@@ -8,6 +8,8 @@
   "state": "active",
   "title": "Harbour Forge Q2 retrofit programme",
   "value": 480000,
+  "upside": 1800000,
+  "downside": 320000,
   "currency": "GBP",
   "stage": "qualified",
   "relations": [

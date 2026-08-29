@@ -8,6 +8,7 @@
   "state": "active",
   "name": "Harbour Forge",
   "industry": "industrial heating",
+  "execution_probability": 0.62,
   "relations": [
     {
       "subject": "urn:aiop:company:harbour-forge",

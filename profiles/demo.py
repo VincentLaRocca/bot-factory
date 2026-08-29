@@ -46,7 +46,12 @@ REQUIRED_PROPERTIES = {
     "Opportunity": ["title", "value"],
     "Technology": ["name"],
     "Evidence": ["title"],
-    "Calculation": ["expression", "inputs", "result"],
+    "Market": ["name"],
+    # A calculation must say what it consumes. How it combines them — a named
+    # function, or a legacy expression carrying its own result — is not
+    # something every deployment agrees on.
+    "Calculation": ["inputs"],
+    "Result": ["value", "inputs", "calculation"],
 }
 
 #: The edge a newer object uses to point at the one it replaces. The store

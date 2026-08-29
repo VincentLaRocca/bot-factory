@@ -47,6 +47,40 @@ ASYMMETRY_VIEW = View(
     description="Company, technology, people, evidence and calculations behind an opportunity.",
 )
 
+#: Everything an expected-value calculation needs, and nothing narrative. The
+#: type filter is what keeps the story out: Sarah is a Person and a Character,
+#: and only the Person half is any of this view's business.
+VALUATION_VIEW = View(
+    name="valuation",
+    depth=3,
+    direction=Direction.BOTH,
+    predicates={
+        "enables",
+        "enabledBy",
+        "develops",
+        "developedBy",
+        "worksFor",
+        "employs",
+        "contains",
+        "partOf",
+        "supports",
+        "supportedBy",
+        "derivedFrom",
+        "sourceOf",
+    },
+    types={
+        "Opportunity",
+        "Company",
+        "Person",
+        "Technology",
+        "Market",
+        "Evidence",
+        "Calculation",
+        "Result",
+    },
+    description="Opportunity, company, person, technology, market and evidence.",
+)
+
 #: Where a derived value came from, and nothing else.
 LINEAGE_VIEW = View(
     name="lineage",
@@ -56,6 +90,23 @@ LINEAGE_VIEW = View(
     description="The objects a calculation drew its variables from.",
 )
 
+#: The other way down the same edges: what depends on this object, and would
+#: have to be recomputed if it changed.
+DEPENDENTS_VIEW = View(
+    name="dependents",
+    depth=1,
+    direction=Direction.IN,
+    predicates={"derivedFrom"},
+    description="The calculations and results that read this object.",
+)
+
 DEMO_VIEWS = {
-    view.name: view for view in (CHARACTER_VIEW, ASYMMETRY_VIEW, LINEAGE_VIEW)
+    view.name: view
+    for view in (
+        CHARACTER_VIEW,
+        ASYMMETRY_VIEW,
+        VALUATION_VIEW,
+        LINEAGE_VIEW,
+        DEPENDENTS_VIEW,
+    )
 }

@@ -6,11 +6,20 @@ import pytest
 
 import aiop
 from aiop import AIOPObject, RelationGraph
-from profiles import DEMO_CONTEXT_FILE, DEMO_PROFILE, DEMO_VOCABULARY, VERSION_PREDICATE
+from profiles import (
+    DEMO_CALCULATION_SCHEMA,
+    DEMO_CONTEXT_FILE,
+    DEMO_FUNCTIONS,
+    DEMO_PROFILE,
+    DEMO_VOCABULARY,
+    VERSION_PREDICATE,
+)
+from reasoning import ReasoningEngine
 from store import ObjectStore
 
 EXAMPLES_DIR = Path(__file__).resolve().parents[1] / "examples"
 WORLD_DIR = EXAMPLES_DIR / "world"
+REASONING_DIR = EXAMPLES_DIR / "reasoning"
 CORE_CONTEXT_FILE = Path(aiop.__file__).with_name("context.jsonld")
 
 #: Keys the protocol reserves; everything else in a document is vocabulary.
@@ -89,6 +98,30 @@ def world_store(world_documents) -> ObjectStore:
     store = ObjectStore(version_predicate=VERSION_PREDICATE)
     store.load(list(world_documents.values()))
     return store
+
+
+@pytest.fixture
+def reasoning_documents() -> Dict[str, Dict]:
+    """What the reasoning layer adds to the world: a market and a calculation."""
+    return {
+        path.stem: json.loads(path.read_text())
+        for path in sorted(REASONING_DIR.glob("*.jsonld"))
+    }
+
+
+@pytest.fixture
+def reasoning_store(world_documents, reasoning_documents) -> ObjectStore:
+    """The demonstration world with something worth calculating in it."""
+    store = ObjectStore(version_predicate=VERSION_PREDICATE)
+    store.load(list(world_documents.values()) + list(reasoning_documents.values()))
+    return store
+
+
+@pytest.fixture
+def engine(reasoning_store) -> ReasoningEngine:
+    return ReasoningEngine(
+        reasoning_store, DEMO_FUNCTIONS, DEMO_CALCULATION_SCHEMA
+    )
 
 
 @pytest.fixture

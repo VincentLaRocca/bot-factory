@@ -215,11 +215,19 @@ def test_composed_context_survives_a_roundtrip(example_documents):
 
 
 def test_every_example_term_resolves_in_the_composed_context(
-    example_documents, world_documents, core_context, profile_context
+    example_documents,
+    world_documents,
+    reasoning_documents,
+    core_context,
+    profile_context,
 ):
     """Nothing an example says is left undefined once both contexts are merged."""
     composed = {**core_context, **profile_context}
-    for name, document in {**example_documents, **world_documents}.items():
+    for name, document in {
+        **example_documents,
+        **world_documents,
+        **reasoning_documents,
+    }.items():
         for term in used_terms(document):
             assert term in composed, f"{name}: '{term}' is defined by neither context"
 

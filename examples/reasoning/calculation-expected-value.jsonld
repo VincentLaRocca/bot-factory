@@ -1,0 +1,75 @@
+{
+  "@context": [
+    "https://aiop.dev/context.jsonld",
+    "https://aiop.dev/profiles/demo/context.jsonld"
+  ],
+  "@id": "urn:aiop:calculation:harbour-q2-asymmetry",
+  "@type": "Calculation",
+  "state": "active",
+  "title": "Expected value of the Q2 retrofit programme",
+  "description": "Five properties of four independently addressable objects.",
+  "function": "expected_value",
+  "currency": "GBP",
+  "inputs": [
+    {
+      "variable": "upside",
+      "source": "urn:aiop:opportunity:harbour-q2-retrofit",
+      "sourceProperty": "upside"
+    },
+    {
+      "variable": "downside",
+      "source": "urn:aiop:opportunity:harbour-q2-retrofit",
+      "sourceProperty": "downside"
+    },
+    {
+      "variable": "execution_probability",
+      "source": "urn:aiop:company:harbour-forge",
+      "sourceProperty": "execution_probability"
+    },
+    {
+      "variable": "success_probability",
+      "source": "urn:aiop:technology:induction-retrofit",
+      "sourceProperty": "success_probability"
+    },
+    {
+      "variable": "adoption_probability",
+      "source": "urn:aiop:market:uk-industrial-heat",
+      "sourceProperty": "adoption_probability"
+    }
+  ],
+  "relations": [
+    {
+      "subject": "urn:aiop:calculation:harbour-q2-asymmetry",
+      "predicate": "derivedFrom",
+      "object": "urn:aiop:opportunity:harbour-q2-retrofit",
+      "attributes": {"variable": "upside", "sourceProperty": "upside"}
+    },
+    {
+      "subject": "urn:aiop:calculation:harbour-q2-asymmetry",
+      "predicate": "derivedFrom",
+      "object": "urn:aiop:company:harbour-forge",
+      "attributes": {"variable": "execution_probability", "sourceProperty": "execution_probability"}
+    },
+    {
+      "subject": "urn:aiop:calculation:harbour-q2-asymmetry",
+      "predicate": "derivedFrom",
+      "object": "urn:aiop:technology:induction-retrofit",
+      "attributes": {"variable": "success_probability", "sourceProperty": "success_probability"}
+    },
+    {
+      "subject": "urn:aiop:calculation:harbour-q2-asymmetry",
+      "predicate": "derivedFrom",
+      "object": "urn:aiop:market:uk-industrial-heat",
+      "attributes": {"variable": "adoption_probability", "sourceProperty": "adoption_probability"}
+    }
+  ],
+  "provenance": [
+    {
+      "agent": "urn:aiop:agent:analyst",
+      "method": "asserted",
+      "confidence": 1.0,
+      "generatedAt": "2026-02-03T09:05:00Z",
+      "note": "Declares what it consumes; the engine decides what it is worth."
+    }
+  ]
+}

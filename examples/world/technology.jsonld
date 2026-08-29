@@ -8,6 +8,7 @@
   "state": "active",
   "name": "Induction retrofit kit",
   "description": "Replaces gas-fired billet heaters without replacing the line.",
+  "success_probability": 0.71,
   "relations": [
     {
       "subject": "urn:aiop:technology:induction-retrofit",

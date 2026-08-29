@@ -1,0 +1,28 @@
+{
+  "@context": [
+    "https://aiop.dev/context.jsonld",
+    "https://aiop.dev/profiles/demo/context.jsonld"
+  ],
+  "@id": "urn:aiop:market:uk-industrial-heat",
+  "@type": "Market",
+  "state": "active",
+  "name": "UK industrial process heat",
+  "description": "Billet and forging heat in UK metals plants, under carbon-cost pressure.",
+  "adoption_probability": 0.55,
+  "relations": [
+    {
+      "subject": "urn:aiop:market:uk-industrial-heat",
+      "predicate": "contains",
+      "object": "urn:aiop:opportunity:harbour-q2-retrofit"
+    }
+  ],
+  "provenance": [
+    {
+      "agent": "urn:aiop:agent:analyst",
+      "method": "estimated",
+      "confidence": 0.6,
+      "generatedAt": "2026-02-03T09:00:00Z",
+      "note": "Adoption rate inferred from two comparable retrofit programmes."
+    }
+  ]
+}
