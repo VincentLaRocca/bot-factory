@@ -1,0 +1,57 @@
+{
+  "@context": [
+    "https://aiop.dev/context.jsonld",
+    "https://aiop.dev/profiles/demo/context.jsonld"
+  ],
+  "@id": "urn:aiop:calculation:harbour-q2-expected-value",
+  "@type": "Calculation",
+  "state": "active",
+  "title": "Expected value of the Q2 retrofit programme",
+  "expression": "opportunity_value * conversion_rate",
+  "inputs": [
+    {
+      "variable": "opportunity_value",
+      "source": "urn:aiop:opportunity:harbour-q2-retrofit",
+      "sourceProperty": "value",
+      "value": 480000
+    },
+    {
+      "variable": "conversion_rate",
+      "source": "urn:aiop:evidence:field-trial",
+      "sourceProperty": "rate",
+      "value": 0.35
+    }
+  ],
+  "result": 168000,
+  "currency": "GBP",
+  "relations": [
+    {
+      "subject": "urn:aiop:calculation:harbour-q2-expected-value",
+      "predicate": "derivedFrom",
+      "object": "urn:aiop:opportunity:harbour-q2-retrofit",
+      "attributes": {"variable": "opportunity_value", "sourceProperty": "value"}
+    },
+    {
+      "subject": "urn:aiop:calculation:harbour-q2-expected-value",
+      "predicate": "derivedFrom",
+      "object": "urn:aiop:evidence:field-trial",
+      "attributes": {"variable": "conversion_rate", "sourceProperty": "rate"}
+    }
+  ],
+  "provenance": [
+    {
+      "agent": "urn:aiop:agent:calculator",
+      "method": "computed",
+      "source": "urn:aiop:opportunity:harbour-q2-retrofit",
+      "confidence": 1.0,
+      "generatedAt": "2026-02-02T08:00:00Z"
+    },
+    {
+      "agent": "urn:aiop:agent:calculator",
+      "method": "computed",
+      "source": "urn:aiop:evidence:field-trial",
+      "confidence": 0.9,
+      "generatedAt": "2026-02-02T08:00:01Z"
+    }
+  ]
+}

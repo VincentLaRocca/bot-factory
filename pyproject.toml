@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aiop"
+version = "0.2.0"
+description = "AIOP — a minimal core for AI-addressable objects, relations, state and provenance, with an object store and cluster layer"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "bot-factory" }]
+keywords = ["aiop", "json-ld", "provenance", "knowledge-graph"]
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=7.4"]
+
+[project.urls]
+Homepage = "https://github.com/VincentLaRocca/bot-factory"
+
+[tool.setuptools]
+packages = ["aiop", "profiles", "store"]
+
+[tool.setuptools.package-data]
+aiop = ["context.jsonld"]
+profiles = ["context.jsonld"]
+store = ["context.jsonld"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

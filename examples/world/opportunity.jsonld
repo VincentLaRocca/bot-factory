@@ -1,0 +1,29 @@
+{
+  "@context": [
+    "https://aiop.dev/context.jsonld",
+    "https://aiop.dev/profiles/demo/context.jsonld"
+  ],
+  "@id": "urn:aiop:opportunity:harbour-q2-retrofit",
+  "@type": "Opportunity",
+  "state": "active",
+  "title": "Harbour Forge Q2 retrofit programme",
+  "value": 480000,
+  "currency": "GBP",
+  "stage": "qualified",
+  "relations": [
+    {
+      "subject": "urn:aiop:opportunity:harbour-q2-retrofit",
+      "predicate": "supersedes",
+      "object": "urn:aiop:opportunity:harbour-q2-retrofit-v1"
+    }
+  ],
+  "provenance": [
+    {
+      "agent": "urn:aiop:agent:analyst",
+      "method": "reviewed",
+      "confidence": 0.8,
+      "generatedAt": "2026-02-01T14:20:00Z",
+      "note": "Scope widened after the field trial."
+    }
+  ]
+}

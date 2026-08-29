@@ -1,0 +1,38 @@
+{
+  "@context": [
+    "https://aiop.dev/context.jsonld",
+    "https://aiop.dev/profiles/demo/context.jsonld"
+  ],
+  "@id": "urn:aiop:story:the-long-walk",
+  "@type": ["Story"],
+  "state": "proposed",
+  "title": "The Long Walk",
+  "description": "A short account of a dog, a founder and a very slow morning.",
+  "relations": [
+    {
+      "subject": "urn:aiop:story:the-long-walk",
+      "predicate": "authoredBy",
+      "object": "urn:aiop:person:ada"
+    },
+    {
+      "subject": "urn:aiop:story:the-long-walk",
+      "predicate": "contains",
+      "object": "urn:aiop:character:the-collie"
+    }
+  ],
+  "provenance": [
+    {
+      "agent": "urn:aiop:agent:writer",
+      "method": "generated",
+      "confidence": 0.6,
+      "generatedAt": "2026-02-11T18:40:00Z",
+      "note": "First draft, unreviewed."
+    },
+    {
+      "agent": "urn:aiop:person:ada",
+      "method": "reviewed",
+      "confidence": 0.95,
+      "generatedAt": "2026-02-12T08:05:00Z"
+    }
+  ]
+}

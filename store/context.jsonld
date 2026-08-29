@@ -1,0 +1,21 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "aiop": "https://aiop.dev/ns#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+
+    "Cluster": "aiop:Cluster",
+    "root": {"@id": "aiop:root", "@type": "@id"},
+    "members": {"@id": "aiop:member", "@container": "@set", "@type": "@id"},
+    "view": "aiop:view",
+    "edges": {"@id": "aiop:edge", "@container": "@set"},
+    "depths": "aiop:depth",
+    "depth": {"@id": "aiop:depth", "@type": "xsd:integer"},
+    "direction": "aiop:direction",
+    "name": "aiop:name",
+    "predicates": {"@id": "aiop:predicates", "@container": "@set"},
+    "excludePredicates": {"@id": "aiop:excludePredicates", "@container": "@set"},
+    "types": {"@id": "aiop:types", "@container": "@set"},
+    "states": {"@id": "aiop:states", "@container": "@set"}
+  }
+}

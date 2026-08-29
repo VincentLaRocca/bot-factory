@@ -1,0 +1,27 @@
+{
+  "@context": [
+    "https://aiop.dev/context.jsonld",
+    "https://aiop.dev/profiles/demo/context.jsonld"
+  ],
+  "@id": "urn:aiop:company:harbour-forge",
+  "@type": ["Company", "Agent"],
+  "state": "active",
+  "name": "Harbour Forge",
+  "industry": "industrial heating",
+  "relations": [
+    {
+      "subject": "urn:aiop:company:harbour-forge",
+      "predicate": "develops",
+      "object": "urn:aiop:technology:induction-retrofit"
+    }
+  ],
+  "provenance": [
+    {
+      "agent": "urn:aiop:agent:registry-import",
+      "method": "imported",
+      "source": "urn:aiop:source:companies-register",
+      "confidence": 1.0,
+      "generatedAt": "2026-01-04T09:10:00Z"
+    }
+  ]
+}

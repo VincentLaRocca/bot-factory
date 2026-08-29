@@ -1,0 +1,28 @@
+{
+  "@context": [
+    "https://aiop.dev/context.jsonld",
+    "https://aiop.dev/profiles/demo/context.jsonld"
+  ],
+  "@id": "urn:aiop:policy:northwind-commission",
+  "@type": ["Policy"],
+  "state": "active",
+  "name": "Northwind sales commission",
+  "rate": 0.075,
+  "description": "Commission rate applied to closed retrofit business.",
+  "relations": [
+    {
+      "subject": "urn:aiop:policy:northwind-commission",
+      "predicate": "partOf",
+      "object": "urn:aiop:company:northwind"
+    }
+  ],
+  "provenance": [
+    {
+      "agent": "urn:aiop:person:ada",
+      "method": "asserted",
+      "source": "https://example.com/handbook/compensation",
+      "confidence": 1.0,
+      "generatedAt": "2026-01-10T14:00:00Z"
+    }
+  ]
+}

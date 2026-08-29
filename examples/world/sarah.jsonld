@@ -1,0 +1,34 @@
+{
+  "@context": [
+    "https://aiop.dev/context.jsonld",
+    "https://aiop.dev/profiles/demo/context.jsonld"
+  ],
+  "@id": "urn:aiop:person:sarah",
+  "@type": ["Person", "Character"],
+  "state": "active",
+  "name": "Sarah Iyer",
+  "role": "farrier",
+  "relations": [
+    {
+      "subject": "urn:aiop:person:sarah",
+      "predicate": "owns",
+      "object": "urn:aiop:animal:scout",
+      "attributes": {"since": "2023-03-18"}
+    },
+    {
+      "subject": "urn:aiop:person:sarah",
+      "predicate": "worksFor",
+      "object": "urn:aiop:company:harbour-forge",
+      "attributes": {"role": "field engineer"}
+    }
+  ],
+  "provenance": [
+    {
+      "agent": "urn:aiop:agent:archivist",
+      "method": "asserted",
+      "confidence": 0.95,
+      "generatedAt": "2026-01-04T09:05:00Z",
+      "note": "Same person in the novella and on the payroll."
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "@context": [
+    "https://aiop.dev/context.jsonld",
+    "https://aiop.dev/profiles/demo/context.jsonld"
+  ],
+  "@id": "urn:aiop:animal:biscuit",
+  "@type": ["Dog", "Animal"],
+  "state": "active",
+  "name": "Biscuit",
+  "breed": "Border Collie",
+  "age": 4,
+  "description": "A real dog, addressable on its own and referenced by anything that needs it.",
+  "relations": [
+    {
+      "subject": "urn:aiop:animal:biscuit",
+      "predicate": "ownedBy",
+      "object": "urn:aiop:person:ada"
+    },
+    {
+      "subject": "urn:aiop:animal:biscuit",
+      "predicate": "portrayedBy",
+      "object": "urn:aiop:character:the-collie"
+    }
+  ],
+  "provenance": [
+    {
+      "agent": "urn:aiop:agent:onboarding-bot",
+      "method": "inferred",
+      "note": "Derived from the owner's declared household members.",
+      "confidence": 0.8,
+      "generatedAt": "2026-01-04T09:16:30Z"
+    }
+  ]
+}

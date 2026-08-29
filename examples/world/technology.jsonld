@@ -1,0 +1,26 @@
+{
+  "@context": [
+    "https://aiop.dev/context.jsonld",
+    "https://aiop.dev/profiles/demo/context.jsonld"
+  ],
+  "@id": "urn:aiop:technology:induction-retrofit",
+  "@type": "Technology",
+  "state": "active",
+  "name": "Induction retrofit kit",
+  "description": "Replaces gas-fired billet heaters without replacing the line.",
+  "relations": [
+    {
+      "subject": "urn:aiop:technology:induction-retrofit",
+      "predicate": "enables",
+      "object": "urn:aiop:opportunity:harbour-q2-retrofit"
+    }
+  ],
+  "provenance": [
+    {
+      "agent": "urn:aiop:agent:analyst",
+      "method": "asserted",
+      "confidence": 0.85,
+      "generatedAt": "2026-01-05T11:00:00Z"
+    }
+  ]
+}

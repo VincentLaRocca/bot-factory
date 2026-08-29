@@ -1,0 +1,20 @@
+{
+  "@context": [
+    "https://aiop.dev/context.jsonld",
+    "https://aiop.dev/profiles/demo/context.jsonld"
+  ],
+  "@id": "urn:aiop:animal:scout",
+  "@type": ["Dog", "Animal"],
+  "state": "active",
+  "name": "Scout",
+  "breed": "Lurcher",
+  "provenance": [
+    {
+      "agent": "urn:aiop:agent:archivist",
+      "method": "imported",
+      "source": "urn:aiop:source:manuscript-2024",
+      "confidence": 0.9,
+      "generatedAt": "2026-01-04T09:06:00Z"
+    }
+  ]
+}

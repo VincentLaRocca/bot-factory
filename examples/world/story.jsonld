@@ -1,0 +1,28 @@
+{
+  "@context": [
+    "https://aiop.dev/context.jsonld",
+    "https://aiop.dev/profiles/demo/context.jsonld"
+  ],
+  "@id": "urn:aiop:story:the-long-field",
+  "@type": "Story",
+  "state": "active",
+  "title": "The Long Field",
+  "description": "A novella about a farrier, her dog, and a village that will not sell.",
+  "relations": [
+    {
+      "subject": "urn:aiop:story:the-long-field",
+      "predicate": "contains",
+      "object": "urn:aiop:person:sarah",
+      "attributes": {"role": "protagonist"}
+    }
+  ],
+  "provenance": [
+    {
+      "agent": "urn:aiop:agent:archivist",
+      "method": "imported",
+      "source": "urn:aiop:source:manuscript-2024",
+      "confidence": 1.0,
+      "generatedAt": "2026-01-04T09:00:00Z"
+    }
+  ]
+}

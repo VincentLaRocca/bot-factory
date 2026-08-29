@@ -1,0 +1,59 @@
+{
+  "@context": [
+    "https://aiop.dev/context.jsonld",
+    "https://aiop.dev/profiles/demo/context.jsonld"
+  ],
+  "@id": "urn:aiop:calculation:northwind-q1-commission",
+  "@type": ["Calculation"],
+  "state": "active",
+  "description": "Commission payable on the Q1 line retrofit.",
+  "expression": "opportunity_value * commission_rate",
+  "inputs": [
+    {
+      "variable": "opportunity_value",
+      "source": "urn:aiop:opportunity:northwind-q1-retrofit",
+      "sourceProperty": "value",
+      "value": 240000
+    },
+    {
+      "variable": "commission_rate",
+      "source": "urn:aiop:policy:northwind-commission",
+      "sourceProperty": "rate",
+      "value": 0.075
+    }
+  ],
+  "result": 18000,
+  "units": "USD",
+  "relations": [
+    {
+      "subject": "urn:aiop:calculation:northwind-q1-commission",
+      "predicate": "derivedFrom",
+      "object": "urn:aiop:opportunity:northwind-q1-retrofit",
+      "attributes": {"variable": "opportunity_value", "sourceProperty": "value"}
+    },
+    {
+      "subject": "urn:aiop:calculation:northwind-q1-commission",
+      "predicate": "derivedFrom",
+      "object": "urn:aiop:policy:northwind-commission",
+      "attributes": {"variable": "commission_rate", "sourceProperty": "rate"}
+    }
+  ],
+  "provenance": [
+    {
+      "agent": "urn:aiop:agent:calculator",
+      "method": "computed",
+      "source": "urn:aiop:opportunity:northwind-q1-retrofit",
+      "confidence": 0.9,
+      "generatedAt": "2026-03-01T11:00:05Z",
+      "note": "opportunity_value bound from the opportunity's 'value' property."
+    },
+    {
+      "agent": "urn:aiop:agent:calculator",
+      "method": "computed",
+      "source": "urn:aiop:policy:northwind-commission",
+      "confidence": 1.0,
+      "generatedAt": "2026-03-01T11:00:05Z",
+      "note": "commission_rate bound from the policy's 'rate' property."
+    }
+  ]
+}

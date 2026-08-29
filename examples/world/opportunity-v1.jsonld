@@ -1,0 +1,21 @@
+{
+  "@context": [
+    "https://aiop.dev/context.jsonld",
+    "https://aiop.dev/profiles/demo/context.jsonld"
+  ],
+  "@id": "urn:aiop:opportunity:harbour-q2-retrofit-v1",
+  "@type": "Opportunity",
+  "state": "superseded",
+  "title": "Harbour Forge Q2 retrofit (single line)",
+  "value": 180000,
+  "currency": "GBP",
+  "stage": "qualified",
+  "provenance": [
+    {
+      "agent": "urn:aiop:agent:analyst",
+      "method": "asserted",
+      "confidence": 0.6,
+      "generatedAt": "2026-01-06T10:00:00Z"
+    }
+  ]
+}

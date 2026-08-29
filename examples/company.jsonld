@@ -1,0 +1,37 @@
+{
+  "@context": [
+    "https://aiop.dev/context.jsonld",
+    "https://aiop.dev/profiles/demo/context.jsonld"
+  ],
+  "@id": "urn:aiop:company:northwind",
+  "@type": ["Company", "Agent"],
+  "state": "active",
+  "name": "Northwind Robotics",
+  "industry": "Industrial automation",
+  "relations": [
+    {
+      "subject": "urn:aiop:company:northwind",
+      "predicate": "employs",
+      "object": "urn:aiop:person:ada"
+    },
+    {
+      "subject": "urn:aiop:company:northwind",
+      "predicate": "contains",
+      "object": "urn:aiop:opportunity:northwind-q1-retrofit"
+    },
+    {
+      "subject": "urn:aiop:company:northwind",
+      "predicate": "contains",
+      "object": "urn:aiop:policy:northwind-commission"
+    }
+  ],
+  "provenance": [
+    {
+      "agent": "urn:aiop:agent:crm-sync",
+      "method": "imported",
+      "source": "crm://accounts/4821",
+      "confidence": 0.9,
+      "generatedAt": "2026-01-02T00:00:00Z"
+    }
+  ]
+}

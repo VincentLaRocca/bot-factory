@@ -1,0 +1,28 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "aiop": "https://aiop.dev/ns#",
+    "prov": "http://www.w3.org/ns/prov#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+
+    "id": "@id",
+    "type": "@type",
+
+    "state": "aiop:state",
+
+    "relations": {"@id": "aiop:relation", "@container": "@set"},
+    "subject": {"@id": "aiop:subject", "@type": "@id"},
+    "predicate": {"@id": "aiop:predicate", "@type": "@vocab"},
+    "object": {"@id": "aiop:object", "@type": "@id"},
+    "attributes": "aiop:attributes",
+
+    "provenance": {"@id": "prov:wasGeneratedBy", "@container": "@set"},
+    "agent": {"@id": "prov:wasAttributedTo", "@type": "@id"},
+    "method": "aiop:method",
+    "source": {"@id": "prov:hadPrimarySource", "@type": "@id"},
+    "sourceProperty": "aiop:sourceProperty",
+    "confidence": {"@id": "aiop:confidence", "@type": "xsd:decimal"},
+    "generatedAt": {"@id": "prov:generatedAtTime", "@type": "xsd:dateTime"},
+    "note": "aiop:note"
+  }
+}

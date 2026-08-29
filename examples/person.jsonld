@@ -1,0 +1,40 @@
+{
+  "@context": [
+    "https://aiop.dev/context.jsonld",
+    "https://aiop.dev/profiles/demo/context.jsonld"
+  ],
+  "@id": "urn:aiop:person:ada",
+  "@type": ["Person", "Agent"],
+  "state": "active",
+  "name": "Ada Okafor",
+  "email": "ada@example.com",
+  "age": 34,
+  "description": "Founder and systems engineer.",
+  "relations": [
+    {
+      "subject": "urn:aiop:person:ada",
+      "predicate": "owns",
+      "object": "urn:aiop:animal:biscuit"
+    },
+    {
+      "subject": "urn:aiop:person:ada",
+      "predicate": "worksFor",
+      "object": "urn:aiop:company:northwind",
+      "attributes": {"role": "CTO", "since": "2021-03-01"}
+    },
+    {
+      "subject": "urn:aiop:person:ada",
+      "predicate": "authorOf",
+      "object": "urn:aiop:story:the-long-walk"
+    }
+  ],
+  "provenance": [
+    {
+      "agent": "urn:aiop:agent:onboarding-bot",
+      "method": "asserted",
+      "source": "https://example.com/signup",
+      "confidence": 1.0,
+      "generatedAt": "2026-01-04T09:15:00Z"
+    }
+  ]
+}

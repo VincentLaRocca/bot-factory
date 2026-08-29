@@ -1,0 +1,27 @@
+{
+  "@context": [
+    "https://aiop.dev/context.jsonld",
+    "https://aiop.dev/profiles/demo/context.jsonld"
+  ],
+  "@id": "urn:aiop:evidence:competitor-teardown",
+  "@type": "Evidence",
+  "state": "active",
+  "title": "Teardown of the incumbent gas heater",
+  "description": "The incumbent cannot be retrofitted without replacing the line.",
+  "relations": [
+    {
+      "subject": "urn:aiop:evidence:competitor-teardown",
+      "predicate": "supports",
+      "object": "urn:aiop:technology:induction-retrofit",
+      "attributes": {"fidelity": "inspected"}
+    }
+  ],
+  "provenance": [
+    {
+      "agent": "urn:aiop:agent:analyst",
+      "method": "inferred",
+      "confidence": 0.7,
+      "generatedAt": "2026-01-20T12:00:00Z"
+    }
+  ]
+}

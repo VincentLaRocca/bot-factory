@@ -1,0 +1,34 @@
+{
+  "@context": [
+    "https://aiop.dev/context.jsonld",
+    "https://aiop.dev/profiles/demo/context.jsonld"
+  ],
+  "@id": "urn:aiop:opportunity:northwind-q1-retrofit",
+  "@type": ["Opportunity"],
+  "state": "active",
+  "title": "Q1 line retrofit",
+  "value": 240000,
+  "currency": "USD",
+  "stage": "negotiation",
+  "relations": [
+    {
+      "subject": "urn:aiop:opportunity:northwind-q1-retrofit",
+      "predicate": "partOf",
+      "object": "urn:aiop:company:northwind"
+    },
+    {
+      "subject": "urn:aiop:opportunity:northwind-q1-retrofit",
+      "predicate": "relatedTo",
+      "object": "urn:aiop:person:ada"
+    }
+  ],
+  "provenance": [
+    {
+      "agent": "urn:aiop:agent:crm-sync",
+      "method": "imported",
+      "source": "crm://opportunities/9917",
+      "confidence": 0.9,
+      "generatedAt": "2026-03-01T11:00:00Z"
+    }
+  ]
+}

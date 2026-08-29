@@ -1,0 +1,29 @@
+{
+  "@context": [
+    "https://aiop.dev/context.jsonld",
+    "https://aiop.dev/profiles/demo/context.jsonld"
+  ],
+  "@id": "urn:aiop:evidence:field-trial",
+  "@type": "Evidence",
+  "state": "active",
+  "title": "Six-week field trial on line 3",
+  "rate": 0.35,
+  "units": "fraction of billet heaters converted",
+  "relations": [
+    {
+      "subject": "urn:aiop:evidence:field-trial",
+      "predicate": "supports",
+      "object": "urn:aiop:opportunity:harbour-q2-retrofit",
+      "attributes": {"fidelity": "measured"}
+    }
+  ],
+  "provenance": [
+    {
+      "agent": "urn:aiop:agent:field-engineer",
+      "method": "generated",
+      "source": "urn:aiop:source:trial-log-2026-01",
+      "confidence": 0.9,
+      "generatedAt": "2026-01-28T17:45:00Z"
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "@context": [
+    "https://aiop.dev/context.jsonld",
+    "https://aiop.dev/profiles/demo/context.jsonld"
+  ],
+  "@id": "urn:aiop:character:the-collie",
+  "@type": ["Character"],
+  "state": "proposed",
+  "name": "The Collie",
+  "description": "The dog as she appears in the story: the same animal, seen through the narrative.",
+  "relations": [
+    {
+      "subject": "urn:aiop:character:the-collie",
+      "predicate": "partOf",
+      "object": "urn:aiop:story:the-long-walk"
+    },
+    {
+      "subject": "urn:aiop:character:the-collie",
+      "predicate": "portrays",
+      "object": "urn:aiop:animal:biscuit",
+      "attributes": {"fidelity": "faithful"}
+    }
+  ],
+  "provenance": [
+    {
+      "agent": "urn:aiop:agent:writer",
+      "method": "generated",
+      "source": "urn:aiop:animal:biscuit",
+      "confidence": 0.7,
+      "generatedAt": "2026-02-11T18:39:00Z"
+    }
+  ]
+}
