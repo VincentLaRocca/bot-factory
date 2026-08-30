@@ -1,0 +1,27 @@
+{
+  "@context": [
+    "https://aiop.dev/context.jsonld",
+    "https://aiop.dev/profiles/demo/context.jsonld",
+    "https://aiop.dev/profiles/asymmetry/context.jsonld"
+  ],
+  "@id": "urn:aiop:evidence:execution-delivery-audit",
+  "@type": "Evidence",
+  "state": "active",
+  "title": "Delivery audit after the third deployment went live early",
+  "dimension": "people.execution_probability",
+  "stance": "supports",
+  "source_kind": "primary",
+  "independent": true,
+  "confidence": 0.9,
+  "claimed_value": 0.78,
+  "observed_at": "2026-04-14",
+  "provenance": [
+    {
+      "agent": "urn:aiop:agent:diligence",
+      "method": "observed",
+      "confidence": 0.9,
+      "generatedAt": "2026-04-14T00:00:00Z",
+      "note": "Third deployment delivered ahead of contract; the earlier 0.62 now looks low."
+    }
+  ]
+}

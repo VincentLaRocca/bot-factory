@@ -1,0 +1,22 @@
+{
+  "@context": [
+    "https://aiop.dev/context.jsonld",
+    "https://aiop.dev/profiles/demo/context.jsonld",
+    "https://aiop.dev/profiles/asymmetry/context.jsonld"
+  ],
+  "@id": "urn:aiop:technology:triage-copilot",
+  "@type": "Technology",
+  "state": "active",
+  "name": "Overnight triage ranking model",
+  "maturity": "pilot",
+  "bottleneck": "Access to labelled outcome data outside the pilot network.",
+  "provenance": [
+    {
+      "agent": "urn:aiop:agent:scout",
+      "method": "asserted",
+      "confidence": 0.75,
+      "generatedAt": "2026-03-02T09:00:00Z",
+      "note": "Success probability and defensibility are open questions, not blanks to be filled in."
+    }
+  ]
+}

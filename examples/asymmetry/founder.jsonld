@@ -1,0 +1,28 @@
+{
+  "@context": [
+    "https://aiop.dev/context.jsonld",
+    "https://aiop.dev/profiles/demo/context.jsonld",
+    "https://aiop.dev/profiles/asymmetry/context.jsonld"
+  ],
+  "@id": "urn:aiop:person:amara-osei",
+  "@type": "Person",
+  "state": "active",
+  "name": "Dr Amara Osei",
+  "role": "founder",
+  "expertise": "Practising GP and informatician; built the referral-triage tooling used by two ICBs.",
+  "relations": [
+    {
+      "subject": "urn:aiop:person:amara-osei",
+      "predicate": "worksFor",
+      "object": "urn:aiop:company:vantage-clinical"
+    }
+  ],
+  "provenance": [
+    {
+      "agent": "urn:aiop:agent:scout",
+      "method": "asserted",
+      "confidence": 0.8,
+      "generatedAt": "2026-03-02T09:00:00Z"
+    }
+  ]
+}

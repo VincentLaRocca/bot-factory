@@ -7,6 +7,15 @@ terms for them — lives here, so a deployment can swap or extend the vocabulary
 without touching the universal layer.
 """
 
+from .asymmetry import (
+    ASYMMETRY_CALCULATION_SCHEMA,
+    ASYMMETRY_CONTEXT,
+    ASYMMETRY_CONTEXT_FILE,
+    ASYMMETRY_CONTEXT_URI,
+    ASYMMETRY_FUNCTIONS,
+    ASYMMETRY_PROFILE,
+    ASYMMETRY_VOCABULARY,
+)
 from .calculations import DEMO_CALCULATION_SCHEMA, DEMO_FUNCTIONS
 from .demo import (
     DEMO_CONTEXT,
@@ -26,7 +35,14 @@ from .views import (
 )
 
 __all__ = [
+    "ASYMMETRY_CALCULATION_SCHEMA",
+    "ASYMMETRY_CONTEXT",
+    "ASYMMETRY_CONTEXT_FILE",
+    "ASYMMETRY_CONTEXT_URI",
+    "ASYMMETRY_FUNCTIONS",
+    "ASYMMETRY_PROFILE",
     "ASYMMETRY_VIEW",
+    "ASYMMETRY_VOCABULARY",
     "CHARACTER_VIEW",
     "DEMO_CALCULATION_SCHEMA",
     "DEMO_CONTEXT",

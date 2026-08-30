@@ -1,0 +1,26 @@
+{
+  "@context": [
+    "https://aiop.dev/context.jsonld",
+    "https://aiop.dev/profiles/demo/context.jsonld",
+    "https://aiop.dev/profiles/asymmetry/context.jsonld"
+  ],
+  "@id": "urn:aiop:evidence:execution-peer-review",
+  "@type": "Evidence",
+  "state": "active",
+  "title": "Peer reference from the Southwark PCN clinical director",
+  "dimension": "people.execution_probability",
+  "stance": "supports",
+  "source_kind": "secondary",
+  "independent": true,
+  "confidence": 0.75,
+  "claimed_value": 0.62,
+  "observed_at": "2026-02-22",
+  "provenance": [
+    {
+      "agent": "urn:aiop:agent:diligence",
+      "method": "observed",
+      "confidence": 0.75,
+      "generatedAt": "2026-02-22T00:00:00Z"
+    }
+  ]
+}

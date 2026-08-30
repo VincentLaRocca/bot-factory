@@ -1,0 +1,102 @@
+{
+  "@context": [
+    "https://aiop.dev/context.jsonld",
+    "https://aiop.dev/profiles/demo/context.jsonld",
+    "https://aiop.dev/profiles/asymmetry/context.jsonld"
+  ],
+  "@id": "urn:aiop:calculation:clinical-triage-expected-value",
+  "@type": "Calculation",
+  "state": "active",
+  "title": "Expected value of the clinical triage opportunity",
+  "description": "Five properties of four objects. Three of them are unknown when this is filed.",
+  "function": "expected_value",
+  "currency": "GBP",
+  "inputs": [
+    {
+      "variable": "upside",
+      "source": "urn:aiop:opportunity:clinical-triage",
+      "sourceProperty": "upside"
+    },
+    {
+      "variable": "downside",
+      "source": "urn:aiop:opportunity:clinical-triage",
+      "sourceProperty": "downside"
+    },
+    {
+      "variable": "execution_probability",
+      "source": "urn:aiop:company:vantage-clinical",
+      "sourceProperty": "execution_probability"
+    },
+    {
+      "variable": "success_probability",
+      "source": "urn:aiop:technology:triage-copilot",
+      "sourceProperty": "success_probability"
+    },
+    {
+      "variable": "adoption_probability",
+      "source": "urn:aiop:market:uk-primary-care",
+      "sourceProperty": "adoption_probability"
+    }
+  ],
+  "relations": [
+    {
+      "subject": "urn:aiop:calculation:clinical-triage-expected-value",
+      "predicate": "derivedFrom",
+      "object": "urn:aiop:opportunity:clinical-triage",
+      "attributes": {
+        "variable": "upside",
+        "sourceProperty": "upside"
+      }
+    },
+    {
+      "subject": "urn:aiop:calculation:clinical-triage-expected-value",
+      "predicate": "derivedFrom",
+      "object": "urn:aiop:opportunity:clinical-triage",
+      "attributes": {
+        "variable": "downside",
+        "sourceProperty": "downside"
+      }
+    },
+    {
+      "subject": "urn:aiop:calculation:clinical-triage-expected-value",
+      "predicate": "derivedFrom",
+      "object": "urn:aiop:company:vantage-clinical",
+      "attributes": {
+        "variable": "execution_probability",
+        "sourceProperty": "execution_probability"
+      }
+    },
+    {
+      "subject": "urn:aiop:calculation:clinical-triage-expected-value",
+      "predicate": "derivedFrom",
+      "object": "urn:aiop:technology:triage-copilot",
+      "attributes": {
+        "variable": "success_probability",
+        "sourceProperty": "success_probability"
+      }
+    },
+    {
+      "subject": "urn:aiop:calculation:clinical-triage-expected-value",
+      "predicate": "derivedFrom",
+      "object": "urn:aiop:market:uk-primary-care",
+      "attributes": {
+        "variable": "adoption_probability",
+        "sourceProperty": "adoption_probability"
+      }
+    },
+    {
+      "subject": "urn:aiop:calculation:clinical-triage-expected-value",
+      "predicate": "about",
+      "object": "urn:aiop:opportunity:clinical-triage"
+    }
+  ],
+  "provenance": [
+    {
+      "agent": "urn:aiop:agent:scout",
+      "method": "asserted",
+      "confidence": 1.0,
+      "generatedAt": "2026-03-02T09:05:00Z",
+      "note": "Declared before its inputs exist: the gaps it implies are the research queue."
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "@context": [
+    "https://aiop.dev/context.jsonld",
+    "https://aiop.dev/profiles/demo/context.jsonld",
+    "https://aiop.dev/profiles/asymmetry/context.jsonld"
+  ],
+  "@id": "urn:aiop:market:uk-primary-care",
+  "@type": "Market",
+  "state": "active",
+  "name": "UK primary care digital triage",
+  "regulatory_factors": "Class IIa medical device under UKCA; DTAC assurance before any network can buy.",
+  "provenance": [
+    {
+      "agent": "urn:aiop:agent:scout",
+      "method": "asserted",
+      "confidence": 0.7,
+      "generatedAt": "2026-03-02T09:00:00Z"
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "@context": [
+    "https://aiop.dev/context.jsonld",
+    "https://aiop.dev/profiles/demo/context.jsonld",
+    "https://aiop.dev/profiles/asymmetry/context.jsonld"
+  ],
+  "@id": "urn:aiop:evidence:replication-note",
+  "@type": "Evidence",
+  "state": "active",
+  "title": "Engineering note: the ranking is reproducible from public guidance alone",
+  "dimension": "technology.defensibility",
+  "stance": "supports",
+  "source_kind": "secondary",
+  "independent": true,
+  "confidence": 0.7,
+  "claimed_value": "Nothing here that a well-resourced incumbent cannot replicate in two quarters.",
+  "observed_at": "2026-02-27",
+  "provenance": [
+    {
+      "agent": "urn:aiop:agent:engineering",
+      "method": "observed",
+      "confidence": 0.7,
+      "generatedAt": "2026-02-27T00:00:00Z"
+    }
+  ]
+}

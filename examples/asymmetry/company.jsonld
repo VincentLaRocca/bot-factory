@@ -1,0 +1,33 @@
+{
+  "@context": [
+    "https://aiop.dev/context.jsonld",
+    "https://aiop.dev/profiles/demo/context.jsonld",
+    "https://aiop.dev/profiles/asymmetry/context.jsonld"
+  ],
+  "@id": "urn:aiop:company:vantage-clinical",
+  "@type": "Company",
+  "state": "active",
+  "name": "Vantage Clinical",
+  "sector": "clinical software",
+  "relations": [
+    {
+      "subject": "urn:aiop:company:vantage-clinical",
+      "predicate": "employs",
+      "object": "urn:aiop:person:amara-osei"
+    },
+    {
+      "subject": "urn:aiop:company:vantage-clinical",
+      "predicate": "develops",
+      "object": "urn:aiop:technology:triage-copilot"
+    }
+  ],
+  "provenance": [
+    {
+      "agent": "urn:aiop:agent:scout",
+      "method": "asserted",
+      "confidence": 0.8,
+      "generatedAt": "2026-03-02T09:00:00Z",
+      "note": "No execution probability: nothing on file yet supports one."
+    }
+  ]
+}

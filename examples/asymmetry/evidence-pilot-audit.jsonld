@@ -1,0 +1,27 @@
+{
+  "@context": [
+    "https://aiop.dev/context.jsonld",
+    "https://aiop.dev/profiles/demo/context.jsonld",
+    "https://aiop.dev/profiles/asymmetry/context.jsonld"
+  ],
+  "@id": "urn:aiop:evidence:pilot-audit",
+  "@type": "Evidence",
+  "state": "active",
+  "title": "Independent audit of the 11-week pilot at Southwark PCN",
+  "dimension": "technology.success_probability",
+  "stance": "supports",
+  "source_kind": "primary",
+  "independent": true,
+  "confidence": 0.85,
+  "claimed_value": 0.68,
+  "observed_at": "2026-02-11",
+  "provenance": [
+    {
+      "agent": "urn:aiop:agent:clinical-audit",
+      "method": "observed",
+      "confidence": 0.85,
+      "generatedAt": "2026-02-11T00:00:00Z",
+      "note": "Ranking matched the retrospective clinician panel on 68% of urgent cases."
+    }
+  ]
+}

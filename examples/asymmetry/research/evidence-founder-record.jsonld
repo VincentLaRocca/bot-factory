@@ -1,0 +1,26 @@
+{
+  "@context": [
+    "https://aiop.dev/context.jsonld",
+    "https://aiop.dev/profiles/demo/context.jsonld",
+    "https://aiop.dev/profiles/asymmetry/context.jsonld"
+  ],
+  "@id": "urn:aiop:evidence:founder-record",
+  "@type": "Evidence",
+  "state": "active",
+  "title": "Delivery record of the ICB referral tooling, 2022-2025",
+  "dimension": "people.execution_history",
+  "stance": "supports",
+  "source_kind": "primary",
+  "independent": true,
+  "confidence": 0.9,
+  "claimed_value": "Shipped and still-running triage tooling at two ICBs; second deployment inside a year.",
+  "observed_at": "2026-02-20",
+  "provenance": [
+    {
+      "agent": "urn:aiop:agent:diligence",
+      "method": "observed",
+      "confidence": 0.9,
+      "generatedAt": "2026-02-20T00:00:00Z"
+    }
+  ]
+}

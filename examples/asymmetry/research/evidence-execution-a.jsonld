@@ -1,0 +1,26 @@
+{
+  "@context": [
+    "https://aiop.dev/context.jsonld",
+    "https://aiop.dev/profiles/demo/context.jsonld",
+    "https://aiop.dev/profiles/asymmetry/context.jsonld"
+  ],
+  "@id": "urn:aiop:evidence:execution-track-record",
+  "@type": "Evidence",
+  "state": "active",
+  "title": "Diligence note: two prior deployments delivered to contract",
+  "dimension": "people.execution_probability",
+  "stance": "supports",
+  "source_kind": "primary",
+  "independent": true,
+  "confidence": 0.8,
+  "claimed_value": 0.62,
+  "observed_at": "2026-02-20",
+  "provenance": [
+    {
+      "agent": "urn:aiop:agent:diligence",
+      "method": "observed",
+      "confidence": 0.8,
+      "generatedAt": "2026-02-20T00:00:00Z"
+    }
+  ]
+}
