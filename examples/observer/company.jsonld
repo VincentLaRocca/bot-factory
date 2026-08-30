@@ -1,0 +1,18 @@
+{
+  "@context": [
+    "https://aiop.dev/context.jsonld",
+    "https://aiop.dev/profiles/demo/context.jsonld",
+    "https://aiop.dev/profiles/observer/context.jsonld"
+  ],
+  "@id": "urn:aiop:company:lattice-works",
+  "@type": "Company",
+  "state": "active",
+  "name": "Lattice Works",
+  "relations": [
+    {
+      "subject": "urn:aiop:company:lattice-works",
+      "predicate": "develops",
+      "object": "urn:aiop:technology:lattice-cell"
+    }
+  ]
+}

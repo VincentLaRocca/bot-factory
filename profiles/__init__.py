@@ -25,6 +25,15 @@ from .demo import (
     DEMO_VOCABULARY,
     VERSION_PREDICATE,
 )
+from .observer import (
+    DISPOSITIONS,
+    OBSERVER_CONTEXT,
+    OBSERVER_CONTEXT_FILE,
+    OBSERVER_CONTEXT_URI,
+    OBSERVER_PROFILE,
+    OBSERVER_VOCABULARY,
+    Permission,
+)
 from .views import (
     ASYMMETRY_VIEW,
     CHARACTER_VIEW,
@@ -53,7 +62,14 @@ __all__ = [
     "DEMO_FUNCTIONS",
     "DEMO_VOCABULARY",
     "DEPENDENTS_VIEW",
+    "DISPOSITIONS",
     "LINEAGE_VIEW",
+    "OBSERVER_CONTEXT",
+    "OBSERVER_CONTEXT_FILE",
+    "OBSERVER_CONTEXT_URI",
+    "OBSERVER_PROFILE",
+    "OBSERVER_VOCABULARY",
+    "Permission",
     "VALUATION_VIEW",
     "VERSION_PREDICATE",
 ]

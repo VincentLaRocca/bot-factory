@@ -1,0 +1,15 @@
+{
+  "@context": [
+    "https://aiop.dev/context.jsonld",
+    "https://aiop.dev/profiles/demo/context.jsonld",
+    "https://aiop.dev/profiles/observer/context.jsonld"
+  ],
+  "@id": "urn:aiop:sensor:lab-report-feed",
+  "@type": "Sensor",
+  "state": "active",
+  "name": "Laboratory report feed",
+  "sensor": "lab-report-feed",
+  "modality": "measurement",
+  "independence_group": "lattice-works-lab",
+  "description": "Weekly cell test reports published by the manufacturer's own laboratory. One source, so every reading through it shares an independence group."
+}

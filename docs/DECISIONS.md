@@ -83,3 +83,53 @@ answer belongs — the object never knew *why* it held a value in the first plac
 object at a past instant. Today that requires replaying claims; if it becomes a
 routine need, the fix is a versioned target with version-following bindings, and
 it should be taken as a Core/Store decision rather than an agent one.
+
+## AD-3 — Authority composes by intersection
+
+*Status: accepted for v0.1. Made while building the Observer motherboard.*
+
+An observer has a charter; a mission has a grant. When they disagree about
+whether the observer may create objects, one of them has to win.
+
+**Chosen.** `observer.grant() == observer.authority ∩ mission.authority`, so
+the narrower always wins, and the effective grant is recomputed per invocation
+rather than stored. A mission can only ever *narrow* what an observer may do.
+
+**Rejected: union, or mission-as-override.** Either would make a mission a
+privilege-granting instrument: anything that can write a Mission object could
+then hand an observer `TRANSACT`. Intersection means the charter is a ceiling
+that no amount of tasking can raise, which is the property worth having when
+missions eventually get written by other agents.
+
+**Consequence.** Granting an observer a new power is deliberately a two-place
+edit — charter *and* mission — and `Readiness` exists so the second place is
+discoverable: it names the missing permissions instead of failing at runtime.
+
+**Revisit when** delegation arrives (`SPAWN`). A child observer's charter should
+be the parent's effective grant, not the parent's charter, or the intersection
+leaks one level down.
+
+## AD-4 — An anomaly score is its strongest dimension, not a blend
+
+*Status: accepted for v0.1. Made while building the Anomaly Listener.*
+
+Six detectors fire independently. Something has to turn several signals into
+one number that a disposition threshold can be applied to.
+
+**Chosen.** `score = max(signal.score)`, with every dimension's own score,
+reason and arithmetic kept alongside on the anomaly.
+
+**Rejected: a weighted blend.** Weighting asserts how the dimensions relate —
+whether a 0.4 deviation *and* a 0.4 step change corroborate each other or are
+two views of the same jump. They are usually the latter, so a sum would
+double-count correlated evidence and manufacture confidence out of arithmetic.
+v0.1 has no data with which to fit those weights, and inventing them would make
+the score unarguable in the specific way the layer exists to avoid.
+
+**Consequence.** Many weak signals never add up to a strong one. An anomaly that
+is only interesting *because* several dimensions agree will currently be scored
+as WATCH and looked at by a human, which is the failure direction to prefer.
+
+**Revisit when** there are enough labelled anomalies to fit a combiner. The
+signals are stored per-dimension precisely so that it can be fitted
+retrospectively over anomalies already in the graph, without re-running history.

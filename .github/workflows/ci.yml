@@ -26,7 +26,7 @@ jobs:
           python -m pip install ".[dev]" pyflakes
 
       - name: Pyflakes
-        run: python -m pyflakes agents aiop profiles reasoning store tests demo.py demo_asymmetry.py
+        run: python -m pyflakes agents aiop capabilities observer profiles reasoning store tests demo.py demo_asymmetry.py demo_observer.py
 
       - name: Test
         run: python -m pytest -q
