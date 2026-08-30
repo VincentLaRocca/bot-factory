@@ -125,6 +125,28 @@ A calculation names a function in a registry; no stored text is ever executed.
 Each result carries a fingerprint of the inputs it was computed from, which is
 what makes staleness a comparison rather than a guess.
 
+## The Asymmetry Analyst
+
+```python
+from agents.asymmetry import AsymmetryAnalyst
+
+analyst = AsymmetryAnalyst(store, research=provider)
+run = analyst.run("urn:aiop:opportunity:clinical-triage")
+
+run.completeness.score                     # 0.71, and which dimensions are missing
+run.gaps                                   # InformationGap objects, ranked
+run.assessment.get("recommended_action")   # INVESTIGATE_INVESTMENT
+```
+
+The first agent, and it owns no knowledge: given an `@id` it assembles its own
+bounded cluster, marks each dimension KNOWN / UNSUPPORTED / UNKNOWN /
+UNREACHABLE, writes the gaps out as objects, researches them through a
+`ResearchProvider` boundary (no model vendor anywhere in the package), turns
+findings into Evidence and Claims, asks the reasoning layer for the arithmetic,
+and writes an Assessment with full lineage plus an ExecutionRecord. New
+evidence supersedes a claim, stales the results and replaces the assessment
+rather than editing it. `python3 demo_asymmetry.py` runs the whole thing.
+
 ## Test
 
 ```bash
@@ -145,3 +167,8 @@ indexing, traversal and views, version awareness, and the cluster envelope.
 [docs/AIOP_REASONING.md](docs/AIOP_REASONING.md) covers bindings, the named
 function registry, results as first-class objects, input fingerprints,
 index-driven invalidation, and recomputation by supersession.
+
+[docs/ASYMMETRY_ANALYST.md](docs/ASYMMETRY_ANALYST.md) covers the analyst: the
+dimension catalogue, the four epistemic states, ranked information gaps, the
+research and reasoning boundaries, claim supersession, and assessment
+fingerprints.

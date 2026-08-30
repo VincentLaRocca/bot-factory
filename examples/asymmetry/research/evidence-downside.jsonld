@@ -1,0 +1,26 @@
+{
+  "@context": [
+    "https://aiop.dev/context.jsonld",
+    "https://aiop.dev/profiles/demo/context.jsonld",
+    "https://aiop.dev/profiles/asymmetry/context.jsonld"
+  ],
+  "@id": "urn:aiop:evidence:participation-cost",
+  "@type": "Evidence",
+  "state": "active",
+  "title": "Co-development cost model, unrecoverable on failure",
+  "dimension": "asymmetry.downside",
+  "stance": "supports",
+  "source_kind": "primary",
+  "independent": true,
+  "confidence": 0.9,
+  "claimed_value": 350000,
+  "observed_at": "2026-02-25",
+  "provenance": [
+    {
+      "agent": "urn:aiop:agent:diligence",
+      "method": "observed",
+      "confidence": 0.9,
+      "generatedAt": "2026-02-25T00:00:00Z"
+    }
+  ]
+}

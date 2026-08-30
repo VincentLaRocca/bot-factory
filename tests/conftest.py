@@ -5,6 +5,12 @@ from typing import Dict, List
 import pytest
 
 import aiop
+from agents.asymmetry import (
+    AsymmetryAnalyst,
+    ChainedResearchProvider,
+    MockResearchProvider,
+    StoreResearchProvider,
+)
 from aiop import AIOPObject, RelationGraph
 from profiles import (
     DEMO_CALCULATION_SCHEMA,
@@ -34,7 +40,16 @@ def load_context(path: Path) -> Dict:
     return json.loads(path.read_text())["@context"]
 
 
-def used_terms(document: Dict) -> set:
+def opaque_terms(context: Dict) -> set:
+    """Terms whose values are literal JSON, not more vocabulary."""
+    return {
+        term
+        for term, definition in context.items()
+        if isinstance(definition, dict) and definition.get("@type") == "@json"
+    }
+
+
+def used_terms(document: Dict, opaque: set = frozenset()) -> set:
     """Every type, property and predicate name a document relies on."""
     terms = set()
 
@@ -45,6 +60,8 @@ def used_terms(document: Dict) -> set:
                     terms.add(key)
                 if key == "predicate":
                     terms.add(child)
+                if key in opaque:
+                    continue
                 walk(child)
         elif isinstance(value, list):
             for child in value:
@@ -130,3 +147,61 @@ def example_graph(example_objects) -> RelationGraph:
         (relation for obj in example_objects for relation in obj),
         vocabulary=DEMO_VOCABULARY,
     )
+
+
+ASYMMETRY_DIR = EXAMPLES_DIR / "asymmetry"
+
+
+def asymmetry_documents(pattern: str) -> List[Dict]:
+    return [json.loads(path.read_text()) for path in sorted(ASYMMETRY_DIR.glob(pattern))]
+
+
+@pytest.fixture
+def asymmetry_store() -> ObjectStore:
+    """A deliberately incomplete Human x AI opportunity and its graph."""
+    store = ObjectStore(version_predicate=VERSION_PREDICATE)
+    store.load(asymmetry_documents("*.jsonld"))
+    return store
+
+
+@pytest.fixture
+def available_evidence() -> Dict[str, List[AIOPObject]]:
+    """Evidence that exists out in the world, keyed by the dimension it answers."""
+    findings: Dict[str, List[AIOPObject]] = {}
+    for document in asymmetry_documents("research/*.jsonld"):
+        obj = AIOPObject.from_jsonld(document)
+        findings.setdefault(obj.get("dimension"), []).append(obj)
+    return findings
+
+
+@pytest.fixture
+def late_evidence() -> List[AIOPObject]:
+    """Evidence that turns up after the first analysis is already filed."""
+    return [
+        AIOPObject.from_jsonld(document)
+        for document in asymmetry_documents("late/*.jsonld")
+    ]
+
+
+@pytest.fixture
+def research(asymmetry_store, available_evidence):
+    return ChainedResearchProvider(
+        StoreResearchProvider(asymmetry_store),
+        MockResearchProvider(available_evidence),
+    )
+
+
+@pytest.fixture
+def analyst(asymmetry_store, research):
+    return AsymmetryAnalyst(asymmetry_store, research=research)
+
+
+@pytest.fixture
+def blind_analyst(asymmetry_store):
+    """An analyst with no research at all: everything unknown stays unknown."""
+    return AsymmetryAnalyst(asymmetry_store)
+
+
+@pytest.fixture
+def opportunity_id() -> str:
+    return "urn:aiop:opportunity:clinical-triage"

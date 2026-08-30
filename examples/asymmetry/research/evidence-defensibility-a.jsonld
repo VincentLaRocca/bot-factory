@@ -1,0 +1,26 @@
+{
+  "@context": [
+    "https://aiop.dev/context.jsonld",
+    "https://aiop.dev/profiles/demo/context.jsonld",
+    "https://aiop.dev/profiles/asymmetry/context.jsonld"
+  ],
+  "@id": "urn:aiop:evidence:data-moat",
+  "@type": "Evidence",
+  "state": "active",
+  "title": "Counsel's view: the outcome-labelled corpus is a durable advantage",
+  "dimension": "technology.defensibility",
+  "stance": "supports",
+  "source_kind": "secondary",
+  "independent": true,
+  "confidence": 0.6,
+  "claimed_value": "Exclusive access to labelled outcome data across the pilot network.",
+  "observed_at": "2026-02-26",
+  "provenance": [
+    {
+      "agent": "urn:aiop:agent:counsel",
+      "method": "observed",
+      "confidence": 0.6,
+      "generatedAt": "2026-02-26T00:00:00Z"
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "@context": [
+    "https://aiop.dev/context.jsonld",
+    "https://aiop.dev/profiles/demo/context.jsonld",
+    "https://aiop.dev/profiles/asymmetry/context.jsonld"
+  ],
+  "@id": "urn:aiop:evidence:comparable-exits",
+  "@type": "Evidence",
+  "state": "active",
+  "title": "Comparable outcomes: three UK clinical-workflow exits, 2021-2025",
+  "dimension": "asymmetry.upside",
+  "stance": "supports",
+  "source_kind": "secondary",
+  "independent": true,
+  "confidence": 0.65,
+  "claimed_value": 4200000,
+  "observed_at": "2026-02-25",
+  "provenance": [
+    {
+      "agent": "urn:aiop:agent:market-desk",
+      "method": "observed",
+      "confidence": 0.65,
+      "generatedAt": "2026-02-25T00:00:00Z"
+    }
+  ]
+}

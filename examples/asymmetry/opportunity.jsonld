@@ -1,0 +1,52 @@
+{
+  "@context": [
+    "https://aiop.dev/context.jsonld",
+    "https://aiop.dev/profiles/demo/context.jsonld",
+    "https://aiop.dev/profiles/asymmetry/context.jsonld"
+  ],
+  "@id": "urn:aiop:opportunity:clinical-triage",
+  "@type": "Opportunity",
+  "state": "active",
+  "title": "Clinical triage copilot for NHS primary care",
+  "problem": "Primary care triage is rationed by clinician time, so the sickest patients are found late.",
+  "proposed_solution": "A copilot that reads the referral queue overnight and ranks it for the duty GP, who decides.",
+  "target_customer": "NHS primary care networks buying under the digital-first framework.",
+  "significance": "A week earlier on the cases that matter changes outcomes, not just throughput.",
+  "stage": "pilot",
+  "upside": 4200000,
+  "downside": 350000,
+  "cost_of_participation": 350000,
+  "human_contribution": "GPs carry the clinical accountability and the tacit knowledge of their own list.",
+  "access_path": "Co-development agreement with the pilot network, with an equity option at Series A.",
+  "currency": "GBP",
+  "requires_capabilities": [
+    "clinical-informatics",
+    "ai-systems-integration"
+  ],
+  "relations": [
+    {
+      "subject": "urn:aiop:opportunity:clinical-triage",
+      "predicate": "ownedBy",
+      "object": "urn:aiop:company:vantage-clinical"
+    },
+    {
+      "subject": "urn:aiop:opportunity:clinical-triage",
+      "predicate": "enabledBy",
+      "object": "urn:aiop:technology:triage-copilot"
+    },
+    {
+      "subject": "urn:aiop:opportunity:clinical-triage",
+      "predicate": "addresses",
+      "object": "urn:aiop:market:uk-primary-care"
+    }
+  ],
+  "provenance": [
+    {
+      "agent": "urn:aiop:agent:scout",
+      "method": "asserted",
+      "confidence": 0.7,
+      "generatedAt": "2026-03-02T09:00:00Z",
+      "note": "Filed deliberately incomplete: what is known is known, the rest is not guessed."
+    }
+  ]
+}

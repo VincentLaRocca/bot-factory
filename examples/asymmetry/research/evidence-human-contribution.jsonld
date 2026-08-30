@@ -1,0 +1,26 @@
+{
+  "@context": [
+    "https://aiop.dev/context.jsonld",
+    "https://aiop.dev/profiles/demo/context.jsonld",
+    "https://aiop.dev/profiles/asymmetry/context.jsonld"
+  ],
+  "@id": "urn:aiop:evidence:override-log",
+  "@type": "Evidence",
+  "state": "active",
+  "title": "Override log: GPs changed 9% of rankings, and were right to",
+  "dimension": "synergy.human_contribution",
+  "stance": "supports",
+  "source_kind": "primary",
+  "independent": true,
+  "confidence": 0.8,
+  "claimed_value": "GPs carry the clinical accountability and the tacit knowledge of their own list.",
+  "observed_at": "2026-02-11",
+  "provenance": [
+    {
+      "agent": "urn:aiop:agent:clinical-audit",
+      "method": "observed",
+      "confidence": 0.8,
+      "generatedAt": "2026-02-11T00:00:00Z"
+    }
+  ]
+}
