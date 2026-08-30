@@ -1,0 +1,12 @@
+{
+  "@context": [
+    "https://aiop.dev/context.jsonld",
+    "https://aiop.dev/profiles/demo/context.jsonld",
+    "https://aiop.dev/profiles/observer/context.jsonld"
+  ],
+  "@id": "urn:aiop:technology:lattice-cell",
+  "@type": "Technology",
+  "state": "active",
+  "name": "Lattice-anode cell",
+  "description": "Cycle efficiency has never moved outside a narrow band."
+}

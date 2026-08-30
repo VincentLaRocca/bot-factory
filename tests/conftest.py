@@ -205,3 +205,23 @@ def blind_analyst(asymmetry_store):
 @pytest.fixture
 def opportunity_id() -> str:
     return "urn:aiop:opportunity:clinical-triage"
+
+
+OBSERVER_DIR = EXAMPLES_DIR / "observer"
+
+
+def observer_documents(pattern: str = "*.jsonld") -> List[Dict]:
+    return [json.loads(path.read_text()) for path in sorted(OBSERVER_DIR.glob(pattern))]
+
+
+@pytest.fixture
+def observer_store() -> ObjectStore:
+    """A technology, the company behind it and the feed that reports on it."""
+    store = ObjectStore(version_predicate=VERSION_PREDICATE)
+    store.load(observer_documents())
+    return store
+
+
+@pytest.fixture
+def technology_id() -> str:
+    return "urn:aiop:technology:lattice-cell"

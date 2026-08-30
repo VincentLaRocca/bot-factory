@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "aiop"
-version = "0.4.0"
-description = "AIOP — a minimal core for AI-addressable objects, relations, state and provenance, with an object store, cluster layer, recomputable calculations and the Asymmetry Analyst"
+version = "0.5.0"
+description = "AIOP — a minimal core for AI-addressable objects, relations, state and provenance, with an object store, cluster layer, recomputable calculations, the Asymmetry Analyst and the Observer motherboard"
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
@@ -20,11 +20,21 @@ dev = ["pytest>=7.4"]
 Homepage = "https://github.com/VincentLaRocca/bot-factory"
 
 [tool.setuptools]
-packages = ["agents", "agents.asymmetry", "aiop", "profiles", "reasoning", "store"]
+packages = [
+    "agents",
+    "agents.asymmetry",
+    "aiop",
+    "capabilities",
+    "capabilities.anomaly",
+    "observer",
+    "profiles",
+    "reasoning",
+    "store",
+]
 
 [tool.setuptools.package-data]
 aiop = ["context.jsonld"]
-profiles = ["context.jsonld", "asymmetry-context.jsonld"]
+profiles = ["context.jsonld", "asymmetry-context.jsonld", "observer-context.jsonld"]
 store = ["context.jsonld"]
 
 [tool.pytest.ini_options]

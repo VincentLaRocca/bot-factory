@@ -20,8 +20,14 @@ another Information Object with full lineage. When an input moves, the results
 that read it are found by index and recomputed — the old conclusion superseded,
 not overwritten.
 
-This is **AIOP Core v0.1**, **Store + Graph/Cluster v0.1** and **Calculation &
-Reasoning v0.1**.
+Above all of it sits the **Observer motherboard**: a chassis with an identity,
+slots, a mission and an explicit grant of authority, into which domain
+intelligence is installed as an interchangeable **capability**. The chassis
+knows no domain, and the first capability — the Anomaly Listener — required no
+change to it.
+
+This is **AIOP Core v0.1**, **Store + Graph/Cluster v0.1**, **Calculation &
+Reasoning v0.1** and **Observer + Anomaly Listener v0.1**.
 
 ## Layout
 
@@ -32,12 +38,18 @@ store/        repository, relation index, traversal, View, ObjectCluster and
               the cluster context.jsonld — domain-neutral, Core-agnostic
 reasoning/    bindings, the named-function registry, calculation evaluation,
               fingerprints, staleness and the engine — no domain vocabulary
-profiles/     domain layer — the demo profile, its views, its calculation
-              schema and formulas, and context.jsonld
+observer/     the motherboard — identity, capability registry, missions,
+              authority, invocation and execution records; no domain anywhere
+capabilities/ interchangeable plug-ins; anomaly/ is the first one
+agents/       the Asymmetry Analyst, built on the layers below
+profiles/     domain layer — the demo, asymmetry and observer profiles, their
+              views, calculation schemas and formulas, and the contexts
 examples/     a connected sample graph, plus world/ — the demonstration world —
-              and reasoning/, the market and calculation it is valued with
-tests/        core, validation, relationship, store, cluster and reasoning suites
-docs/         AIOP_CORE.md, AIOP_STORE.md, AIOP_REASONING.md
+              reasoning/, asymmetry/ and observer/
+tests/        core, validation, relationship, store, cluster, reasoning,
+              asymmetry and observer suites
+docs/         AIOP_CORE.md, AIOP_STORE.md, AIOP_REASONING.md,
+              ASYMMETRY_ANALYST.md, OBSERVER.md, DECISIONS.md
 demo.py       assembles the clusters, then calculates on them
 ```
 
@@ -147,6 +159,33 @@ and writes an Assessment with full lineage plus an ExecutionRecord. New
 evidence supersedes a claim, stales the results and replaces the assessment
 rather than editing it. `python3 demo_asymmetry.py` runs the whole thing.
 
+## The Observer motherboard
+
+```python
+observer = Observer("watchtower", store=store, authority=INTERNAL_AUTHORITY)
+observer.install(AnomalyListener())          # a plug-in, not a subclass
+observer.assign(mission)                     # refused if a capability is absent
+
+result = observer.invoke("anomaly_listener", inputs=[observation])
+result.findings["disposition"]               # 'ESCALATE'
+result.record.get("authority")               # what it was actually allowed to do
+```
+
+```
+Agent = Observer + Capabilities + Mission + Authority + Resources
+```
+
+The chassis knows identity, slots, purpose, permission and how to write down
+what happened — and nothing about anomalies, medicine or the web. Authority
+composes by intersection, so a mission can only narrow a charter, never widen
+it: an observer holding the listener but not `CREATE_OBJECT` is refused, and
+the refusal is recorded rather than raised.
+
+The Anomaly Listener keeps no memory of its own; it reads history out of the
+store, so the same reading against a different past gives a different answer.
+It produces an `Anomaly` — a trigger with its arithmetic attached — never an
+`Opportunity`. `python3 demo_observer.py` runs the whole arc.
+
 ## Test
 
 ```bash
@@ -173,7 +212,13 @@ dimension catalogue, the four epistemic states, ranked information gaps, the
 research and reasoning boundaries, claim supersession, and assessment
 fingerprints.
 
-[docs/DECISIONS.md](docs/DECISIONS.md) records the two decisions worth arguing
+[docs/OBSERVER.md](docs/OBSERVER.md) covers the motherboard: capability cards
+and the registry, sensors versus capabilities, authority as intersection,
+missions and readiness, observation endpoints and independence groups, the six
+anomaly dimensions actually implemented, and execution records.
+
+[docs/DECISIONS.md](docs/DECISIONS.md) records the decisions worth arguing
 with: why assessments carry their own input fingerprint instead of generalising
-staleness in `reasoning/`, and why an accepted claim enriches its target object
-in place instead of superseding it.
+staleness in `reasoning/`, why an accepted claim enriches its target object in
+place instead of superseding it, why authority composes by intersection, and
+why an anomaly score is its strongest dimension rather than a blend.
