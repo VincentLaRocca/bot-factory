@@ -172,3 +172,8 @@ index-driven invalidation, and recomputation by supersession.
 dimension catalogue, the four epistemic states, ranked information gaps, the
 research and reasoning boundaries, claim supersession, and assessment
 fingerprints.
+
+[docs/DECISIONS.md](docs/DECISIONS.md) records the two decisions worth arguing
+with: why assessments carry their own input fingerprint instead of generalising
+staleness in `reasoning/`, and why an accepted claim enriches its target object
+in place instead of superseding it.
