@@ -23,11 +23,12 @@ not overwritten.
 Above all of it sits the **Observer motherboard**: a chassis with an identity,
 slots, a mission and an explicit grant of authority, into which domain
 intelligence is installed as an interchangeable **capability**. The chassis
-knows no domain, and the first capability — the Anomaly Listener — required no
-change to it.
+knows no domain, and neither the first capability — the Anomaly Listener — nor
+the second — the Researcher, which consumes the first one's output — required a
+line of change to it.
 
 This is **AIOP Core v0.1**, **Store + Graph/Cluster v0.1**, **Calculation &
-Reasoning v0.1** and **Observer + Anomaly Listener v0.1**.
+Reasoning v0.1**, **Observer + Anomaly Listener v0.1** and **Researcher v0.1**.
 
 ## Layout
 
@@ -40,16 +41,18 @@ reasoning/    bindings, the named-function registry, calculation evaluation,
               fingerprints, staleness and the engine — no domain vocabulary
 observer/     the motherboard — identity, capability registry, missions,
               authority, invocation and execution records; no domain anywhere
-capabilities/ interchangeable plug-ins; anomaly/ is the first one
+capabilities/ interchangeable plug-ins — anomaly/ detects, research/
+              investigates what anomaly/ produced
 agents/       the Asymmetry Analyst, built on the layers below
-profiles/     domain layer — the demo, asymmetry and observer profiles, their
-              views, calculation schemas and formulas, and the contexts
+profiles/     domain layer — the demo, asymmetry, observer and research
+              profiles, their views, calculation schemas and formulas, and
+              the contexts
 examples/     a connected sample graph, plus world/ — the demonstration world —
-              reasoning/, asymmetry/ and observer/
+              reasoning/, asymmetry/, observer/ and research/
 tests/        core, validation, relationship, store, cluster, reasoning,
-              asymmetry and observer suites
+              asymmetry, observer and researcher suites
 docs/         AIOP_CORE.md, AIOP_STORE.md, AIOP_REASONING.md,
-              ASYMMETRY_ANALYST.md, OBSERVER.md, DECISIONS.md
+              ASYMMETRY_ANALYST.md, OBSERVER.md, RESEARCHER.md, DECISIONS.md
 demo.py       assembles the clusters, then calculates on them
 ```
 
@@ -186,6 +189,24 @@ store, so the same reading against a different past gives a different answer.
 It produces an `Anomaly` — a trigger with its arithmetic attached — never an
 `Opportunity`. `python3 demo_observer.py` runs the whole arc.
 
+## The second capability, in the same slots
+
+```python
+desk.install(Researcher(provider))            # no chassis change, no subclass
+found = desk.invoke("researcher", inputs=[anomaly])
+
+found.findings["investigations"][0]["topics"]  # {'cause': 'UNSUPPORTED', ...}
+```
+
+The Researcher consumes an `Anomaly` and files what sources said as `Evidence`,
+with `Claim` objects for the propositions that evidence bears on — through a
+vendor-neutral `ResearchProvider` boundary with no network on this side of it.
+It never writes a value onto the target object: `Source → Evidence → Claim` is
+as far as a source's word travels. Two filings say *reverse split*, a newswire
+says *breakthrough*, and the claim stays `CONTESTED` with all three kept. Where
+nobody answered, the topic stays `UNKNOWN`; where nobody could be asked, it is
+`UNREACHABLE`. `python3 demo_researcher.py` runs the whole arc.
+
 ## Test
 
 ```bash
@@ -217,8 +238,15 @@ and the registry, sensors versus capabilities, authority as intersection,
 missions and readiness, observation endpoints and independence groups, the six
 anomaly dimensions actually implemented, and execution records.
 
+[docs/RESEARCHER.md](docs/RESEARCHER.md) covers the researcher: the
+`Source → Evidence → Claim` ordering, the provider boundary and its fixed
+question template, contradiction and the four epistemic states, digest identity
+and repeated runs, and the negative test that keeps the chassis ignorant.
+
 [docs/DECISIONS.md](docs/DECISIONS.md) records the decisions worth arguing
 with: why assessments carry their own input fingerprint instead of generalising
 staleness in `reasoning/`, why an accepted claim enriches its target object in
 place instead of superseding it, why authority composes by intersection, and
-why an anomaly score is its strongest dimension rather than a blend.
+why an anomaly score is its strongest dimension rather than a blend, and why
+the researcher reuses the analyst's Claim vocabulary instead of inventing a
+second one.
