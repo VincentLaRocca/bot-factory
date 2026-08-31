@@ -1,0 +1,13 @@
+{
+  "@context": [
+    "https://aiop.dev/context.jsonld",
+    "https://aiop.dev/profiles/demo/context.jsonld",
+    "https://aiop.dev/profiles/observer/context.jsonld",
+    "https://aiop.dev/profiles/research/context.jsonld"
+  ],
+  "@id": "urn:aiop:company:abc",
+  "@type": "Company",
+  "state": "active",
+  "name": "ABC Corporation",
+  "relations": []
+}

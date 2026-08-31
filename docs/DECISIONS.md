@@ -133,3 +133,62 @@ as WATCH and looked at by a human, which is the failure direction to prefer.
 **Revisit when** there are enough labelled anomalies to fit a combiner. The
 signals are stored per-dimension precisely so that it can be fitted
 retrospectively over anomalies already in the graph, without re-running history.
+
+## AD-5 — The researcher reuses the analyst's Claim, rather than owning one
+
+*Status: accepted for v0.1. Made while building the Researcher.*
+
+The Researcher needs to say "this proposition is what the evidence bears on".
+The Asymmetry Analyst already has a `Claim` type with `statement`, `dimension`
+and `status`, and evidence that `supports` or `contradicts` it.
+
+**Chosen.** The same type, the same three required properties, the same three
+stance predicates. A researcher claim validates against `ASYMMETRY_PROFILE`,
+and a test asserts it. The research profile adds only what is genuinely new —
+`Evidence` as a stored type with its source metadata, `investigatedFrom`, and
+the derived `supporting`/`contradicting`/`qualifying` lists.
+
+**Rejected: a `ResearchClaim` with its own vocabulary.** It would have been
+easier to write and impossible to reconcile: two claim systems in one graph
+means every later consumer — validator, judge, analyst — needs to know which
+kind it is holding, and the first thing anyone would build is a translation
+layer between them. Independent vocabularies are cheap to create and expensive
+forever.
+
+**Consequence.** The researcher inherits a constraint it did not choose: claim
+status is `SUPPORTED` / `CONTESTED` / `UNSUPPORTED`, and `ACCEPTED` belongs to
+whoever adjudicates. That is the right constraint — the researcher must not be
+able to promote its own findings — but it does mean the analyst's status
+vocabulary is now load-bearing for two capabilities and should change carefully.
+
+**Revisit when** a third producer of claims needs something neither has. The
+answer then is to lift `Claim` into a shared profile above both, not to fork it.
+
+## AD-6 — Claim status is read from the graph, not from the run
+
+*Status: accepted for v0.1. Made while building the Researcher.*
+
+An investigation could decide a claim's status from the findings it just
+received. It does not: it writes the evidence, then reads every piece of
+evidence in the store that bears on the claim — including evidence filed by
+earlier runs and by other researchers with other providers — and derives the
+status from all of it.
+
+**Chosen.** Status is a function of the graph at the moment of writing.
+Contradiction filed tomorrow by a different provider unsettles a claim that
+looked `SUPPORTED` today, without anyone re-running the original investigation.
+
+**Rejected: status from the current response.** It makes a claim mean "what one
+provider said on one afternoon", and the last writer wins. Worse, it makes the
+same claim's status depend on invocation order, which is exactly the kind of
+irreproducibility the store exists to prevent.
+
+**Consequence.** A run can change objects it did not create, and the change is
+visible in the claim's `supporting`/`contradicting` lists rather than only in
+its status. Repeated identical runs are still inert: digest identity means the
+same evidence produces the same objects, so nothing accumulates.
+
+**Revisit when** evidence needs retracting. Today nothing is ever withdrawn, so
+"read everything that bears on this" and "read everything ever said" are the
+same query; a retracted source would make them differ, and the read would need
+to become state-aware.

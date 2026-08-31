@@ -1,0 +1,86 @@
+{
+  "target": "urn:aiop:company:abc",
+  "unreachable": ["alternative"],
+  "findings": [
+    {
+      "topic": "event_verification",
+      "source": "urn:aiop:source:exchange-tape",
+      "source_name": "Exchange consolidated tape",
+      "source_type": "exchange_data",
+      "source_kind": "primary",
+      "source_date": "2026-02-17",
+      "independence_group": "abc-exchange",
+      "content": "ABC Corporation printed a closing share price of 42.00 on 2026-02-17, against 4.20 on 2026-02-16.",
+      "proposition": "ABC Corporation's share price closed at 42.00 on 2026-02-17.",
+      "stance": "supports",
+      "claimed_property": "share_price",
+      "claimed_value": 42.0,
+      "confidence": 0.99
+    },
+    {
+      "topic": "cause",
+      "source": "urn:aiop:source:exchange-corporate-actions",
+      "source_name": "Exchange corporate actions notice",
+      "source_type": "corporate_action",
+      "source_kind": "primary",
+      "source_date": "2026-02-16",
+      "independence_group": "abc-exchange",
+      "content": "A 1-for-10 reverse split in ABC Corporation takes effect at the open on 2026-02-17.",
+      "proposition": "The 2026-02-17 move in ABC Corporation's share price is the mechanical effect of a 1-for-10 reverse split.",
+      "stance": "supports",
+      "confidence": 0.95
+    },
+    {
+      "topic": "cause",
+      "source": "urn:aiop:source:regulatory-filing-8k",
+      "source_name": "ABC Corporation regulatory filing",
+      "source_type": "filing",
+      "source_kind": "primary",
+      "source_date": "2026-02-10",
+      "independence_group": "abc-issuer",
+      "content": "ABC Corporation's board approved a 1-for-10 reverse split to regain listing compliance.",
+      "proposition": "The 2026-02-17 move in ABC Corporation's share price is the mechanical effect of a 1-for-10 reverse split.",
+      "stance": "supports",
+      "confidence": 0.9
+    },
+    {
+      "topic": "cause",
+      "source": "urn:aiop:source:market-wire",
+      "source_name": "Market wire",
+      "source_type": "news",
+      "source_kind": "secondary",
+      "source_date": "2026-02-17",
+      "independence_group": "wire-syndicate",
+      "content": "Traders said ABC Corporation shares surged tenfold on news of a product breakthrough.",
+      "proposition": "The 2026-02-17 move in ABC Corporation's share price is the mechanical effect of a 1-for-10 reverse split.",
+      "stance": "contradicts",
+      "confidence": 0.4
+    },
+    {
+      "topic": "context",
+      "source": "urn:aiop:source:share-register",
+      "source_name": "Share register",
+      "source_type": "filing",
+      "source_kind": "primary",
+      "source_date": "2026-02-18",
+      "independence_group": "abc-issuer",
+      "content": "Shares outstanding in ABC Corporation fell from 480 million to 48 million on 2026-02-17.",
+      "proposition": "ABC Corporation's shares outstanding fell by 90 percent on 2026-02-17.",
+      "stance": "supports",
+      "confidence": 0.97
+    },
+    {
+      "topic": "context",
+      "source": "urn:aiop:source:market-wire",
+      "source_name": "Market wire",
+      "source_type": "news",
+      "source_kind": "secondary",
+      "source_date": "2026-02-17",
+      "independence_group": "wire-syndicate",
+      "content": "The move left ABC Corporation's market capitalisation unchanged on the day.",
+      "proposition": "ABC Corporation's shares outstanding fell by 90 percent on 2026-02-17.",
+      "stance": "qualifies",
+      "confidence": 0.5
+    }
+  ]
+}

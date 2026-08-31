@@ -1,0 +1,51 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "schema": "https://schema.org/",
+    "prov": "http://www.w3.org/ns/prov#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "asym": "https://aiop.dev/profiles/asymmetry#",
+    "res": "https://aiop.dev/profiles/research#",
+
+    "Claim": "asym:Claim",
+
+    "statement": "asym:statement",
+    "dimension": "asym:dimension",
+    "status": "asym:status",
+    "stance": "asym:stance",
+    "claimed_value": "asym:claimedValue",
+    "source_kind": "asym:sourceKind",
+    "independent": {"@id": "asym:independent", "@type": "xsd:boolean"},
+
+    "title": "schema:name",
+    "source": {"@id": "res:source", "@type": "@id"},
+    "source_name": "res:sourceName",
+    "source_type": "res:sourceType",
+    "source_date": {"@id": "res:sourceDate", "@type": "xsd:date"},
+    "retrieved_at": {"@id": "res:retrievedAt", "@type": "xsd:dateTime"},
+    "content": "schema:text",
+    "reliability": "res:reliability",
+    "question": "res:question",
+    "questions": {"@id": "res:questions", "@type": "@json"},
+    "provider": "res:provider",
+    "provider_version": "res:providerVersion",
+    "researched_by": {"@id": "res:researchedBy", "@type": "@id"},
+    "researched_at": {"@id": "res:researchedAt", "@type": "xsd:dateTime"},
+    "researcher_version": "res:researcherVersion",
+    "anomaly": {"@id": "res:anomaly", "@type": "@id"},
+    "topics": {"@id": "res:topics", "@type": "@json"},
+    "proposed_by": {"@id": "res:proposedBy", "@type": "@id"},
+    "independence_groups": {"@id": "res:independenceGroups", "@container": "@set"},
+    "supporting": {"@id": "res:supporting", "@container": "@set"},
+    "contradicting": {"@id": "res:contradicting", "@container": "@set"},
+    "qualifying": {"@id": "res:qualifying", "@container": "@set"},
+
+    "investigatedFrom": {"@id": "res:investigatedFrom", "@type": "@id"},
+    "investigatedBy": {"@id": "res:investigatedBy", "@type": "@id"},
+    "contradicts": {"@id": "asym:contradicts", "@type": "@id"},
+    "contradictedBy": {"@id": "asym:contradictedBy", "@type": "@id"},
+    "qualifies": {"@id": "asym:qualifies", "@type": "@id"},
+    "qualifiedBy": {"@id": "asym:qualifiedBy", "@type": "@id"},
+    "supportedBy": {"@id": "res:supportedBy", "@type": "@id"}
+  }
+}
