@@ -192,3 +192,47 @@ same evidence produces the same objects, so nothing accumulates.
 "read everything that bears on this" and "read everything ever said" are the
 same query; a retracted source would make them differ, and the read would need
 to become state-aware.
+
+## AD-7 — Validation and judgment are separate capabilities
+
+*Status: accepted for v0.1. Made while building Validator/Judge.*
+
+**Chosen.** The Validator reads a Claim and its committed evidence universe and
+writes a mechanical Validation. The Judge reads that Validation and writes a
+proposed Decision. The Validator cannot recommend; the Judge cannot upgrade
+the evidentiary verdict.
+
+**Rejected: one capability that evaluates and decides.** Combining them makes
+an evidentiary check indistinguishable from the policy decision made from it.
+It also lets persuasive judgment leak backward into source counting,
+contradiction handling, and missing-state classification.
+
+**Consequence.** Two permissions are meaningful: `VALIDATE` for the evidence
+check and `RECOMMEND` for the bounded Decision. `INTERNAL_AUTHORITY` continues
+to omit `VALIDATE`, so a validation bench must be explicitly chartered.
+
+**Revisit when** there is a validated reason that every consumer needs a single
+atomic operation. Even then, compose the two capabilities in an orchestrated
+transaction rather than merging their roles.
+
+## AD-8 — Judge writes beside the Claim and never through it
+
+*Status: accepted for v0.1. Made while building Validator/Judge.*
+
+**Chosen.** A Decision is a new `PROPOSED` object related to its Validation and
+Claim. It does not mutate `Claim.status`, update the object the Claim is about,
+or authorize an external action. Every v0.1 Decision requires human review and
+stores `authorized_action: NONE`.
+
+**Rejected: promote by changing the Claim.** That would erase the distinction
+between what the Researcher filed, what the Validator found, what the Judge
+recommended, and what the Human Principal accepted. It would also turn a
+recommendation permission into implicit write-through authority.
+
+**Consequence.** Working belief and action remain downstream states that do not
+yet exist in this implementation. The full chain is reconstructable without
+replaying internal reasoning, and attempted verdict upgrades leave a receipt.
+
+**Revisit when** Human Watch promotion is implemented. Promotion should write a
+separate, authorized object with its own actor and timestamp rather than edit
+the Decision in place.
