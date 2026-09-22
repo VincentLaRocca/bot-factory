@@ -145,7 +145,8 @@ function lead(id, minAgo, ch, med, contact, o, d, cargo, pay, mi, urg, dl, st) {
     urgency_level: urg, window_deadline: dl, triage_status: st, updated_at: ts };
 }
 
-const state = { api: resolveApi(), leads: [], tab: "active", channel: "", sort: "urgency", lastFetch: null, busy: new Set() };
+const state = { api: resolveApi(), leads: [], tab: "active", channel: "", sort: "urgency", lastFetch: null, busy: new Set(), lockedUntil: 0 };
+const RELAYOUT_LOCK_MS = 700;
 
 function resolveApi() {
   const q = new URLSearchParams(location.search).get("api");
@@ -196,7 +197,7 @@ function normalize(l) {
 
 async function triage(leadId, action) {
   const l = state.leads.find(x => x.lead_id === leadId);
-  if (!l || state.busy.has(leadId)) return;
+  if (!l || state.busy.has(leadId) || Date.now() < state.lockedUntil) return;
   const next = { ACCEPT: "ACCEPTED", PREPARE_BID: "BID_PREPARED", DISMISS: "DISMISSED", WATCH: "WATCH", RESET: "NEW" }[action];
   state.busy.add(leadId); render();
   try {
@@ -214,7 +215,10 @@ async function triage(leadId, action) {
   } catch (err) {
     toast(err.message, true);
   } finally {
-    state.busy.delete(leadId); render();
+    state.busy.delete(leadId);
+    state.lockedUntil = Date.now() + RELAYOUT_LOCK_MS;
+    render();
+    setTimeout(render, RELAYOUT_LOCK_MS);
   }
 }
 
@@ -287,7 +291,7 @@ function card(l) {
   for (const [act, label, cls, from] of ACTIONS) {
     if (!from.includes(l.triage_status)) continue;
     const b = document.createElement("button");
-    b.textContent = label; b.className = cls; b.disabled = state.busy.has(l.lead_id);
+    b.textContent = label; b.className = cls; b.disabled = state.busy.has(l.lead_id) || Date.now() < state.lockedUntil;
     b.onclick = () => triage(l.lead_id, act);
     actions.appendChild(b);
   }
