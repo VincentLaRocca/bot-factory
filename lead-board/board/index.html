@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mid-Atlantic Lead Board</title>
+<style>
+  :root {
+    --bg: #0f1216; --panel: #171b21; --line: #262c35; --text: #e8ecf1; --muted: #8b95a5;
+    --accent: #4f8cff; --ok: #2ecc71; --warn: #f5b942; --crit: #ff5c5c; --low: #7f8c9b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  header { display: flex; align-items: center; gap: 16px; padding: 14px 20px; border-bottom: 1px solid var(--line); background: var(--panel); position: sticky; top: 0; z-index: 2; }
+  header h1 { font-size: 18px; margin: 0; letter-spacing: .3px; }
+  header .count { color: var(--muted); }
+  header .count b { color: var(--text); }
+  header .spacer { flex: 1; }
+  button { background: #222831; color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; cursor: pointer; font: inherit; }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.danger:hover { border-color: var(--crit); color: var(--crit); }
+  button:disabled { opacity: .5; cursor: default; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 12px 20px; border-bottom: 1px solid var(--line); }
+  .tabs { display: flex; gap: 4px; }
+  .tabs button { border-radius: 999px; padding: 4px 12px; }
+  .tabs button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  select, input { background: #222831; color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; font: inherit; }
+  .toolbar .status { color: var(--muted); margin-left: auto; font-size: 12px; }
+  .banner { margin: 12px 20px 0; padding: 10px 14px; border: 1px dashed var(--warn); color: var(--warn); border-radius: 8px; font-size: 13px; }
+  .banner code { color: var(--text); }
+  main { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; padding: 16px 20px 40px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--low); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+  .card.CRITICAL { border-left-color: var(--crit); }
+  .card.HIGH { border-left-color: var(--warn); }
+  .card.MEDIUM { border-left-color: var(--accent); }
+  .card.DISMISSED, .card.ACCEPTED { opacity: .7; }
+  .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+  .badges { display: flex; flex-wrap: wrap; gap: 6px; }
+  .badge { font-size: 11px; letter-spacing: .4px; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+  .badge.urg.CRITICAL { color: var(--crit); border-color: var(--crit); }
+  .badge.urg.HIGH { color: var(--warn); border-color: var(--warn); }
+  .badge.urg.MEDIUM { color: var(--accent); border-color: var(--accent); }
+  .badge.st { color: var(--text); background: #222831; }
+  .badge.st.ACCEPTED { color: var(--ok); border-color: var(--ok); }
+  .badge.st.BID_PREPARED { color: var(--warn); border-color: var(--warn); }
+  .route { font-size: 15px; font-weight: 600; }
+  .route .arrow { color: var(--muted); margin: 0 6px; }
+  .cargo { color: var(--muted); }
+  .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .metric { background: #10141a; border-radius: 8px; padding: 8px 10px; }
+  .metric .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+  .metric .value { font-size: 16px; font-weight: 600; }
+  .metric .value.good { color: var(--ok); }
+  .metric .value.bad { color: var(--crit); }
+  .meta { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--muted); }
+  .meta b { color: var(--text); font-weight: 500; }
+  .deadline { color: var(--warn); }
+  .actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: auto; }
+  .actions button { padding: 5px 10px; font-size: 13px; }
+  .empty { grid-column: 1 / -1; text-align: center; color: var(--muted); padding: 60px 0; }
+  #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #222831; border: 1px solid var(--line); border-radius: 8px; padding: 10px 16px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  #toast.show { opacity: 1; }
+  #toast.err { border-color: var(--crit); }
+  dialog { background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 10px; padding: 18px; width: min(560px, 92vw); }
+  dialog::backdrop { background: rgba(0,0,0,.6); }
+  dialog label { display: block; font-size: 12px; color: var(--muted); margin: 10px 0 4px; }
+  dialog input { width: 100%; }
+  dialog .row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Mid-Atlantic Lead Board</h1>
+  <span class="count"><b id="activeCount">0</b> active</span>
+  <span class="spacer"></span>
+  <label style="color:var(--muted);font-size:12px"><input type="checkbox" id="autoRefresh" checked> auto-refresh 60s</label>
+  <button id="refreshBtn">Refresh</button>
+  <button id="configBtn">Configure</button>
+</header>
+
+<div class="toolbar">
+  <div class="tabs" id="tabs"></div>
+  <select id="channelFilter"><option value="">All channels</option></select>
+  <select id="sortBy">
+    <option value="urgency">Sort: urgency</option>
+    <option value="newest">Sort: newest</option>
+    <option value="rate">Sort: $/mile</option>
+    <option value="payout">Sort: payout</option>
+  </select>
+  <span class="status" id="statusLine"></span>
+</div>
+
+<div class="banner" id="demoBanner" hidden>
+  Demo mode — showing sample leads. Click <b>Configure</b> or open with <code>?api=https://script.google.com/macros/s/.../exec</code> to connect to your LiveQueue sheet.
+</div>
+
+<main id="board"></main>
+<div id="toast"></div>
+
+<dialog id="configDialog">
+  <h3 style="margin:0">Connect to Apps Script</h3>
+  <label for="apiInput">Web app /exec URL (doGet + doPost endpoint)</label>
+  <input id="apiInput" placeholder="https://script.google.com/macros/s/AKfycb.../exec">
+  <div class="row">
+    <button id="clearApi" class="danger">Use demo data</button>
+    <button id="saveApi" class="primary">Save &amp; reload</button>
+  </div>
+</dialog>
+
+<script>
+const LEAD_BOARD_API_URL = ""; // optional hard-coded default; ?api= and localStorage override it
+const ACTIVE = ["NEW", "WATCH", "BID_PREPARED"];
+const TABS = [
+  ["active", "Active", ACTIVE],
+  ["NEW", "New", ["NEW"]],
+  ["WATCH", "Watch", ["WATCH"]],
+  ["BID_PREPARED", "Bid prepared", ["BID_PREPARED"]],
+  ["ACCEPTED", "Accepted", ["ACCEPTED"]],
+  ["DISMISSED", "Dismissed", ["DISMISSED"]],
+  ["all", "All", null],
+];
+const URGENCY_RANK = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
+const ACTIONS = [
+  ["ACCEPT", "Accept", "primary", ACTIVE],
+  ["PREPARE_BID", "Prepare bid", "", ["NEW", "WATCH"]],
+  ["WATCH", "Watch", "", ["NEW"]],
+  ["DISMISS", "Dismiss", "danger", ACTIVE],
+  ["RESET", "Reopen", "", ["ACCEPTED", "DISMISSED"]],
+];
+
+const DEMO_LEADS = [
+  lead("LEAD-2026-0922-01", -25, "Trade Distress", "SMS", "Mike · field lead (Baker Bros HVAC)", "Carrier Enterprise · Midlothian", "Scott's Addition · Richmond", "2 TXV valves + recovery tank", 75, 18, "CRITICAL", "Pickup by 12:40 PM", "NEW"),
+  lead("LEAD-2026-0922-02", -70, "Commercial / B2B", "Email", "Dominion Dental Lab · dispatch", "Dominion Dental Lab · Glen Allen", "Bon Secours St. Mary's · Richmond", "Crown case, 1 small cooler, keep upright", 60, 9.5, "HIGH", "Deliver by 2:00 PM", "NEW"),
+  lead("LEAD-2026-0922-03", -140, "Open Boards", "Board Scraping", "Courier Board · post #88213", "Ferguson · Chester", "Jobsite · Hopewell", "6 boxes PEX fittings, 90 lb", 55, 21, "MEDIUM", "Today EOD", "WATCH"),
+  lead("LEAD-2026-0922-04", -200, "Local Community", "Direct Form", "Sarah K.", "Short Pump Town Center", "Church Hill · Richmond", "1 envelope, signed documents", 35, 14, "LOW", "Before 5 PM", "BID_PREPARED"),
+  lead("LEAD-2026-0922-05", -320, "Commercial / B2B", "Webhook", "Fastenal · Ashland", "Fastenal · Ashland", "Amazon RIC1 · Ashland", "Pallet-top fasteners, 2 totes", 45, 6, "MEDIUM", "Pickup by 11:00 AM", "ACCEPTED"),
+  lead("LEAD-2026-0921-11", -1400, "Open Boards", "Board Scraping", "Craigslist · gigs", "Fredericksburg", "Richmond", "Sofa (2-person lift)", 80, 58, "LOW", "Flexible", "DISMISSED"),
+];
+
+function lead(id, minAgo, ch, med, contact, o, d, cargo, pay, mi, urg, dl, st) {
+  const ts = new Date(Date.now() + minAgo * 60000).toISOString();
+  return { lead_id: id, timestamp: ts, listener_channel: ch, source_medium: med, source_contact: contact, origin: o, destination: d,
+    cargo_summary: cargo, payout_offered: pay, mileage_est: mi, rate_per_mile: mi > 0 ? +(pay / mi).toFixed(2) : 0,
+    urgency_level: urg, window_deadline: dl, triage_status: st, updated_at: ts };
+}
+
+const state = { api: resolveApi(), leads: [], tab: "active", channel: "", sort: "urgency", lastFetch: null, busy: new Set() };
+
+function resolveApi() {
+  const q = new URLSearchParams(location.search).get("api");
+  if (q) { localStorage.setItem("leadBoardApi", q); return q; }
+  return localStorage.getItem("leadBoardApi") || LEAD_BOARD_API_URL;
+}
+
+function jsonp(url) {
+  return new Promise((resolve, reject) => {
+    const cb = "lb_cb_" + Math.random().toString(36).slice(2);
+    const s = document.createElement("script");
+    const timer = setTimeout(() => { cleanup(); reject(new Error("timeout fetching leads")); }, 20000);
+    function cleanup() { clearTimeout(timer); delete window[cb]; s.remove(); }
+    window[cb] = (data) => { cleanup(); resolve(data); };
+    s.onerror = () => { cleanup(); reject(new Error("script load failed")); };
+    s.src = url + (url.includes("?") ? "&" : "?") + "callback=" + cb + "&_=" + Date.now();
+    document.head.appendChild(s);
+  });
+}
+
+async function loadLeads() {
+  setStatus("Loading…");
+  try {
+    if (!state.api) {
+      if (!state.leads.length) state.leads = DEMO_LEADS.map(l => ({ ...l }));
+      document.getElementById("demoBanner").hidden = false;
+    } else {
+      document.getElementById("demoBanner").hidden = true;
+      const res = await jsonp(state.api + "?status=all&limit=500");
+      if (res.status !== "SUCCESS") throw new Error(res.message || "API error");
+      state.leads = res.leads.map(normalize);
+    }
+    state.lastFetch = new Date();
+    render();
+  } catch (err) {
+    setStatus("Error: " + err.message);
+    toast(err.message, true);
+  }
+}
+
+function normalize(l) {
+  const pay = parseFloat(l.payout_offered) || 0, mi = parseFloat(l.mileage_est) || 0;
+  return { ...l, payout_offered: pay, mileage_est: mi,
+    rate_per_mile: parseFloat(l.rate_per_mile) || (mi > 0 ? +(pay / mi).toFixed(2) : 0),
+    urgency_level: String(l.urgency_level || "MEDIUM").toUpperCase(),
+    triage_status: String(l.triage_status || "NEW").toUpperCase() };
+}
+
+async function triage(leadId, action) {
+  const l = state.leads.find(x => x.lead_id === leadId);
+  if (!l || state.busy.has(leadId)) return;
+  const next = { ACCEPT: "ACCEPTED", PREPARE_BID: "BID_PREPARED", DISMISS: "DISMISSED", WATCH: "WATCH", RESET: "NEW" }[action];
+  state.busy.add(leadId); render();
+  try {
+    if (state.api) {
+      const r = await fetch(state.api, { method: "POST", headers: { "Content-Type": "text/plain" },
+        body: JSON.stringify({ action: "triage", lead_id: leadId, triage_action: action }), redirect: "follow" });
+      const data = await r.json();
+      if (data.status !== "SUCCESS") throw new Error(data.message || "triage failed");
+      l.triage_status = data.triage_status || next;
+    } else {
+      l.triage_status = next;
+    }
+    l.updated_at = new Date().toISOString();
+    toast(`${leadId} → ${l.triage_status}`);
+  } catch (err) {
+    toast(err.message, true);
+  } finally {
+    state.busy.delete(leadId); render();
+  }
+}
+
+function visibleLeads() {
+  const tab = TABS.find(t => t[0] === state.tab);
+  let rows = state.leads.filter(l => !tab[2] || tab[2].includes(l.triage_status));
+  if (state.channel) rows = rows.filter(l => l.listener_channel === state.channel);
+  const by = {
+    urgency: (a, b) => (URGENCY_RANK[a.urgency_level] ?? 9) - (URGENCY_RANK[b.urgency_level] ?? 9) || b.timestamp.localeCompare(a.timestamp),
+    newest: (a, b) => b.timestamp.localeCompare(a.timestamp),
+    rate: (a, b) => b.rate_per_mile - a.rate_per_mile,
+    payout: (a, b) => b.payout_offered - a.payout_offered,
+  }[state.sort];
+  return rows.sort(by);
+}
+
+function render() {
+  document.getElementById("activeCount").textContent = state.leads.filter(l => ACTIVE.includes(l.triage_status)).length;
+
+  const tabs = document.getElementById("tabs");
+  tabs.innerHTML = "";
+  for (const [key, label, statuses] of TABS) {
+    const n = state.leads.filter(l => !statuses || statuses.includes(l.triage_status)).length;
+    const b = document.createElement("button");
+    b.textContent = `${label} (${n})`;
+    b.className = key === state.tab ? "active" : "";
+    b.onclick = () => { state.tab = key; render(); };
+    tabs.appendChild(b);
+  }
+
+  const sel = document.getElementById("channelFilter");
+  const channels = [...new Set(state.leads.map(l => l.listener_channel).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">All channels</option>' + channels.map(c => `<option${c === state.channel ? " selected" : ""}>${esc(c)}</option>`).join("");
+
+  const board = document.getElementById("board");
+  const rows = visibleLeads();
+  board.innerHTML = rows.length ? "" : '<div class="empty">No leads in this view.</div>';
+  for (const l of rows) board.appendChild(card(l));
+
+  if (state.lastFetch) setStatus(`${state.api ? "Sheet" : "Demo"} · updated ${state.lastFetch.toLocaleTimeString()}`);
+}
+
+function card(l) {
+  const el = document.createElement("div");
+  el.className = `card ${l.urgency_level} ${l.triage_status}`;
+  const rateClass = l.rate_per_mile >= 3 ? "good" : l.rate_per_mile > 0 && l.rate_per_mile < 1.5 ? "bad" : "";
+  el.innerHTML = `
+    <div class="top">
+      <div class="badges">
+        <span class="badge urg ${l.urgency_level}">${esc(l.urgency_level)}</span>
+        <span class="badge st ${l.triage_status}">${esc(l.triage_status.replace("_", " "))}</span>
+        <span class="badge">${esc(l.listener_channel)}</span>
+      </div>
+      <span class="meta">${age(l.timestamp)}</span>
+    </div>
+    <div class="route">${esc(l.origin)}<span class="arrow">→</span>${esc(l.destination)}</div>
+    <div class="cargo">${esc(l.cargo_summary)}</div>
+    <div class="metrics">
+      <div class="metric"><div class="label">Payout</div><div class="value">${money(l.payout_offered)}</div></div>
+      <div class="metric"><div class="label">Miles</div><div class="value">${l.mileage_est ? l.mileage_est.toFixed(1) : "—"}</div></div>
+      <div class="metric"><div class="label">$ / mile</div><div class="value ${rateClass}">${l.rate_per_mile ? money(l.rate_per_mile) : "—"}</div></div>
+    </div>
+    <div class="meta">
+      <span class="deadline">⏱ <b>${esc(l.window_deadline)}</b></span>
+      <span>${esc(l.source_medium)} · <b>${esc(l.source_contact)}</b></span>
+      <span>${esc(l.lead_id)}</span>
+    </div>
+    <div class="actions"></div>`;
+  const actions = el.querySelector(".actions");
+  for (const [act, label, cls, from] of ACTIONS) {
+    if (!from.includes(l.triage_status)) continue;
+    const b = document.createElement("button");
+    b.textContent = label; b.className = cls; b.disabled = state.busy.has(l.lead_id);
+    b.onclick = () => triage(l.lead_id, act);
+    actions.appendChild(b);
+  }
+  return el;
+}
+
+function age(ts) {
+  const m = Math.max(0, Math.round((Date.now() - new Date(ts)) / 60000));
+  if (m < 60) return `${m}m ago`;
+  if (m < 1440) return `${Math.floor(m / 60)}h ${m % 60}m ago`;
+  return `${Math.floor(m / 1440)}d ago`;
+}
+function money(n) { return "$" + Number(n).toFixed(2); }
+function esc(s) { return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+function setStatus(t) { document.getElementById("statusLine").textContent = t; }
+let toastTimer;
+function toast(msg, err) {
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.className = "show" + (err ? " err" : "");
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.className = "", 3000);
+}
+
+document.getElementById("refreshBtn").onclick = loadLeads;
+document.getElementById("channelFilter").onchange = e => { state.channel = e.target.value; render(); };
+document.getElementById("sortBy").onchange = e => { state.sort = e.target.value; render(); };
+const dlg = document.getElementById("configDialog");
+document.getElementById("configBtn").onclick = () => { document.getElementById("apiInput").value = state.api; dlg.showModal(); };
+document.getElementById("saveApi").onclick = () => { localStorage.setItem("leadBoardApi", document.getElementById("apiInput").value.trim()); location.href = location.pathname; };
+document.getElementById("clearApi").onclick = () => { localStorage.removeItem("leadBoardApi"); location.href = location.pathname; };
+setInterval(() => { if (document.getElementById("autoRefresh").checked && state.api) loadLeads(); }, 60000);
+loadLeads();
+</script>
+</body>
+</html>

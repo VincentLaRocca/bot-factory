@@ -74,7 +74,7 @@ function findRowByLeadId_(sheet, leadId) {
 function response_(data, callback) {
   const body = JSON.stringify(data);
   if (callback) return ContentService.createTextOutput(callback + "(" + body + ")")
-    .setMimeType(MimeType.JAVASCRIPT);
+    .setMimeType(ContentService.MimeType.JAVASCRIPT);
   return ContentService.createTextOutput(body).setMimeType(ContentService.MimeType.JSON);
 }
 
@@ -144,7 +144,7 @@ function doGet(e) {
     const values = sheet.getLastRow() < 2 ? [] : sheet.getRange(2, 1,
       sheet.getLastRow() - 1, HEADERS.length).getValues();
     const requested = String((e && e.parameter && e.parameter.status) || "")
-      .split(",").map(value => value.trim().toUpperCase()).filter(Boolean);
+      .split(",").map(value => value.trim().toUpperCase()).filter(value => value && value !== "ALL");
     const statuses = requested.flatMap(status =>
       status === "ACTIVE" ? ["NEW", "WATCH", "BID_PREPARED"] : [status]);
     const limitValue = parseInt((e && e.parameter && e.parameter.limit) || "200", 10);
