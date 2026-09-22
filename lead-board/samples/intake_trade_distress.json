@@ -1,0 +1,12 @@
+{
+  "listener_channel": "Trade Distress",
+  "source_medium": "SMS",
+  "source_contact": "Mike · field lead (Baker Bros HVAC)",
+  "origin": "Carrier Enterprise · Midlothian",
+  "destination": "Scott's Addition · Richmond",
+  "cargo_summary": "2 TXV valves + recovery tank",
+  "payout_offered": 75.00,
+  "mileage_est": 18.0,
+  "urgency_level": "CRITICAL",
+  "window_deadline": "Pickup by 12:40 PM"
+}

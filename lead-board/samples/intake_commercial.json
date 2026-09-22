@@ -1,0 +1,12 @@
+{
+  "listener_channel": "Commercial / B2B",
+  "source_medium": "Email",
+  "source_contact": "Service desk · Richmond Mechanical",
+  "origin": "Henrico · Richmond",
+  "destination": "Chesterfield · Richmond",
+  "cargo_summary": "Commercial HVAC control board",
+  "payout_offered": 120.00,
+  "mileage_est": 26.5,
+  "urgency_level": "HIGH",
+  "window_deadline": "Pickup by 3:00 PM"
+}
