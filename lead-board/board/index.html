@@ -102,6 +102,8 @@
   <h3 style="margin:0">Connect to Apps Script</h3>
   <label for="apiInput">Web app /exec URL (doGet + doPost endpoint)</label>
   <input id="apiInput" placeholder="https://script.google.com/macros/s/AKfycb.../exec">
+  <label for="apiKeyInput">API key</label>
+  <input id="apiKeyInput" type="password" autocomplete="off" placeholder="Configured in Apps Script properties">
   <div class="row">
     <button id="clearApi" class="danger">Use demo data</button>
     <button id="saveApi" class="primary">Save &amp; reload</button>
@@ -110,6 +112,7 @@
 
 <script>
 const LEAD_BOARD_API_URL = ""; // optional hard-coded default; ?api= and localStorage override it
+const LEAD_BOARD_API_KEY = ""; // optional default; prefer entering this through Configure
 const ACTIVE = ["NEW", "WATCH", "BID_PREPARED"];
 const TABS = [
   ["active", "Active", ACTIVE],
@@ -145,12 +148,17 @@ function lead(id, minAgo, ch, med, contact, o, d, cargo, pay, mi, urg, dl, st) {
     urgency_level: urg, window_deadline: dl, triage_status: st, updated_at: ts };
 }
 
-const state = { api: resolveApi(), leads: [], tab: "active", channel: "", sort: "urgency", lastFetch: null, busy: new Set() };
+const state = { api: resolveApi(), apiKey: resolveApiKey(), leads: [], tab: "active", channel: "", sort: "urgency", lastFetch: null, busy: new Set(), loadSequence: 0 };
 
 function resolveApi() {
   const q = new URLSearchParams(location.search).get("api");
   if (q) { localStorage.setItem("leadBoardApi", q); return q; }
+  if (localStorage.getItem("leadBoardDemo") === "true") return "";
   return localStorage.getItem("leadBoardApi") || LEAD_BOARD_API_URL;
+}
+
+function resolveApiKey() {
+  return localStorage.getItem("leadBoardApiKey") || LEAD_BOARD_API_KEY;
 }
 
 function jsonp(url) {
@@ -167,6 +175,7 @@ function jsonp(url) {
 }
 
 async function loadLeads() {
+  const sequence = ++state.loadSequence;
   setStatus("Loading…");
   try {
     if (!state.api) {
@@ -174,13 +183,16 @@ async function loadLeads() {
       document.getElementById("demoBanner").hidden = false;
     } else {
       document.getElementById("demoBanner").hidden = true;
-      const res = await jsonp(state.api + "?status=all&limit=500");
+      const params = new URLSearchParams({status: "all", limit: "500", api_key: state.apiKey});
+      const res = await jsonp(state.api + "?" + params);
+      if (sequence !== state.loadSequence) return;
       if (res.status !== "SUCCESS") throw new Error(res.message || "API error");
       state.leads = res.leads.map(normalize);
     }
     state.lastFetch = new Date();
     render();
   } catch (err) {
+    if (sequence !== state.loadSequence) return;
     setStatus("Error: " + err.message);
     toast(err.message, true);
   }
@@ -195,22 +207,27 @@ function normalize(l) {
 }
 
 async function triage(leadId, action) {
-  const l = state.leads.find(x => x.lead_id === leadId);
-  if (!l || state.busy.has(leadId)) return;
+  const original = state.leads.find(x => x.lead_id === leadId);
+  if (!original || state.busy.has(leadId)) return;
   const next = { ACCEPT: "ACCEPTED", PREPARE_BID: "BID_PREPARED", DISMISS: "DISMISSED", WATCH: "WATCH", RESET: "NEW" }[action];
   state.busy.add(leadId); render();
   try {
+    let updatedAt = new Date().toISOString();
+    let responseData = null;
     if (state.api) {
       const r = await fetch(state.api, { method: "POST", headers: { "Content-Type": "text/plain" },
-        body: JSON.stringify({ action: "triage", lead_id: leadId, triage_action: action }), redirect: "follow" });
-      const data = await r.json();
-      if (data.status !== "SUCCESS") throw new Error(data.message || "triage failed");
-      l.triage_status = data.triage_status || next;
-    } else {
-      l.triage_status = next;
+        body: JSON.stringify({ action: "triage", lead_id: leadId, triage_action: action,
+          expected_updated_at: original.updated_at, api_key: state.apiKey }), redirect: "follow" });
+      responseData = await r.json();
+      if (responseData.status !== "SUCCESS") throw new Error(responseData.message || "triage failed");
+      updatedAt = responseData.updated_at || updatedAt;
     }
-    l.updated_at = new Date().toISOString();
-    toast(`${leadId} → ${l.triage_status}`);
+    const current = state.leads.find(x => x.lead_id === leadId);
+    if (current) {
+      current.triage_status = responseData ? responseData.triage_status || next : next;
+      current.updated_at = updatedAt;
+      toast(`${leadId} → ${current.triage_status}`);
+    }
   } catch (err) {
     toast(err.message, true);
   } finally {
@@ -314,9 +331,23 @@ document.getElementById("refreshBtn").onclick = loadLeads;
 document.getElementById("channelFilter").onchange = e => { state.channel = e.target.value; render(); };
 document.getElementById("sortBy").onchange = e => { state.sort = e.target.value; render(); };
 const dlg = document.getElementById("configDialog");
-document.getElementById("configBtn").onclick = () => { document.getElementById("apiInput").value = state.api; dlg.showModal(); };
-document.getElementById("saveApi").onclick = () => { localStorage.setItem("leadBoardApi", document.getElementById("apiInput").value.trim()); location.href = location.pathname; };
-document.getElementById("clearApi").onclick = () => { localStorage.removeItem("leadBoardApi"); location.href = location.pathname; };
+document.getElementById("configBtn").onclick = () => {
+  document.getElementById("apiInput").value = state.api;
+  document.getElementById("apiKeyInput").value = state.apiKey;
+  dlg.showModal();
+};
+document.getElementById("saveApi").onclick = () => {
+  localStorage.setItem("leadBoardApi", document.getElementById("apiInput").value.trim());
+  localStorage.setItem("leadBoardApiKey", document.getElementById("apiKeyInput").value.trim());
+  localStorage.removeItem("leadBoardDemo");
+  location.href = location.pathname;
+};
+document.getElementById("clearApi").onclick = () => {
+  localStorage.removeItem("leadBoardApi");
+  localStorage.removeItem("leadBoardApiKey");
+  localStorage.setItem("leadBoardDemo", "true");
+  location.href = location.pathname;
+};
 setInterval(() => { if (document.getElementById("autoRefresh").checked && state.api) loadLeads(); }, 60000);
 loadLeads();
 </script>

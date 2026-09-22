@@ -81,8 +81,11 @@ class Spreadsheet {
 const spreadsheet = new Spreadsheet();
 const context = {
   SpreadsheetApp: {openById: () => spreadsheet},
+  PropertiesService: {
+    getScriptProperties: () => ({getProperty: () => "test-api-key"})
+  },
   ContentService: {
-    MimeType: {JSON: "application/json"},
+    MimeType: {JSON: "application/json", JAVASCRIPT: "application/javascript"},
     createTextOutput: content => ({
       content,
       mimeType: null,
@@ -113,7 +116,7 @@ const context = {
 vm.runInNewContext(fs.readFileSync(__dirname + "/Code.gs", "utf8"), context);
 
 function post(payload) {
-  const output = context.doPost({postData: {contents: JSON.stringify(payload)}});
+  const output = context.doPost({postData: {contents: JSON.stringify({...payload, api_key: "test-api-key"})}});
   return JSON.parse(output.getContent());
 }
 
