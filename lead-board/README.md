@@ -27,24 +27,34 @@ through `doPost`.
 | `triage_status` | enum | Current board state | `NEW` |
 | `updated_at` | ISO string | Last state update | `2026-09-22T16:20:00.000Z` |
 
-## Deployment
+## Trusted-operator prototype deployment
 
 1. Create a Google Sheet and copy its ID from the URL.
 2. Paste the ID into `SPREADSHEET_ID` in `apps-script/Code.gs`.
 3. Paste `Code.gs` and `appsscript.json` into a project at
    [script.google.com](https://script.google.com), or use `clasp`.
-4. Deploy → **Web app**, execute as **User deploying**, and grant access to
-   **Anyone**.
-5. Copy the deployed `/exec` URL.
+4. Select `setup` in the Apps Script function menu and click **Run**. Approve
+   the requested Sheet access. This creates the sheet headers and, when needed,
+   generates a 64-character API key in the `LEAD_BOARD_API_KEY` Script Property.
+   Copy the key from the execution log and do not commit it.
+5. Deploy → **Web app**, execute as **User deploying**, and grant access only
+   to the trusted Google accounts or Workspace domain that operate the board.
+   Do not select anonymous access.
+6. Copy the deployed `/exec` URL. Each operator must sign into an allowed
+   Google account before using it.
 
-On first request, the script creates `LiveQueue` and its headers. A
+On first authorized request, the script creates `LiveQueue` and its headers. A
 `PREPARE_BID` action creates `BidCalculator` with its own headers.
 
 ## Connecting the board
 
-The board reads a `?api=` query parameter, or a `LEAD_BOARD_API_URL` constant
-in `board/index.html`. Set either to the deployed `/exec` URL. JSONP is
-available by adding `callback=someFunction` to a GET request.
+Host `board/index.html` on a trusted HTTPS site. Open it, click **Configure**,
+and enter the deployed `/exec` URL and API key. The values are stored in that
+browser's local storage, so use only managed, non-shared operator devices.
+
+The board reads a `?api=` query parameter or a `LEAD_BOARD_API_URL` constant as
+an optional URL default. JSONP callbacks are restricted to JavaScript identifier
+paths. The API key is still required for reads and writes.
 
 Incoming listener values are matched case-insensitively to the supported
 enums; unknown channel, medium, or urgency values fall back to
@@ -59,16 +69,27 @@ enums; unknown channel, medium, or urgency values fall back to
 Every triage action updates `updated_at`. The dispatch notification is
 intentionally a logging stub until an email or other channel is configured.
 
-## Curl examples
+## Tests and curl example
 
-Run from `lead-board/samples/` after setting `LEAD_BOARD_API_URL`:
+Run the local smoke test before deployment:
+
+```bash
+node lead-board/apps-script/test_local.js
+```
+
+After deployment, run the end-to-end smoke test from any directory. This test
+requires `node` and an authenticated Google session that can reach the web app:
 
 ```bash
 export LEAD_BOARD_API_URL="https://script.google.com/macros/s/DEPLOYMENT_ID/exec"
-./curl.sh
+export LEAD_BOARD_API_KEY="your-generated-key"
+./lead-board/samples/curl.sh
 ```
 
-The intake and triage requests use `Content-Type: text/plain` to avoid a
-browser preflight. The final request is `GET ?status=active`, which includes
-`NEW`, `WATCH`, and `BID_PREPARED` leads. Individual requests can also be run
-with `curl -H "Content-Type: text/plain" --data-binary @file.json "$API_URL"`.
+The script adds the key at runtime, creates a lead, captures its generated ID,
+accepts that same lead, and reads the active queue. The intake and triage
+requests use `Content-Type: text/plain` to avoid a browser preflight.
+
+For a prototype, the same key authorizes intake, reads, and triage. Do not give
+it to untrusted listener integrations. Split intake into a separately scoped
+credential or service before exposing intake outside the operator group.

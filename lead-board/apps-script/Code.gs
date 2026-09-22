@@ -35,6 +35,21 @@ function authorized_(e, data) {
   return expected && supplied && supplied === expected;
 }
 
+function setup() {
+  if (SPREADSHEET_ID === "YOUR_SPREADSHEET_ID_HERE") {
+    throw new Error("Set SPREADSHEET_ID in Code.gs before running setup");
+  }
+  const properties = PropertiesService.getScriptProperties();
+  let apiKey = properties.getProperty(API_KEY_PROPERTY);
+  if (!apiKey) {
+    apiKey = Utilities.getUuid().replace(/-/g, "") + Utilities.getUuid().replace(/-/g, "");
+    properties.setProperty(API_KEY_PROPERTY, apiKey);
+  }
+  getSheet_();
+  console.log("Lead board configured. API key: " + apiKey);
+  return "Lead board configured; copy the API key from the execution log";
+}
+
 function validCallback_(callback) {
   return /^[A-Za-z_$][0-9A-Za-z_$]*(\.[A-Za-z_$][0-9A-Za-z_$]*)*$/.test(callback);
 }

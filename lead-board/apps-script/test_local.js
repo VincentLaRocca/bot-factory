@@ -82,7 +82,10 @@ const spreadsheet = new Spreadsheet();
 const context = {
   SpreadsheetApp: {openById: () => spreadsheet},
   PropertiesService: {
-    getScriptProperties: () => ({getProperty: () => "test-api-key"})
+    getScriptProperties: () => ({
+      getProperty: () => "test-api-key",
+      setProperty() {}
+    })
   },
   ContentService: {
     MimeType: {JSON: "application/json", JAVASCRIPT: "application/javascript"},
@@ -136,18 +139,21 @@ assert.strictEqual(intake.status, "SUCCESS");
 assert.strictEqual(intake.row.length, 15);
 assert.strictEqual(intake.row[10], 4.17);
 
-const board = JSON.parse(context.doGet({parameter: {}}).getContent());
+const unauthorized = JSON.parse(context.doGet({parameter: {}}).getContent());
+assert.deepStrictEqual(unauthorized, {status: "ERROR", message: "unauthorized"});
+
+const board = JSON.parse(context.doGet({parameter: {api_key: "test-api-key"}}).getContent());
 assert.strictEqual(board.status, "SUCCESS");
 assert.strictEqual(board.count, 1);
 assert.strictEqual(board.leads[0].lead_id, intake.lead_id);
 assert.strictEqual(board.leads[0].triage_status, "NEW");
 
-const accepted = post({action: "triage", lead_id: intake.lead_id, triage_action: "ACCEPT"});
-assert.deepStrictEqual(accepted, {
-  status: "SUCCESS",
-  lead_id: intake.lead_id,
-  triage_status: "ACCEPTED"
-});
+const accepted = post({action: "triage", lead_id: intake.lead_id, triage_action: "ACCEPT",
+  expected_updated_at: board.leads[0].updated_at});
+assert.strictEqual(accepted.status, "SUCCESS");
+assert.strictEqual(accepted.lead_id, intake.lead_id);
+assert.strictEqual(accepted.triage_status, "ACCEPTED");
+assert.ok(accepted.updated_at);
 
 const missing = post({action: "triage", lead_id: "LD-missing", triage_action: "ACCEPT"});
 assert.deepStrictEqual(missing, {status: "ERROR", message: "lead not found"});
