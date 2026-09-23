@@ -1,6 +1,7 @@
 const SPREADSHEET_ID = "YOUR_SPREADSHEET_ID_HERE";
 const SHEET_NAME = "LiveQueue";
 const BID_SHEET_NAME = "BidCalculator";
+const SMS_INTAKE_TOKEN = "";
 const HEADERS = [
   "lead_id", "timestamp", "listener_channel", "source_medium", "source_contact",
   "origin", "destination", "cargo_summary", "payout_offered", "mileage_est",
@@ -80,34 +81,21 @@ function response_(data, callback) {
 
 function doPost(e) {
   try {
+    if (e && e.parameter && e.parameter.Body !== undefined && e.parameter.From !== undefined) {
+      return handleSms_(e);
+    }
     const contents = e && e.postData && e.postData.contents;
     const encodedPayload = e && e.parameter && e.parameter.payload;
-    const data = JSON.parse(contents || encodedPayload || "{}");
+    const trimmedContents = String(contents || "").trim();
+    const data = JSON.parse(trimmedContents.startsWith("{") ? trimmedContents :
+      (encodedPayload || "{}"));
     const action = String(data.action || "intake").toUpperCase();
-    const sheet = getSheet_();
     if (action === "INTAKE") {
-      const payout = parseFloat(data.payout_offered) || 0;
-      const mileage = parseFloat(data.mileage_est) || 0;
-      const timestamp = nowIso_();
-      const row = [
-        data.lead_id || makeLeadId_(), timestamp,
-        normalize_(data.listener_channel, LISTENER_CHANNELS, "General Intake"),
-        normalize_(data.source_medium, SOURCE_MEDIUMS, "Webhook"),
-        data.source_contact || "", data.origin || "", data.destination || "",
-        data.cargo_summary || "", payout, mileage, mileage > 0 ? round2(payout / mileage) : 0,
-        normalize_(data.urgency_level, URGENCY, "MEDIUM"), data.window_deadline || "",
-        "NEW", timestamp
-      ];
-      const lock = LockService.getScriptLock();
-      lock.waitLock(30000);
-      try {
-        sheet.appendRow(row);
-      } finally {
-        lock.releaseLock();
-      }
+      const row = appendLead_(data);
       return response_({status: "SUCCESS", lead_id: row[0], row: row});
     }
     if (action === "TRIAGE") {
+      const sheet = getSheet_();
       const leadId = data.lead_id;
       const triageAction = String(data.triage_action || "").toUpperCase();
       const actions = {ACCEPT: "ACCEPTED", PREPARE_BID: "BID_PREPARED", DISMISS: "DISMISSED",
@@ -136,6 +124,149 @@ function doPost(e) {
   } catch (error) {
     return response_({status: "ERROR", message: String(error.message || error)});
   }
+}
+
+function appendLead_(fields) {
+  const payout = parseFloat(fields.payout_offered) || 0;
+  const mileage = parseFloat(fields.mileage_est) || 0;
+  const timestamp = nowIso_();
+  const row = [
+    fields.lead_id || makeLeadId_(), timestamp,
+    normalize_(fields.listener_channel, LISTENER_CHANNELS, "General Intake"),
+    normalize_(fields.source_medium, SOURCE_MEDIUMS, "Webhook"),
+    fields.source_contact || "", fields.origin || "", fields.destination || "",
+    fields.cargo_summary || "", payout, mileage, mileage > 0 ? round2(payout / mileage) : 0,
+    normalize_(fields.urgency_level, URGENCY, "MEDIUM"), fields.window_deadline || "",
+    "NEW", timestamp
+  ];
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    getSheet_().appendRow(row);
+  } finally {
+    lock.releaseLock();
+  }
+  return row;
+}
+
+function handleSms_(e) {
+  if (SMS_INTAKE_TOKEN && e.parameter.token !== SMS_INTAKE_TOKEN) {
+    console.log("Unauthorized SMS intake");
+    return twiml_("Unauthorized");
+  }
+  const lead = parseSmsBody_(e.parameter.Body);
+  const row = appendLead_({
+    listener_channel: lead.listener_channel || "Trade Distress",
+    source_medium: "SMS",
+    source_contact: e.parameter.From + (lead.contact ? " · " + lead.contact : ""),
+    origin: lead.origin,
+    destination: lead.destination,
+    cargo_summary: lead.cargo_summary || e.parameter.Body,
+    payout_offered: lead.payout_offered,
+    mileage_est: lead.mileage_est,
+    urgency_level: lead.urgency_level,
+    window_deadline: lead.window_deadline
+  });
+  const message = "Logged " + row[0] + ": " + row[5] + " → " + row[6] +
+    " $" + row[8] + " (" + row[9] + " mi)";
+  return twiml_(message);
+}
+
+function twiml_(message) {
+  const body = '<?xml version="1.0" encoding="UTF-8"?><Response><Message>' +
+    xmlEscape_(message) + "</Message></Response>";
+  return ContentService.createTextOutput(body).setMimeType(ContentService.MimeType.XML);
+}
+
+function xmlEscape_(value) {
+  return String(value == null ? "" : value)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&apos;");
+}
+
+function parseSmsBody_(text) {
+  const raw = String(text || "").trim();
+  const result = {
+    origin: "", destination: "", cargo_summary: "", payout_offered: 0,
+    mileage_est: 0, urgency_level: "", window_deadline: "",
+    listener_channel: "", contact: ""
+  };
+  const aliases = {
+    from: "origin", origin: "origin", pickup: "origin",
+    to: "destination", dest: "destination", destination: "destination", dropoff: "destination",
+    cargo: "cargo_summary", load: "cargo_summary", items: "cargo_summary",
+    pay: "payout_offered", payout: "payout_offered", price: "payout_offered", rate: "payout_offered",
+    miles: "mileage_est", mi: "mileage_est", mileage: "mileage_est",
+    urgency: "urgency_level", priority: "urgency_level",
+    by: "window_deadline", deadline: "window_deadline", window: "window_deadline",
+    channel: "listener_channel", contact: "contact", name: "contact"
+  };
+  const structured = {};
+  const pieces = raw.split(/[\n;]+/);
+  pieces.forEach(piece => {
+    const match = piece.match(/^\s*([^:=]+?)\s*[:=]\s*(.*?)\s*$/);
+    if (!match) return;
+    const key = match[1].toLowerCase().replace(/[\s_]/g, "");
+    if (aliases[key]) structured[aliases[key]] = match[2].trim();
+  });
+  if (Object.keys(structured).length >= 2) {
+    Object.keys(structured).forEach(key => {
+      result[key] = structured[key];
+    });
+    result.origin = stripRoutePunctuation_(result.origin);
+    result.destination = stripRoutePunctuation_(result.destination);
+    result.payout_offered = numberFromText_(result.payout_offered);
+    result.mileage_est = numberFromText_(result.mileage_est);
+    if (result.urgency_level) result.urgency_level = urgencyFromText_(result.urgency_level);
+    if (result.window_deadline) result.window_deadline = result.window_deadline.trim();
+    return result;
+  }
+
+  const payoutMatch = raw.match(/\$\s?(\d+(?:\.\d+)?)/);
+  const milesMatch = raw.match(/(\d+(?:\.\d+)?)\s?(?:mi|miles?)\b/i);
+  const deadlineMatch = raw.match(/\bby\s+(\d{1,2}(?::\d{2})?\s?(?:am|pm)?|eod|noon|tonight|today|tomorrow[^,;$]*)/i);
+  const routePatterns = [
+    /(?:pickup|from|pu)\s+(.+?)\s+(?:to|->|→)\s+(.+?)(?=\s*[:;,]|\s+\$|\s+\d+(?:\.\d+)?\s?mi|\s+by\b|$)/i,
+    /^(.+?)\s+(?:to|->|→)\s+(.+?)(?=[:;,]|\s+\$|\s+\d|\s+by\b|$)/i
+  ];
+  let routeMatch = null;
+  for (let i = 0; i < routePatterns.length && !routeMatch; i++) {
+    routeMatch = raw.match(routePatterns[i]);
+  }
+  if (routeMatch) {
+    result.origin = stripRoutePunctuation_(routeMatch[1]);
+    result.destination = stripRoutePunctuation_(routeMatch[2]);
+  }
+  result.payout_offered = payoutMatch ? parseFloat(payoutMatch[1]) : 0;
+  result.mileage_est = milesMatch ? parseFloat(milesMatch[1]) : 0;
+  result.window_deadline = deadlineMatch ? "By " + deadlineMatch[1].trim() : "";
+  result.urgency_level = urgencyFromText_(raw);
+
+  let cargo = routeMatch ? raw.slice(routeMatch.index + routeMatch[0].length) : raw;
+  if (cargo.trim().charAt(0) === ":") cargo = cargo.trim().slice(1);
+  if (payoutMatch) cargo = cargo.replace(payoutMatch[0], "");
+  if (milesMatch) cargo = cargo.replace(milesMatch[0], "");
+  if (deadlineMatch) cargo = cargo.replace(deadlineMatch[0], "");
+  cargo = cargo.replace(/\b(?:URGENT|ASAP|CRITICAL|STAT|RUSH|HIGH|HOT|LOW|FLEX|FLEXIBLE|WHENEVER)\b/ig, "");
+  result.cargo_summary = cargo.replace(/\s+/g, " ").replace(/^[\s:;,]+|[\s:;,]+$/g, "").trim() || raw;
+  return result;
+}
+
+function numberFromText_(value) {
+  const match = String(value || "").match(/\d+(?:\.\d+)?/);
+  return match ? parseFloat(match[0]) : 0;
+}
+
+function urgencyFromText_(text) {
+  const value = String(text || "").toUpperCase();
+  if (/\b(?:URGENT|ASAP|CRITICAL|STAT)\b/.test(value)) return "CRITICAL";
+  if (/\b(?:RUSH|HIGH|HOT)\b/.test(value)) return "HIGH";
+  if (/\b(?:LOW|FLEX|FLEXIBLE|WHENEVER)\b/.test(value)) return "LOW";
+  return "MEDIUM";
+}
+
+function stripRoutePunctuation_(value) {
+  return String(value || "").trim().replace(/[.,;:]+$/, "").trim();
 }
 
 function doGet(e) {

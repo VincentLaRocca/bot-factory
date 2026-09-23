@@ -7,6 +7,35 @@ Apps Script stores normalized leads in the `LiveQueue` sheet. The static board
 reads active leads from `doGet` as JSON or JSONP and sends triage actions back
 through `doPost`.
 
+## SMS intake (Twilio)
+
+In Twilio Console, open **Phone Numbers → your number → Messaging**. Under
+**A message comes in**, choose **Webhook**, **HTTP POST**, and set the URL to
+the deployed `/exec` URL. If `SMS_INTAKE_TOKEN` is set in `Code.gs`, append
+`?token=...` to that URL.
+
+The handler accepts structured messages with semicolon-separated labels:
+
+```text
+from: Ferguson Chester; to: Jobsite Hopewell; cargo: 6 boxes PEX; pay: 55; miles: 21; urgency: low; by: EOD
+```
+
+It also accepts free text:
+
+```text
+PICKUP Carrier Enterprise Midlothian TO Scott's Addition Richmond: 2 TXV valves + recovery tank $75 18mi by 12:40pm URGENT
+```
+
+The sender receives a confirmation such as
+`Logged LD-20260922-120000-AB12: Carrier Enterprise Midlothian → Scott's
+Addition Richmond $75 (18 mi)`. Unrecognized or incomplete messages still
+create a lead, preserving the original text as cargo when necessary.
+
+Apps Script answers web requests with a 302 redirect to
+`script.googleusercontent.com`. Twilio's webhook client follows redirects in
+our understanding, but if the confirmation SMS never arrives, relay through a
+tiny Twilio Function or Studio flow that POSTs JSON to the endpoint.
+
 ## LiveQueue columns
 
 | Column | Type | Description | Example |
