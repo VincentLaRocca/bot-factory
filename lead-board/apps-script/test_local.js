@@ -83,6 +83,16 @@ const source = fs.readFileSync(__dirname + "/Code.gs", "utf8");
 function loadContext(code) {
   const spreadsheet = new Spreadsheet();
   const cache = new Map();
+  const properties = new Map();
+  const scriptCache = {
+    get: key => cache.get(key) || null,
+    put: (key, value) => cache.set(key, value),
+    reset: () => cache.clear()
+  };
+  const scriptProperties = {
+    getProperty: key => properties.get(key) || null,
+    setProperty: (key, value) => properties.set(key, value)
+  };
   const context = {
     SpreadsheetApp: {openById: () => spreadsheet},
     ContentService: {
@@ -107,10 +117,10 @@ function loadContext(code) {
       })
     },
     CacheService: {
-      getScriptCache: () => ({
-        get: key => cache.get(key) || null,
-        put: (key, value) => cache.set(key, value)
-      })
+      getScriptCache: () => scriptCache
+    },
+    PropertiesService: {
+      getScriptProperties: () => scriptProperties
     },
     Utilities: {
       formatDate: date => {
@@ -121,7 +131,7 @@ function loadContext(code) {
     console
   };
   vm.runInNewContext(code, context);
-  return {context, spreadsheet};
+  return {context, spreadsheet, cache: scriptCache, properties: scriptProperties};
 }
 
 const loaded = loadContext(source);
@@ -204,6 +214,15 @@ const retryFirstLeadId = retryFirst.match(/<Message>Logged ([^:]+):/)[1];
 const retrySecondLeadId = retrySecond.match(/<Message>Logged ([^:]+):/)[1];
 assert.strictEqual(retryFirstLeadId, retrySecondLeadId);
 
+const rowsBeforeDurableRetry = liveQueue.rows.length;
+const durableFirst = postSms(freeText, "+18045550123", {MessageSid: "SM999"});
+loaded.cache.reset();
+const durableSecond = postSms(freeText, "+18045550123", {MessageSid: "SM999"});
+assert.strictEqual(liveQueue.rows.length, rowsBeforeDurableRetry + 1);
+const durableFirstLeadId = durableFirst.match(/<Message>Logged ([^:]+):/)[1];
+const durableSecondLeadId = durableSecond.match(/<Message>Logged ([^:]+):/)[1];
+assert.strictEqual(durableFirstLeadId, durableSecondLeadId);
+
 const rowsBeforeNoSid = liveQueue.rows.length;
 postSms("no sid still appends");
 assert.strictEqual(liveQueue.rows.length, rowsBeforeNoSid + 1);
@@ -226,6 +245,12 @@ assert.strictEqual(garbageRow[7], "hey call me");
 assert.strictEqual(garbageRow[8], 0);
 assert.strictEqual(garbageRow[10], 0);
 
+for (let i = 0; i < 205; i++) context.smsRemember_("CAP" + i, ["CAP" + i]);
+const remembered = JSON.parse(loaded.properties.getProperty("sms_seen"));
+assert.strictEqual(remembered.length, 200);
+assert.strictEqual(remembered[0].sid, "CAP5");
+assert.strictEqual(remembered[199].sid, "CAP204");
+
 const tokenSource = source.replace('const SMS_INTAKE_TOKEN = "";',
   'const SMS_INTAKE_TOKEN = "test-secret";');
 const tokenLoaded = loadContext(tokenSource);
@@ -243,6 +268,8 @@ console.log("PASS unknown lead: returned lead not found");
 console.log("PASS non-JSON POST: returned ERROR without appending");
 console.log("PASS Twilio free text: route, payout, miles, urgency, deadline, and SMS source");
 console.log("PASS Twilio retry dedup: same MessageSid appended one row and reused lead ID");
+console.log("PASS Twilio durable retry: reused lead after cache reset");
+console.log("PASS Twilio history cap: retained the latest 200 MessageSids");
 console.log("PASS Twilio no MessageSid: appended normally");
 console.log("PASS Twilio structured text: parsed labeled fields");
 console.log("PASS Twilio garbage text: logged raw cargo with zero numeric fields");

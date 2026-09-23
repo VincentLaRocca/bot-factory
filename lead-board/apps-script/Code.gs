@@ -153,6 +153,35 @@ function appendLead_(fields) {
   return row;
 }
 
+function smsSeen_(sid) {
+  if (!sid) return null;
+  const raw = PropertiesService.getScriptProperties().getProperty("sms_seen");
+  if (!raw) return null;
+  try {
+    const entries = JSON.parse(raw);
+    const match = entries.find(entry => entry.sid === sid);
+    return match ? match.row : null;
+  } catch (error) {
+    return null;
+  }
+}
+
+function smsRemember_(sid, row) {
+  if (!sid) return;
+  const properties = PropertiesService.getScriptProperties();
+  let entries = [];
+  const raw = properties.getProperty("sms_seen");
+  if (raw) {
+    try {
+      entries = JSON.parse(raw);
+    } catch (error) {
+      entries = [];
+    }
+  }
+  entries.push({sid: sid, lead_id: row[0], row: row, at: nowIso_()});
+  properties.setProperty("sms_seen", JSON.stringify(entries.slice(-200)));
+}
+
 function handleSms_(e) {
   if (SMS_INTAKE_TOKEN && e.parameter.token !== SMS_INTAKE_TOKEN) {
     console.log("Unauthorized SMS intake");
@@ -180,10 +209,16 @@ function handleSms_(e) {
     if (cacheKey) {
       const cached = cache.get(cacheKey);
       if (cached) return twiml_(smsConfirmation_(JSON.parse(cached)));
+      const remembered = smsSeen_(messageSid);
+      if (remembered) {
+        cache.put(cacheKey, JSON.stringify(remembered), 21600);
+        return twiml_(smsConfirmation_(remembered));
+      }
     }
     const row = buildLeadRow_(fields);
     getSheet_().appendRow(row);
     if (cacheKey) cache.put(cacheKey, JSON.stringify(row), 21600);
+    smsRemember_(messageSid, row);
     return twiml_(smsConfirmation_(row));
   } finally {
     lock.releaseLock();

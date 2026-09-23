@@ -30,6 +30,8 @@ The sender receives a confirmation such as
 `Logged LD-20260922-120000-AB12: Carrier Enterprise Midlothian → Scott's
 Addition Richmond $75 (18 mi)`. Unrecognized or incomplete messages still
 create a lead, preserving the original text as cargo when necessary.
+Retries are deduped by `MessageSid` using the cache plus a durable
+`PropertiesService` fallback that retains the last 200 messages.
 
 Apps Script answers web requests with a 302 redirect to
 `script.googleusercontent.com`. Twilio's webhook client follows redirects in
