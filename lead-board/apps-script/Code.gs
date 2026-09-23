@@ -88,7 +88,7 @@ function doPost(e) {
     const encodedPayload = e && e.parameter && e.parameter.payload;
     const trimmedContents = String(contents || "").trim();
     const data = JSON.parse(trimmedContents.startsWith("{") ? trimmedContents :
-      (encodedPayload || "{}"));
+      (encodedPayload || trimmedContents || "{}"));
     const action = String(data.action || "intake").toUpperCase();
     if (action === "INTAKE") {
       const row = appendLead_(data);
@@ -126,11 +126,11 @@ function doPost(e) {
   }
 }
 
-function appendLead_(fields) {
+function buildLeadRow_(fields) {
   const payout = parseFloat(fields.payout_offered) || 0;
   const mileage = parseFloat(fields.mileage_est) || 0;
   const timestamp = nowIso_();
-  const row = [
+  return [
     fields.lead_id || makeLeadId_(), timestamp,
     normalize_(fields.listener_channel, LISTENER_CHANNELS, "General Intake"),
     normalize_(fields.source_medium, SOURCE_MEDIUMS, "Webhook"),
@@ -139,6 +139,10 @@ function appendLead_(fields) {
     normalize_(fields.urgency_level, URGENCY, "MEDIUM"), fields.window_deadline || "",
     "NEW", timestamp
   ];
+}
+
+function appendLead_(fields) {
+  const row = buildLeadRow_(fields);
   const lock = LockService.getScriptLock();
   lock.waitLock(30000);
   try {
@@ -155,7 +159,7 @@ function handleSms_(e) {
     return twiml_("Unauthorized");
   }
   const lead = parseSmsBody_(e.parameter.Body);
-  const row = appendLead_({
+  const fields = {
     listener_channel: lead.listener_channel || "Trade Distress",
     source_medium: "SMS",
     source_contact: e.parameter.From + (lead.contact ? " · " + lead.contact : ""),
@@ -166,10 +170,29 @@ function handleSms_(e) {
     mileage_est: lead.mileage_est,
     urgency_level: lead.urgency_level,
     window_deadline: lead.window_deadline
-  });
-  const message = "Logged " + row[0] + ": " + row[5] + " → " + row[6] +
+  };
+  const messageSid = e.parameter.MessageSid;
+  const cacheKey = messageSid ? "sms:" + messageSid : "";
+  const cache = cacheKey ? CacheService.getScriptCache() : null;
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    if (cacheKey) {
+      const cached = cache.get(cacheKey);
+      if (cached) return twiml_(smsConfirmation_(JSON.parse(cached)));
+    }
+    const row = buildLeadRow_(fields);
+    getSheet_().appendRow(row);
+    if (cacheKey) cache.put(cacheKey, JSON.stringify(row), 21600);
+    return twiml_(smsConfirmation_(row));
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function smsConfirmation_(row) {
+  return "Logged " + row[0] + ": " + row[5] + " → " + row[6] +
     " $" + row[8] + " (" + row[9] + " mi)";
-  return twiml_(message);
 }
 
 function twiml_(message) {

@@ -82,6 +82,7 @@ const source = fs.readFileSync(__dirname + "/Code.gs", "utf8");
 
 function loadContext(code) {
   const spreadsheet = new Spreadsheet();
+  const cache = new Map();
   const context = {
     SpreadsheetApp: {openById: () => spreadsheet},
     ContentService: {
@@ -103,6 +104,12 @@ function loadContext(code) {
       getScriptLock: () => ({
         waitLock() {},
         releaseLock() {}
+      })
+    },
+    CacheService: {
+      getScriptCache: () => ({
+        get: key => cache.get(key) || null,
+        put: (key, value) => cache.set(key, value)
       })
     },
     Utilities: {
@@ -166,11 +173,16 @@ assert.deepStrictEqual(accepted, {
 const missing = post({action: "triage", lead_id: "LD-missing", triage_action: "ACCEPT"});
 assert.deepStrictEqual(missing, {status: "ERROR", message: "lead not found"});
 
+const liveQueue = spreadsheet.getSheetByName("LiveQueue");
+const rowsBeforeInvalidJson = liveQueue.rows.length;
+const invalidJson = context.doPost({parameter: {}, postData: {contents: "hello"}});
+assert.strictEqual(JSON.parse(invalidJson.getContent()).status, "ERROR");
+assert.strictEqual(liveQueue.rows.length, rowsBeforeInvalidJson);
+
 const freeText = "PICKUP Carrier Enterprise Midlothian TO Scott's Addition Richmond: " +
   "2 TXV valves + recovery tank $75 18mi by 12:40pm URGENT";
 const freeTextResponse = postSms(freeText);
 assert(freeTextResponse.includes("<Response><Message>Logged LD-"));
-const liveQueue = spreadsheet.getSheetByName("LiveQueue");
 const freeTextRow = liveQueue.rows[liveQueue.rows.length - 1];
 assert.strictEqual(freeTextRow[2], "Trade Distress");
 assert.strictEqual(freeTextRow[3], "SMS");
@@ -183,6 +195,18 @@ assert.strictEqual(freeTextRow[10], 4.17);
 assert.strictEqual(freeTextRow[11], "CRITICAL");
 assert.strictEqual(freeTextRow[12], "By 12:40pm");
 assert(freeTextRow[7].includes("TXV"));
+
+const rowsBeforeRetry = liveQueue.rows.length;
+const retryFirst = postSms(freeText, "+18045550123", {MessageSid: "SM123"});
+const retrySecond = postSms(freeText, "+18045550123", {MessageSid: "SM123"});
+assert.strictEqual(liveQueue.rows.length, rowsBeforeRetry + 1);
+const retryFirstLeadId = retryFirst.match(/<Message>Logged ([^:]+):/)[1];
+const retrySecondLeadId = retrySecond.match(/<Message>Logged ([^:]+):/)[1];
+assert.strictEqual(retryFirstLeadId, retrySecondLeadId);
+
+const rowsBeforeNoSid = liveQueue.rows.length;
+postSms("no sid still appends");
+assert.strictEqual(liveQueue.rows.length, rowsBeforeNoSid + 1);
 
 postSms("from: Ferguson Chester; to: Jobsite Hopewell; cargo: 6 boxes PEX; " +
   "pay: 55; miles: 21; urgency: low; by: EOD");
@@ -216,7 +240,10 @@ console.log("PASS intake: 15 columns, computed rate 4.17");
 console.log("PASS doGet: returned the intake lead");
 console.log("PASS triage ACCEPT: status changed to ACCEPTED");
 console.log("PASS unknown lead: returned lead not found");
+console.log("PASS non-JSON POST: returned ERROR without appending");
 console.log("PASS Twilio free text: route, payout, miles, urgency, deadline, and SMS source");
+console.log("PASS Twilio retry dedup: same MessageSid appended one row and reused lead ID");
+console.log("PASS Twilio no MessageSid: appended normally");
 console.log("PASS Twilio structured text: parsed labeled fields");
 console.log("PASS Twilio garbage text: logged raw cargo with zero numeric fields");
 console.log("PASS Twilio token: rejected wrong token without appending");
