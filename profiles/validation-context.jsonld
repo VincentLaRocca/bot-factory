@@ -1,0 +1,53 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "val": "https://aiop.dev/profiles/validation#",
+
+    "Validation": "val:Validation",
+    "Decision": "val:Decision",
+
+    "claim": {"@id": "val:claim", "@type": "@id"},
+    "claim_type": "val:claimType",
+    "normalized_claim": "val:normalizedClaim",
+    "propositions": {"@id": "val:propositions", "@type": "@json"},
+    "evidence": {"@id": "val:evidence", "@type": "@json"},
+    "counter_evidence": {"@id": "val:counterEvidence", "@type": "@json"},
+    "qualifying_evidence": {"@id": "val:qualifyingEvidence", "@type": "@json"},
+    "source_universe": {"@id": "val:sourceUniverse", "@type": "@json"},
+    "independence_roots": {"@id": "val:independenceRoots", "@type": "@json"},
+    "expected_independence_roots": {"@id": "val:expectedIndependenceRoots", "@type": "@json"},
+    "assumption_ledger": {"@id": "val:assumptionLedger", "@type": "@json"},
+    "tests": {"@id": "val:tests", "@type": "@json"},
+    "contradictions": {"@id": "val:contradictions", "@type": "@json"},
+    "causal_warnings": {"@id": "val:causalWarnings", "@type": "@json"},
+    "quantitative_checks": {"@id": "val:quantitativeChecks", "@type": "@json"},
+    "provenance_notes": {"@id": "val:provenanceNotes", "@type": "@json"},
+    "missing_information": {"@id": "val:missingInformation", "@type": "@json"},
+    "research_requests": {"@id": "val:researchRequests", "@type": "@json"},
+    "failure_reasons": {"@id": "val:failureReasons", "@type": "@json"},
+    "strongest_counterargument": "val:strongestCounterargument",
+    "verdict": "val:verdict",
+    "public_verdict": "val:publicVerdict",
+    "confidence_label": "val:confidenceLabel",
+    "confidence_kind": "val:confidenceKind",
+    "input_fingerprint": "val:inputFingerprint",
+    "evaluated_at": {"@id": "val:evaluatedAt", "@type": "xsd:dateTime"},
+    "calibration": {"@id": "val:calibration", "@type": "@json"},
+
+    "validation": {"@id": "val:validation", "@type": "@id"},
+    "source_verdict": "val:sourceVerdict",
+    "recommendation": "val:recommendation",
+    "reasons": {"@id": "val:reasons", "@type": "@json"},
+    "human_review_required": {"@id": "val:humanReviewRequired", "@type": "xsd:boolean"},
+    "authorized_action": "val:authorizedAction",
+    "decided_at": {"@id": "val:decidedAt", "@type": "xsd:dateTime"},
+
+    "validationOf": {"@id": "val:validationOf", "@type": "@id"},
+    "validatedBy": {"@id": "val:validatedBy", "@type": "@id"},
+    "basedOn": {"@id": "val:basedOn", "@type": "@id"},
+    "basisFor": {"@id": "val:basisFor", "@type": "@id"},
+    "decisionFor": {"@id": "val:decisionFor", "@type": "@id"},
+    "decidedBy": {"@id": "val:decidedBy", "@type": "@id"}
+  }
+}

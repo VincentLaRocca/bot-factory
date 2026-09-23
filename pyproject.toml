@@ -26,6 +26,9 @@ packages = [
     "aiop",
     "capabilities",
     "capabilities.anomaly",
+    "capabilities.judgment",
+    "capabilities.research",
+    "capabilities.validation",
     "observer",
     "profiles",
     "reasoning",
@@ -34,7 +37,7 @@ packages = [
 
 [tool.setuptools.package-data]
 aiop = ["context.jsonld"]
-profiles = ["context.jsonld", "asymmetry-context.jsonld", "observer-context.jsonld"]
+profiles = ["context.jsonld", "asymmetry-context.jsonld", "observer-context.jsonld", "research-context.jsonld", "validation-context.jsonld"]
 store = ["context.jsonld"]
 
 [tool.pytest.ini_options]

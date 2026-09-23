@@ -27,8 +27,15 @@ knows no domain, and neither the first capability — the Anomaly Listener — n
 the second — the Researcher, which consumes the first one's output — required a
 line of change to it.
 
+The third and fourth capabilities close the epistemic loop without closing the
+human one. The **Validator** adversarially checks a Claim's committed evidence
+universe and writes a reproducible Validation; the separate **Judge** may carry
+or weaken that verdict into a proposed Decision, but cannot upgrade evidence,
+mutate the Claim, or authorize action.
+
 This is **AIOP Core v0.1**, **Store + Graph/Cluster v0.1**, **Calculation &
-Reasoning v0.1**, **Observer + Anomaly Listener v0.1** and **Researcher v0.1**.
+Reasoning v0.1**, **Observer + Anomaly Listener v0.1**, **Researcher v0.1**,
+**Validator v0.1** and **Judge v0.1**.
 
 ## Layout
 
@@ -42,17 +49,18 @@ reasoning/    bindings, the named-function registry, calculation evaluation,
 observer/     the motherboard — identity, capability registry, missions,
               authority, invocation and execution records; no domain anywhere
 capabilities/ interchangeable plug-ins — anomaly/ detects, research/
-              investigates what anomaly/ produced
+              investigates, validation/ checks claims, judgment/ bounds verdicts
 agents/       the Asymmetry Analyst, built on the layers below
-profiles/     domain layer — the demo, asymmetry, observer and research
+profiles/     domain layer — the demo, asymmetry, observer, research and validation
               profiles, their views, calculation schemas and formulas, and
               the contexts
 examples/     a connected sample graph, plus world/ — the demonstration world —
               reasoning/, asymmetry/, observer/ and research/
-tests/        core, validation, relationship, store, cluster, reasoning,
-              asymmetry, observer and researcher suites
+tests/        core, protocol validation, relationship, store, cluster, reasoning,
+              asymmetry, observer, researcher and claim-validation suites
 docs/         AIOP_CORE.md, AIOP_STORE.md, AIOP_REASONING.md,
-              ASYMMETRY_ANALYST.md, OBSERVER.md, RESEARCHER.md, DECISIONS.md
+              ASYMMETRY_ANALYST.md, OBSERVER.md, RESEARCHER.md,
+              VALIDATOR_JUDGE.md, DECISIONS.md
 demo.py       assembles the clusters, then calculates on them
 ```
 
@@ -207,6 +215,25 @@ says *breakthrough*, and the claim stays `CONTESTED` with all three kept. Where
 nobody answered, the topic stays `UNKNOWN`; where nobody could be asked, it is
 `UNREACHABLE`. `python3 demo_researcher.py` runs the whole arc.
 
+## Validator and Judge
+
+```python
+bench.install(Validator())
+bench.install(Judge())
+
+checked = bench.invoke("validator", inputs=[claim])
+validation = store.get(checked.findings["validations"][0])
+judged = bench.invoke("judge", inputs=[validation])
+decision = store.get(judged.findings["decisions"][0])
+```
+
+The Validator counts independent evidence roots, preserves contradictions,
+applies extra tests to causal and quantitative claims, and keeps missing state
+explicit. The Judge reads that receipt and writes a `PROPOSED` Decision for
+human review. It can weaken a verdict but cannot upgrade it; every v0.1
+Decision has `authorized_action: NONE`. Neither capability mutates the Claim or
+the object it concerns. See `docs/VALIDATOR_JUDGE.md` for the contract.
+
 ## Test
 
 ```bash
@@ -242,6 +269,10 @@ anomaly dimensions actually implemented, and execution records.
 `Source → Evidence → Claim` ordering, the provider boundary and its fixed
 question template, contradiction and the four epistemic states, digest identity
 and repeated runs, and the negative test that keeps the chassis ignorant.
+
+[docs/VALIDATOR_JUDGE.md](docs/VALIDATOR_JUDGE.md) covers the separation of
+evidence evaluation from bounded judgment, verdicts, independence roots,
+claim-type checks, explicit validation authority, and the human Watch gate.
 
 [docs/DECISIONS.md](docs/DECISIONS.md) records the decisions worth arguing
 with: why assessments carry their own input fingerprint instead of generalising
