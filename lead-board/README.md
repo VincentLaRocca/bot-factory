@@ -72,3 +72,29 @@ The intake and triage requests use `Content-Type: text/plain` to avoid a
 browser preflight. The final request is `GET ?status=active`, which includes
 `NEW`, `WATCH`, and `BID_PREPARED` leads. Individual requests can also be run
 with `curl -H "Content-Type: text/plain" --data-binary @file.json "$API_URL"`.
+
+## Board scraping (Craigslist)
+
+The scraper runs locally because Craigslist blocks datacenter IPs with HTTP
+403 responses. A cloud VM request returns `Your request has been blocked`, so
+run this process from a residential connection.
+
+```bash
+cd lead-board/scraper
+cp config.example.json config.json
+# Set api_url in config.json to the deployed /exec URL.
+python3 scrape.py --config config.json --dry-run
+```
+
+The default is one pass; scheduling is external. For cron, run every 30
+minutes with `*/30 * * * * cd /path/to/bot-factory/lead-board/scraper &&
+python3 scrape.py --config config.json >> scraper.log 2>&1`. On Windows, create
+a Task Scheduler task that runs `python.exe` with arguments
+`C:\path\to\bot-factory\lead-board\scraper\scrape.py --config
+C:\path\to\bot-factory\lead-board\scraper\config.json` and set its working
+directory to the scraper folder.
+
+Listings are deduplicated with the JSON state file and deterministic
+`CL-<hash>` lead IDs derived from each listing URL. The Craigslist parser
+targets the static fallback markup; if Craigslist changes its markup, re-verify
+the parser against a saved page fixture before relying on it.

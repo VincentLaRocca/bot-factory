@@ -1,0 +1,12 @@
+{
+  "api_url": "https://script.google.com/macros/s/DEPLOYMENT_ID/exec",
+  "user_agent": "Mozilla/5.0 (compatible; LeadBoardScraper/1.0)",
+  "state_file": "state.json",
+  "boards": [
+    {
+      "adapter": "craigslist",
+      "url": "https://richmond.craigslist.org/search/lbg",
+      "listener_channel": "Open Boards"
+    }
+  ]
+}
