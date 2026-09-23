@@ -91,7 +91,8 @@ function loadContext(code) {
   };
   const scriptProperties = {
     getProperty: key => properties.get(key) || null,
-    setProperty: (key, value) => properties.set(key, value)
+    setProperty: (key, value) => properties.set(key, value),
+    deleteProperty: key => properties.delete(key)
   };
   const context = {
     SpreadsheetApp: {openById: () => spreadsheet},
@@ -245,11 +246,14 @@ assert.strictEqual(garbageRow[7], "hey call me");
 assert.strictEqual(garbageRow[8], 0);
 assert.strictEqual(garbageRow[10], 0);
 
-for (let i = 0; i < 205; i++) context.smsRemember_("CAP" + i, ["CAP" + i]);
-const remembered = JSON.parse(loaded.properties.getProperty("sms_seen"));
-assert.strictEqual(remembered.length, 200);
-assert.strictEqual(remembered[0].sid, "CAP5");
-assert.strictEqual(remembered[199].sid, "CAP204");
+const capLoaded = loadContext(source);
+for (let i = 0; i < 205; i++) capLoaded.context.smsRemember_("CAP" + i, ["CAP" + i]);
+const remembered = JSON.parse(capLoaded.properties.getProperty("sms_index"));
+assert.strictEqual(remembered.length, 150);
+assert.strictEqual(remembered[0], "CAP55");
+assert.strictEqual(remembered[149], "CAP204");
+assert.strictEqual(capLoaded.properties.getProperty("sms:CAP54"), null);
+assert.deepStrictEqual(JSON.parse(capLoaded.properties.getProperty("sms:CAP55")), ["CAP55"]);
 
 const tokenSource = source.replace('const SMS_INTAKE_TOKEN = "";',
   'const SMS_INTAKE_TOKEN = "test-secret";');
@@ -269,7 +273,7 @@ console.log("PASS non-JSON POST: returned ERROR without appending");
 console.log("PASS Twilio free text: route, payout, miles, urgency, deadline, and SMS source");
 console.log("PASS Twilio retry dedup: same MessageSid appended one row and reused lead ID");
 console.log("PASS Twilio durable retry: reused lead after cache reset");
-console.log("PASS Twilio history cap: retained the latest 200 MessageSids");
+console.log("PASS Twilio history cap: retained the latest 150 MessageSids and evicted old rows");
 console.log("PASS Twilio no MessageSid: appended normally");
 console.log("PASS Twilio structured text: parsed labeled fields");
 console.log("PASS Twilio garbage text: logged raw cargo with zero numeric fields");

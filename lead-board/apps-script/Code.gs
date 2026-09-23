@@ -155,12 +155,10 @@ function appendLead_(fields) {
 
 function smsSeen_(sid) {
   if (!sid) return null;
-  const raw = PropertiesService.getScriptProperties().getProperty("sms_seen");
+  const raw = PropertiesService.getScriptProperties().getProperty("sms:" + sid);
   if (!raw) return null;
   try {
-    const entries = JSON.parse(raw);
-    const match = entries.find(entry => entry.sid === sid);
-    return match ? match.row : null;
+    return JSON.parse(raw);
   } catch (error) {
     return null;
   }
@@ -169,17 +167,23 @@ function smsSeen_(sid) {
 function smsRemember_(sid, row) {
   if (!sid) return;
   const properties = PropertiesService.getScriptProperties();
-  let entries = [];
-  const raw = properties.getProperty("sms_seen");
+  properties.setProperty("sms:" + sid, JSON.stringify(row));
+  let index = [];
+  const raw = properties.getProperty("sms_index");
   if (raw) {
     try {
-      entries = JSON.parse(raw);
+      index = JSON.parse(raw);
     } catch (error) {
-      entries = [];
+      index = [];
     }
   }
-  entries.push({sid: sid, lead_id: row[0], row: row, at: nowIso_()});
-  properties.setProperty("sms_seen", JSON.stringify(entries.slice(-200)));
+  const existing = index.indexOf(sid);
+  if (existing >= 0) index.splice(existing, 1);
+  index.push(sid);
+  while (index.length > 150) {
+    properties.deleteProperty("sms:" + index.shift());
+  }
+  properties.setProperty("sms_index", JSON.stringify(index));
 }
 
 function handleSms_(e) {
