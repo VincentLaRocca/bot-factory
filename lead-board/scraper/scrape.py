@@ -14,7 +14,7 @@ from leadscraper.poster import post_lead
 from leadscraper.state import is_seen, load, mark_seen, save
 
 
-def run(config: Dict, dry_run: bool = False) -> int:
+def run(config: Dict, dry_run: bool = False, max_new: int = 0) -> int:
     state = load(config["state_file"])
     failures = 0
     for board in config.get("boards", []):
@@ -31,6 +31,8 @@ def run(config: Dict, dry_run: bool = False) -> int:
                 if is_seen(state, lead["lead_id"]):
                     continue
                 new_count += 1
+                if max_new and new_count > max_new:
+                    continue
                 if dry_run:
                     print(json.dumps(lead, sort_keys=True))
                 else:
@@ -59,10 +61,12 @@ def main() -> int:
     parser.add_argument("--config", required=True, help="path to scraper config JSON")
     parser.add_argument("--dry-run", action="store_true", help="print leads without posting")
     parser.add_argument("--once", action="store_true", help="run one pass (the default)")
+    parser.add_argument("--max-new", type=int, default=25,
+                        help="post at most N new listings per board per run (0 = unlimited)")
     args = parser.parse_args()
     with open(args.config, "r", encoding="utf-8") as handle:
         config = json.load(handle)
-    return run(config, dry_run=args.dry_run)
+    return run(config, dry_run=args.dry_run, max_new=args.max_new)
 
 
 if __name__ == "__main__":

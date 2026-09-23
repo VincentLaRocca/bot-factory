@@ -75,9 +75,12 @@ with `curl -H "Content-Type: text/plain" --data-binary @file.json "$API_URL"`.
 
 ## Board scraping (Craigslist)
 
-The scraper runs locally because Craigslist blocks datacenter IPs with HTTP
-403 responses. A cloud VM request returns `Your request has been blocked`, so
-run this process from a residential connection.
+The scraper is meant to run on your own machine. Craigslist rate-limits and
+sometimes blocks automated or datacenter traffic with HTTP 403
+`Your request has been blocked`; the scraper reports this as `FetchBlocked`.
+Keep the interval modest (30 minutes or more) and use a realistic
+`user_agent` in the config. Each run posts at most `--max-new` listings per
+board (default 25) so the first run does not flood the board with backlog.
 
 ```bash
 cd lead-board/scraper
