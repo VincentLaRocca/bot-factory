@@ -147,6 +147,9 @@ class EbayHuntListener:
             self.errors.append(f"token: {error}")
             return
         found_by_id: Dict[str, Lead] = {}   # one lead per listing, even when several wish lists want it
+        if getattr(self, "watching", False):
+            from .. import customers as customer_module
+            self._cards = customer_module.load()
         for query in self.current_queries():
             try:
                 data = self.fetch(self.search_url(query), headers={
@@ -165,19 +168,27 @@ class EbayHuntListener:
                     self._mark_watch(found, query)
         yield from found_by_id.values()
 
-    @staticmethod
-    def _mark_watch(found: Lead, query: Dict[str, Any]) -> None:
+    def _mark_watch(self, found: Lead, query: Dict[str, Any]) -> None:
+        from .. import customers as customer_module
         tag = f"watch:{query['watch']}"
         who = query.get("customer")
         first_watch = not any(t.startswith("watch:") for t in found.tags)
         if tag not in found.tags:
             found.tags.append(tag)
-        if who and f"for:{who}" not in found.tags:
-            found.tags.append(f"for:{who}")
-            wishers = [t[4:] for t in found.tags if t.startswith("for:")]
-            base = found.contact.split(" · ", 1)[1] if found.contact.startswith("wish list:") else found.contact
-            found.contact = f"wish list: {', '.join(wishers)} · " + base
-        if query.get("notify", "all") == "all" and first_watch:
+        notify = query.get("notify", "all")
+        if who:
+            card = self._cards.get(who, {"name": who}) if hasattr(self, "_cards") else {"name": who}
+            ok, why = customer_module.fits(query, card, found.value, float(found.raw.get("reference") or 0))
+            found.body += f" · {who}: {why}"
+            if ok and f"fits:{who}" not in found.tags:
+                found.tags.append(f"fits:{who}")
+                found.bonus.append((40, f"fits {who}'s terms ({why})"))
+            if f"for:{who}" not in found.tags:
+                found.tags.append(f"for:{who}")
+                wishers = [t[4:] for t in found.tags if t.startswith("for:")]
+                base = found.contact.split(" · ", 1)[1] if found.contact.startswith("wish list:") else found.contact
+                found.contact = f"wish list: {', '.join(wishers)} · " + base
+        if notify == "all" and first_watch:
             found.bonus.append((50, f"special listen: {query['watch']}" + (f" for {who}" if who else "")))
 
     # -- the reading ---------------------------------------------------------
@@ -191,6 +202,7 @@ class EbayHuntListener:
         seller = item.get("seller") or {}
         bonus, facts, tags = [], [], ["ebay", hunt]
 
+        reference = 0.0
         if hunt in ("vehicle", "equipment", "electronics", "auto"):
             appraisal = appraisers.appraise(title + " " + str(item.get("condition", "")), cost,
                                             None if hunt == "auto" else hunt, comps=self.comps,
@@ -200,9 +212,12 @@ class EbayHuntListener:
             facts.extend(said or ["no appraisal: item not recognised"])
             if appraisal:
                 tags.append(appraisal.domain)
+                reference = appraisal.reference
         gem = valuation.read_gem(title) if hunt in ("gem", "jewelry") else None
         if hunt in ("silver", "gold", "jewelry"):
             got, said = valuation.break_down(title, cost, self.spot, self.recovery, gem)
+            yardstick = appraisers.appraise(title, cost, "jewelry", spot=self.spot, recovery=self.recovery)
+            reference = yardstick.reference if yardstick else 0.0
             bonus.extend(got)
             facts.extend(said or ["weight/purity not in title"])
             metal = valuation.read_metal(title)
@@ -273,5 +288,6 @@ class EbayHuntListener:
             value=cost, deadline=item.get("itemEndDate", "") if auction else "",
             posted_at=item.get("itemCreationDate", ""), tags=tags, bonus=bonus,
             raw={"itemId": item.get("itemId"), "price": price, "shipping": shipping, "auction": auction,
+                 "reference": reference,
                  "bids": item.get("bidCount"), "image": (item.get("image") or {}).get("imageUrl")},
         )

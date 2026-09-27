@@ -15,7 +15,12 @@ that speed doesn't cost trust.
 | **Judge** | Claude Code | the factory's judge: checks work against the Build Card's "Done means", runs the tests, rules pass / rework, and builds or fixes code when that's the fastest route |
 | **Assist** | Grok (sometimes) | called in when an outside read or extra hands help, such as a Breaker pass on a Maker's work, a tie-break between Claudes, or a piece of the build. Its input is logged like any other |
 | **Library** | Gemini | keeper of the NotebookLM library. Asked what already exists (their specs, notebooks and prior work) before anything new is built |
-| **Site builds** | ChatGPT (Apps SDK sites) | when a piece needs a hosted web app or site, borrow ChatGPT's site skills, as with the Mid-Atlantic Lead Board and the RSS feed leads app. The factory talks to them over their webhooks/feeds |
+| **Site builds** | ChatGPT (Apps SDK sites) | when a piece needs a hosted web app or site, borrow ChatGPT's site skills, as with the Mid-Atlantic Lead Board and the RSS feed leads app. The factory talks to them over their webhooks/feeds, and Claude publishes a documented API + a paste-ready brief (e.g. docs/CUSTOMER_API.md) |
+
+**Each AI where it's strongest** (Vinny): Claude builds engines, the listeners,
+appraisers and value logic; ChatGPT builds sites; Gemini keeps the library; Grok
+assists; Vinny approves. Interfaces between them are plain JSON APIs, webhooks
+and feeds, so any one can be swapped without breaking the others.
 
 ## Loose, not completely loose
 

@@ -78,7 +78,7 @@ def appraise(text: str, cost: float = 0.0, comps: Optional[List] = None, parts_v
         facts.append(f"no price-sheet comp; condition: {cond}")
     extra = [(10, f"bulk lot of {n}")] if n >= 10 else []
     return Appraisal("electronics", f"{n} × {label}", floor=floor, estimate=estimate, confidence=confidence,
-                     facts=facts, extra=extra, no_veto=True)
+                     facts=facts, extra=extra, no_veto=True, reference=estimate)
 
 
 appraise.matches = matches

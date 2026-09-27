@@ -90,6 +90,7 @@ def appraise(text: str, cost: float = 0.0, comps: Optional[List] = None, scrap_p
     estimate, confidence = 0.0, 0.45
     comp = comps_module.best(comps if comps is not None else comps_module.load(), "vehicle", text, yr)
     extra = []
+    book = 0.0
     problems = ad_problems(text)
     if comp:
         mile = use_factor(miles, MILEAGE_BANDS)
@@ -128,6 +129,7 @@ def appraise(text: str, cost: float = 0.0, comps: Optional[List] = None, scrap_p
         extra.append((10, "runs"))
     item = " ".join(x for x in (str(yr) if yr else "", body) if x)
     return Appraisal("vehicle", item, floor=floor, estimate=estimate, confidence=max(0.2, confidence),
+                     reference=book if comp else 0.0,
                      facts=facts, extra=extra,
                      no_veto=True)  # a working machine is worth more than its scrap; the floor only rewards
 

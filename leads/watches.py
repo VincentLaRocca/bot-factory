@@ -66,7 +66,8 @@ def _key(watch: Dict) -> tuple:
 
 
 def add(name: str, q: str, hunt: str = "auto", max_price: Optional[float] = None, near: Optional[Dict] = None,
-        notify: str = "all", file: Optional[str] = None, customer: Optional[str] = None) -> Dict:
+        notify: str = "all", file: Optional[str] = None, customer: Optional[str] = None,
+        discount: Optional[float] = None) -> Dict:
     """Add or replace a watch. The same item name can sit on several customers' wish lists."""
     watch = {"name": name, "q": q, "hunt": hunt, "notify": notify}
     if customer:
@@ -76,6 +77,8 @@ def add(name: str, q: str, hunt: str = "auto", max_price: Optional[float] = None
         watch["max_price"] = max_price
     if near:
         watch["near"] = near
+    if discount:
+        watch["discount"] = discount if discount <= 1 else discount / 100
     watches.append(watch)
     save(watches, file)
     return watch
@@ -156,6 +159,9 @@ def read_matrix(text: str) -> List[Dict]:
                 want["max_price"] = _price(get("max_price") or get("max"))
             if get("zip"):
                 want["near"] = {"zip": get("zip"), "miles": int(get("miles") or 150)}
+            if get("discount"):
+                d = float(get("discount").rstrip("%"))
+                want["discount"] = d / 100 if d > 1 else d
             wants.append(want)
         return wants
     for row in rows[1:]:                                           # WIDE layout
@@ -166,7 +172,9 @@ def read_matrix(text: str) -> List[Dict]:
             cell = row[i] if i < len(row) else ""
             if item and _wanted(cell):
                 want = {"name": item, "q": item, "hunt": "auto", "notify": "all", "customer": customer}
-                if _price(cell):
+                if cell.strip().endswith("%"):                     # "30%" = discount threshold instead of a price
+                    want["discount"] = float(cell.strip().rstrip("%")) / 100
+                elif _price(cell):
                     want["max_price"] = _price(cell)
                 wants.append(want)
     return wants

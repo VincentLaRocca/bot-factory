@@ -16,6 +16,8 @@ Routes::
     POST /sms?token=…        Twilio inbound SMS (form-encoded)
     GET  /health             liveness
     GET  /recent?token=…     last routed leads, JSON
+    GET  /customers?token=…  customer cards: who, what they want, their discount
+                             threshold, and matches to approve or pass (phone-friendly)
     GET  /intake?token=…     a small same-origin page for posting leads by hand
                              or from Claude in Chrome (sites' CSP often blocks
                              cross-origin fetch, so Chrome posts from here)
@@ -256,6 +258,16 @@ def make_handler(pipeline, token: str, source: str = "webhook"):
                 if not self._authorized(query):
                     return self._reply(401, {"status": "ERROR", "message": "unauthorized"})
                 return self._reply(200, {"status": "SUCCESS", "leads": pipeline.store.recent(50)})
+            if url.path == "/customers":
+                if not self._authorized(query):
+                    return self._reply(401, {"status": "ERROR", "message": "unauthorized"})
+                from ..customer_page import PAGE
+                return self._reply(200, PAGE.encode(), "text/html; charset=utf-8")
+            if url.path == "/api/customers":
+                if not self._authorized(query):
+                    return self._reply(401, {"status": "ERROR", "message": "unauthorized"})
+                from .. import customers
+                return self._reply(200, customers.api({"action": "list"}, pipeline.store))
             if url.path == "/intake":
                 if not self._authorized(query):
                     return self._reply(401, {"status": "ERROR", "message": "unauthorized"})
@@ -290,6 +302,9 @@ def make_handler(pipeline, token: str, source: str = "webhook"):
                     pipeline.process([from_twilio(form, source)])
                     # Empty TwiML: acknowledge without texting the sender back.
                     return self._reply(200, b'<?xml version="1.0" encoding="UTF-8"?><Response/>', "text/xml")
+                if url.path == "/api/customers":
+                    from .. import customers
+                    return self._reply(200, customers.api(json.loads(raw or "{}"), pipeline.store))
                 if url.path == "/leads":
                     data = json.loads(raw or "{}")
                     items = data if isinstance(data, list) else [data]

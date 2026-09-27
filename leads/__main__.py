@@ -108,6 +108,13 @@ def main(argv=None) -> int:
     p_watch.add_argument("--notify", choices=["all", "deals"], default="all",
                          help="all = every new listing; deals = only when the appraisers like the price")
     p_watch.add_argument("--for", dest="customer", default=None, help="customer whose wish list this is on")
+    p_watch.add_argument("--discount", default=None, help="this want's discount threshold, e.g. 25%%")
+
+    p_cust = sub.add_parser("customer", help="customer cards: who, what they want, their discount threshold")
+    p_cust.add_argument("action", choices=["list", "add", "show", "remove"])
+    p_cust.add_argument("name", nargs="?")
+    for flag in ("phone", "email", "zip", "miles", "discount", "budget", "notes"):
+        p_cust.add_argument(f"--{flag}")
 
     sub.add_parser("check")
     p_recent = sub.add_parser("recent")
@@ -116,6 +123,26 @@ def main(argv=None) -> int:
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO,
                         format="%(asctime)s %(levelname)-7s %(message)s", datefmt="%H:%M:%S")
+    if args.command == "customer":
+        from . import customers
+        if args.action == "list":
+            for c in customers.all_cards():
+                terms = " · ".join(x for x in (f"{c['discount']:.0%} under" if c.get("discount") else "",
+                                               f"budget ${c['budget']:,.0f}" if c.get("budget") else "",
+                                               c.get("phone", "")) if x)
+                print(f"{c['name']:<20} {len(c['wants'])} wants  {terms}")
+            return 0
+        if not args.name:
+            parser.error("customer add/show/remove needs a name")
+        if args.action == "remove":
+            print("removed" if customers.delete(args.name) else "no such customer")
+            return 0
+        if args.action == "add":
+            customers.upsert(args.name, **{k: getattr(args, k) for k in ("phone", "email", "zip", "miles",
+                                                                          "discount", "budget", "notes")})
+        print(json.dumps(customers.card(args.name), indent=2))
+        return 0
+
     if args.command == "watch":
         from . import watches
         if args.action == "list":
@@ -141,7 +168,12 @@ def main(argv=None) -> int:
             print("removed" if watches.remove(args.name, customer=args.customer) else "no such watch")
             return 0
         near = {"zip": args.zip, "miles": args.miles} if args.zip else None
-        w = watches.add(args.name, args.q or args.name, args.hunt, args.max, near, args.notify, customer=args.customer)
+        discount = float(str(args.discount).rstrip("%")) if args.discount else None
+        w = watches.add(args.name, args.q or args.name, args.hunt, args.max, near, args.notify, customer=args.customer,
+                        discount=discount)
+        if args.customer:
+            from . import customers
+            customers.upsert(args.customer)
         print(f"watching: {w['name']} → {w['q']}" + (f" (wish list: {w['customer']})" if w.get("customer") else ""))
         return 0
 

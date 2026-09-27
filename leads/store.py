@@ -90,6 +90,19 @@ class SeenStore:
         keys = ("lead_id", "source", "title", "url", "score", "urgency", "first_seen")
         return [dict(zip(keys, row)) for row in rows]
 
+    def tagged(self, tag: str, limit: int = 20) -> List[Dict]:
+        """Recent routed leads carrying ``tag`` (e.g. "for:Customer A"), newest first."""
+        rows = self.db.execute(
+            "SELECT payload FROM leads WHERE disposition = 'ROUTED' AND instr(payload, ?) > 0 "
+            "ORDER BY first_seen DESC LIMIT ?", (json.dumps(tag), limit)).fetchall()
+        out = []
+        for (payload,) in rows:
+            data = json.loads(payload)
+            if tag in data.get("tags", []):
+                out.append({k: data.get(k) for k in ("lead_id", "title", "url", "value", "score", "urgency",
+                                                      "body", "tags", "seen_at", "deadline")})
+        return out
+
     def counts(self) -> Dict[str, int]:
         return dict(self.db.execute("SELECT disposition, COUNT(*) FROM leads GROUP BY disposition").fetchall())
 

@@ -35,6 +35,7 @@ class Appraisal:
     facts: List[str] = field(default_factory=list)
     extra: Bonus = field(default_factory=list)   # domain-specific evidence points
     no_veto: bool = False           # e.g. designer pieces: the floor test can't penalise
+    reference: float = 0.0          # the yardstick for "X% under": book (vehicles), melt+gems (jewelry), comp (others)
 
 
 def score(appraisal: Optional[Appraisal], cost: float, cushion: float = 0.0) -> Tuple[Bonus, List[str]]:

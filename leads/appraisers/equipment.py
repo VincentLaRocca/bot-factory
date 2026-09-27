@@ -66,7 +66,7 @@ def appraise(text: str, cost: float = 0.0, comps: Optional[List] = None, scrap_p
         confidence -= 0.15
     extra = [(10, "runs/operational")] if factor >= 1.0 and known else []
     return Appraisal("equipment", " ".join(x for x in (str(yr) if yr else "", label) if x), floor=floor,
-                     estimate=estimate, confidence=max(0.2, confidence), facts=facts, extra=extra,
+                     estimate=estimate, confidence=max(0.2, confidence), facts=facts, extra=extra, reference=estimate,
                      no_veto=True)  # a working machine is worth more than its scrap; the floor only rewards
 
 

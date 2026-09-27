@@ -1088,3 +1088,71 @@ def test_matrix_from_published_google_sheet(tmp_path):
                                   str(tmp_path / "w.json"), fetcher=FakeWeb({"https://docs.google.com": sheet}))
     assert wants == [{"name": "Mazdaspeed6", "q": "Mazdaspeed6", "hunt": "auto", "notify": "all",
                       "customer": "Customer C", "max_price": 11000.0}]
+
+
+# ----------------------------------------------------------- customer cards
+def test_customer_cards_and_terms(tmp_path, monkeypatch):
+    from leads import customers
+    from leads.__main__ import main
+    monkeypatch.setenv("WATCHES_FILE", str(tmp_path / "w.json"))
+    monkeypatch.setenv("CUSTOMERS_FILE", str(tmp_path / "c.json"))
+    main(["customer", "add", "Customer A", "--phone", "804-555-0101", "--zip", "23220", "--miles", "150",
+          "--discount", "30%", "--budget", "$20,000", "--notes", "cash buyer, weekends"])
+    main(["watch", "add", "Mazdaspeed6", "--q", "mazdaspeed6", "--for", "Customer A", "--max", "15000", "--discount", "25%"])
+    card = customers.card("Customer A")
+    assert card["discount"] == 0.30 and card["budget"] == 20000.0 and card["miles"] == 150
+    assert card["wants"][0]["discount"] == 0.25 and card["wants"][0]["max_price"] == 15000
+    want = card["wants"][0]
+    assert customers.fits(want, card, 9000, 13000) == (True, "31% under value, meets 25% threshold, under $15,000 max")
+    assert customers.fits(want, card, 11000, 13000)[0] is False                      # only 15% under
+    assert customers.fits(want, card, 16000, 30000)[1].startswith("over Customer A max $15,000")
+    assert customers.fits({}, card, 9000, 0)[1].startswith("no book/melt value")      # card default 30%, no yardstick
+
+
+def test_watch_match_checks_the_customers_terms(tmp_path, monkeypatch):
+    from datetime import datetime, timezone
+    from leads import customers
+    from leads.__main__ import main
+    from leads.appraisers.comps import Comp
+    from leads.listeners.ebay import EbayHuntListener
+    monkeypatch.setenv("WATCHES_FILE", str(tmp_path / "w.json"))
+    monkeypatch.setenv("CUSTOMERS_FILE", str(tmp_path / "c.json"))
+    main(["watch", "add", "Mazdaspeed6", "--q", "mazdaspeed6", "--hunt", "vehicle", "--for", "Customer A", "--discount", "30%"])
+    main(["watch", "add", "Mazdaspeed6", "--q", "mazdaspeed6", "--hunt", "vehicle", "--for", "Customer B", "--discount", "50%"])
+    web = FakeWeb({"https://api.ebay.com/identity": {"access_token": "T"},
+                   "https://api.ebay.com/buy/browse": {"itemSummaries": [
+                       _ebay_item("m6", "2007 Mazda Mazdaspeed6 Grand Touring 90,000 miles runs great", 6000)]}})
+    hunt = EbayHuntListener.for_watches("ebay-watches", "id", "s", watch_file=str(tmp_path / "w.json"), fetcher=web,
+                                        now=datetime(2026, 9, 27, tzinfo=timezone.utc))
+    hunt.comps = [Comp("vehicle", ["mazdaspeed6"], 2006, 2007, 10000, "")]
+    lead_ = next(hunt.listen())
+    assert lead_.raw["reference"] == 10000.0
+    assert "fits:Customer A" in lead_.tags and "fits:Customer B" not in lead_.tags     # 40% under: A yes, B wants 50%
+    assert "Customer B: 40% under value, short of 50% threshold" in lead_.body
+    store = SeenStore()
+    Pipeline(store, RuleSet(), []).process([lead_])
+    listing = customers.api({"action": "list"}, store)["customers"]
+    a = next(c for c in listing if c["name"] == "Customer A")
+    assert a["matches"][0]["fits"] and a["matches"][0]["decision"] == ""
+    customers.api({"action": "decide", "customer": "Customer A", "lead_id": a["matches"][0]["lead_id"], "decision": "approved"})
+    a = next(c for c in customers.api({"action": "list"}, store)["customers"] if c["name"] == "Customer A")
+    assert a["matches"][0]["decision"] == "approved"
+
+
+def test_customer_page_and_api_over_http(live_server, tmp_path, monkeypatch):
+    monkeypatch.setenv("WATCHES_FILE", str(tmp_path / "w.json"))
+    monkeypatch.setenv("CUSTOMERS_FILE", str(tmp_path / "c.json"))
+    base, _ = live_server
+    with urllib.request.urlopen(base + "/customers?token=s3cret", timeout=5) as reply:
+        assert "Customer cards" in reply.read().decode()
+    status, body = _post(base + "/api/customers", json.dumps({"action": "save_card", "card": {
+        "name": "Customer C", "discount": "20%", "phone": "757-555-0100"}}), token="s3cret")
+    assert json.loads(body)["card"]["discount"] == 0.2
+    _post(base + "/api/customers", json.dumps({"action": "add_want", "customer": "Customer C",
+                                                "want": {"name": "Shelby GT500", "max_price": "$45,000", "hunt": "vehicle"}}), token="s3cret")
+    request = urllib.request.Request(base + "/api/customers", headers={"Authorization": "Bearer s3cret"})
+    with urllib.request.urlopen(request, timeout=5) as reply:
+        cards = json.loads(reply.read())["customers"]
+    assert cards[0]["name"] == "Customer C" and cards[0]["wants"][0]["max_price"] == 45000.0
+    with pytest.raises(urllib.error.HTTPError):
+        urllib.request.urlopen(base + "/customers", timeout=5)

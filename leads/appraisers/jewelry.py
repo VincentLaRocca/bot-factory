@@ -40,7 +40,8 @@ def appraise(text: str, cost: float = 0.0, spot: Optional[Dict[str, float]] = No
     confidence = 0.5 if (metal and metal.estimated) else 0.8
     extra = [(10, f"designer/period '{designer[0]}': worth more whole, check sold comps")] if designer else []
     return Appraisal("jewelry", metal.basis if metal else (gem.stone or "gem"), floor=round(metal_value + stones, 2),
-                     confidence=confidence, facts=facts, extra=extra, no_veto=bool(designer))
+                     confidence=confidence, facts=facts, extra=extra, no_veto=bool(designer),
+                     reference=round(metal_value + stones, 2))
 
 
 appraise.matches = matches
