@@ -41,3 +41,7 @@ Slack, the digest, the 5090 kit, and Chrome playbooks.
 1. Which first: vehicles or equipment? And for resale, parts, or for use in the businesses?
 2. Area: VA/Mid-Atlantic pickup only, or ship anything?
 3. Where do comps come from? Sold listings (eBay sold data needs a different API), auction results, or your own price sheets to start.
+
+## Log
+
+- 2026-09-27 · Claude web · [cross]: Vinny: "the appraiser is the heart of the opportunity finder." Framing: this is an **opportunity finder**. Sources feed listings in, **appraisers** (one per domain) say what each is worth and how sure they are, and the value test decides. Borrow note: bot-factory already has `Opportunity` objects and the Asymmetry Analyst (`agents/asymmetry/`). An appraised listing could become an AIOP Opportunity with its evidence and provenance attached (v1).
