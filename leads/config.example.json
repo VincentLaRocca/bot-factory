@@ -127,7 +127,8 @@
     {
       "name": "reddit-threads",
       "kind": "reddit_threads",
-      "enabled": true,
+      "enabled": false,
+      "_paused": "2026-09-27: paused while Vinny sorts out his Reddit standing. Re-enable when he is back in good standing.",
       "_note": "Every thread Vinny comments in or starts gets read in full and re-checked for 7 days. Run on the 5090 (Reddit throttles cloud IPs).",
       "username": "${REDDIT_USERNAME}",
       "follow_user": true,
@@ -144,7 +145,8 @@
     {
       "name": "owned-groups",
       "kind": "reddit_threads",
-      "enabled": true,
+      "enabled": false,
+      "_paused": "2026-09-27: paused while Vinny sorts out his Reddit standing. Re-enable when he is back in good standing.",
       "_note": "Groups we own: recruiting runs through these. Every thread in them is read in full. OWNED_SUBREDDITS is comma-separated, e.g. sub1,sub2.",
       "username": "${REDDIT_USERNAME}",
       "follow_user": false,

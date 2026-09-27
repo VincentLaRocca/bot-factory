@@ -347,7 +347,7 @@ def test_example_config_builds_and_skips_missing_keys(monkeypatch, tmp_path):
     monkeypatch.setenv("LEADS_WEBHOOK_TOKEN", "t")
     config = config_module.load(config_module.__file__.replace("config.py", "config.example.json"))
     system = config_module.build(config, store_path=str(tmp_path / "s.db"))
-    assert {n for n, _ in system.skipped} == {"sam-painting", "inbox", "reddit-replies", "reddit-threads", "owned-groups"}
+    assert {n for n, _ in system.skipped} == {"sam-painting", "inbox", "reddit-replies"}
     assert system.listeners == []               # Reddit scraping is parked: Vinny posts, replies come by email
     assert system.webhook["token"] == "t"
     assert [s.name for s in system.pipeline.sinks] == ["ledger"]    # no board/slack without URLs
