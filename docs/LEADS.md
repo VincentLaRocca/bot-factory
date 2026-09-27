@@ -59,8 +59,16 @@ sweeper: Actions, the 5090 box, Chrome, and inbound forms.
 | --- | --- | --- | --- |
 | Bids | `sam` | `SAM_API_KEY` — sam.gov → Account Details → Public API Key | Ultra-Thin v0 scope: NAICS 238320, SDVOSB + small-business set-asides, place of performance VA/MD/NC/DC. One request per NAICS × set-aside; state filtered locally. `min_interval_minutes: 480` protects the small daily quota. |
 | Email | `email` | `LEADS_IMAP_USER`, `LEADS_IMAP_PASSWORD` (Gmail: an **App Password**) | Read-only (`BODY.PEEK`), UID cursor so each message is seen once. Point it at a **Leads** label fed by a Gmail filter, not the whole inbox. |
-| Social | `feed` | nothing (Google Alerts: an RSS URL) | Reddit search per subreddit + any RSS/Atom URL. Gated on *topic in title* **and** *buying intent* ("looking for", "need a", "recommend", "[hiring]") so chatter doesn't route. |
+| Social | `feed` | nothing (Google Alerts: an RSS URL) | Any RSS/Atom URL, gated on *topic in title* **and** *buying intent*. The Reddit presets are **parked** (see below). |
+| Reddit replies | `email` (`reddit-replies`) | same IMAP login | **Reddit is human-first:** Vinny posts as himself, and people reply. Reddit's reply and message notification emails land in the Leads label, and every reply is routed (`min_score: 0`) as feedback to look at. |
 | Inbound | `webhook` | `LEADS_WEBHOOK_TOKEN` | `POST /leads` takes one JSON object or an array — common form field names (`name`, `phone`, `service`, `message`, `budget`, `zip`…) are mapped automatically. `POST /sms` takes Twilio's inbound webhook as-is. Auth by `Authorization: Bearer` or `?token=`. |
+
+**Reddit: Vinny posts, the system listens for replies.** Scraping Reddit
+from servers gets throttled, and cold-reading strangers' posts is the weaker
+channel anyway. Vinny posts in local and tribe subreddits as a real
+redditor. Replies and DMs arrive as Reddit notification emails, and the
+`reddit-replies` listener puts them on the board. Claude can draft posts;
+Vinny publishes them.
 
 **Claude in Chrome as a listener.** For sources with no feed or API (Facebook
 groups, Nextdoor, eVA and portals behind a login), Claude in Chrome works them

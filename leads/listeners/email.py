@@ -41,7 +41,8 @@ def body_text(message: EmailMessage) -> str:
     return html_to_text(content) if part.get_content_type() == "text/html" else clean(content)
 
 
-def to_lead(message: EmailMessage, source: str = "email", uid: str = "") -> Lead:
+def to_lead(message: EmailMessage, source: str = "email", uid: str = "",
+            channel: str = "Commercial / B2B", tags=("email",)) -> Lead:
     name, address = parseaddr(message.get("From", ""))
     reply_name, reply_to = parseaddr(message.get("Reply-To", ""))
     subject = clean(message.get("Subject", "(no subject)"), 200)
@@ -57,13 +58,13 @@ def to_lead(message: EmailMessage, source: str = "email", uid: str = "") -> Lead
         source=source,
         external_id=clean(message.get("Message-ID")) or f"uid:{uid}",
         title=subject,
-        channel="Commercial / B2B",
+        channel=channel,
         medium="Email",
         body=clean(text, 2000),
         contact=clean(" · ".join(x for x in contact_bits if x)),
         value=float(money.group(1).replace(",", "")) if money else 0.0,
         posted_at=posted,
-        tags=["email"],
+        tags=list(tags),
         raw={"from": address, "uid": uid},
     )
 
@@ -73,6 +74,8 @@ class EmailListener:
 
     def __init__(self, name: str, host: str, user: str, password: str, folder: str = "INBOX",
                  only_from: Optional[List[str]] = None, max_messages: int = 50, port: int = 993,
+                 channel: str = "Commercial / B2B", tags: Optional[List[str]] = None,
+                 skip_from: Optional[List[str]] = None,
                  connect: Optional[Callable[[], imaplib.IMAP4]] = None, store=None):
         if not (user and password):
             raise ValueError("email listener needs LEADS_IMAP_USER and LEADS_IMAP_PASSWORD")
@@ -81,15 +84,18 @@ class EmailListener:
         self.user, self.password = user, password
         self.folder = folder
         self.only_from = [x.lower() for x in (only_from or [])]
+        self.skip_from = [x.lower() for x in (skip_from or [])]
         self.max_messages = max_messages
         self.connect = connect or (lambda: imaplib.IMAP4_SSL(self.host, self.port))
         self.store = store  # SeenStore, for the UID cursor; optional
+        self.channel = channel
+        self.tags = tags or ["email"]
 
     def allowed(self, message: EmailMessage) -> bool:
-        if not self.only_from:
-            return True
         sender = parseaddr(message.get("From", ""))[1].lower()
-        return any(rule in sender for rule in self.only_from)
+        if any(rule in sender for rule in self.skip_from):
+            return False
+        return not self.only_from or any(rule in sender for rule in self.only_from)
 
     def listen(self) -> Iterator[Lead]:
         imap = self.connect()
@@ -110,7 +116,7 @@ class EmailListener:
                 message = email.message_from_bytes(raw, policy=email.policy.default)
                 newest = max(newest, int(uid))
                 if self.allowed(message):
-                    yield to_lead(message, self.name, uid.decode())
+                    yield to_lead(message, self.name, uid.decode(), self.channel, self.tags)
             if self.store and newest > last:
                 self.store.set_cursor(self.name, str(newest))
         finally:

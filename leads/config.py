@@ -58,7 +58,9 @@ def build_listener(spec: Dict[str, Any], store: SeenStore, fetcher: Optional[Fet
         return EmailListener(
             name, spec.get("host", "imap.gmail.com"), spec.get("user", ""), spec.get("password", ""),
             folder=spec.get("folder", "INBOX"), only_from=spec.get("only_from"),
-            max_messages=int(spec.get("max_messages", 50)), port=int(spec.get("port", 993)), store=store)
+            max_messages=int(spec.get("max_messages", 50)), port=int(spec.get("port", 993)), store=store,
+            channel=spec.get("channel", "Commercial / B2B"), tags=spec.get("tags"),
+            skip_from=spec.get("skip_from"))
     if kind == "feed":
         return FeedListener.from_config(name, spec, fetcher=fetcher)
     raise ValueError(f"unknown listener kind {kind!r} for {name}")

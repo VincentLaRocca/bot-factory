@@ -23,7 +23,7 @@ for a human to triage.
 
 1. `python -m leads sweep` pulls SAM.gov (NAICS 238320, SDVOSB/SB set-asides, VA-area place of performance), a mail folder, and configured Reddit/RSS feeds, then routes passing leads to the lead board.
 2. Re-running a sweep never duplicates a lead: not in the store, and not on the board.
-3. Social posts route only when the topic is in the title **and** there is buying intent.
+3. Social posts route only when the topic is in the title **and** there is buying intent. Reddit is human-first: Vinny posts, and replies to his posts route to the board.
 4. `POST /leads` (JSON) and `POST /sms` (Twilio) put an inbound lead on the board within seconds, and both require the token.
 5. HIGH/CRITICAL leads ping Slack; lower-urgency leads don't.
 6. A listener without credentials is skipped with a message; it doesn't crash the sweep. A single dead feed doesn't silence the others.
@@ -96,3 +96,4 @@ Conventions: pipeline/README.md. Station name on every entry; `[cross]` marks a 
 - 2026-09-27 · Claude Code · [architect] [5090]: Windows kit in `leads/deploy/5090/` (start, Cloudflare tunnel, autostart at login). The machine is Windows with cloudflared and Ollama already present. GitHub Actions now sweeps only the inbox and SAM; social feeds run on the 5090.
 - 2026-09-27 · Claude Code · [architect]: borrowed the Mid-Atlantic Lead Board as a second destination (`sinks.webhooks`, bearer + Idempotency-Key). Its exact payload shape is unconfirmed: sends lead-board field names by default. Check on the first real post.
 - 2026-09-27 · Claude Code · [architect]: morning digest (`python -m leads digest --send`, 7:48am ET in Actions). It reads the board, so it sees every sweeper. Tests 299 passed.
+- 2026-09-27 · Claude web · [cross]: Vinny: on Reddit, we rely on him as a redditor, posting and getting feedback. Reddit scraping parked (`social-*` disabled). New `reddit-replies` email listener routes Reddit reply/message notifications to the board. Chrome never posts on Reddit; it can summarize replies on his posts or draft posts for him.

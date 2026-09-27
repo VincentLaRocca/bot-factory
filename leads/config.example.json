@@ -51,6 +51,7 @@
       "password": "${LEADS_IMAP_PASSWORD}",
       "folder": "Leads",
       "only_from": [],
+      "skip_from": ["redditmail.com", "reddit.com"],
       "rules": {
         "require_any": ["paint", "quote", "estimate", "bid", "rfq", "rfp", "delivery", "courier", "pickup",
                         "haul", "move", "job", "project", "proposal", "invitation to bid"],
@@ -62,7 +63,8 @@
     {
       "name": "social-painting",
       "kind": "feed",
-      "enabled": true,
+      "enabled": false,
+      "_note": "Parked: on Reddit, Vinny posts as himself and leads come back as replies (see reddit-replies). Keep for Google Alerts / other RSS by moving URLs here and enabling.",
       "channel": "Local Community",
       "reddit": [
         { "subreddit": "rva",            "query": "painter OR painting OR \"paint my\"" },
@@ -84,7 +86,8 @@
     {
       "name": "social-courier",
       "kind": "feed",
-      "enabled": true,
+      "enabled": false,
+      "_note": "Parked, as above.",
       "channel": "Local Community",
       "reddit": [
         { "subreddit": "rva",      "query": "courier OR delivery OR \"pick up\" OR movers OR haul" },
@@ -99,6 +102,25 @@
         "boost": { "[hiring]": 20, "need": 10, "looking for": 15, "pay": 10, "paid": 10 },
         "exclude_any": ["[for hire]", "doordash", "uber eats", "instacart", "amazon flex"],
         "min_score": 35
+      }
+    },
+
+    {
+      "name": "reddit-replies",
+      "kind": "email",
+      "enabled": true,
+      "_note": "Reddit is human-first: Vinny posts, people reply. Turn on Reddit's email notifications for replies, comments, and chat/messages; a Gmail filter labels mail from redditmail.com as Leads.",
+      "host": "imap.gmail.com",
+      "user": "${LEADS_IMAP_USER}",
+      "password": "${LEADS_IMAP_PASSWORD}",
+      "folder": "Leads",
+      "only_from": ["redditmail.com", "reddit.com"],
+      "channel": "Local Community",
+      "tags": ["reddit", "reply"],
+      "rules": {
+        "exclude_any": ["upvoted", "trending", "top posts", "digest", "you have a new follower"],
+        "boost": { "quote": 15, "how much": 15, "interested": 15, "can you": 10, "dm": 10, "message you": 10, "available": 10 },
+        "min_score": 0
       }
     },
 

@@ -1,9 +1,9 @@
 # 5090 kit — run the lead system on your own machine
 
 The escalation path when the cloud hits a wall (`[5090]` in the pipeline).
-From this machine the Reddit feeds aren't throttled, the inbound listener is
-always on, and local models (Ollama) are there for when scoring moves past
-rules.
+From this machine the inbound listener is always on (for forms, texts, and
+Claude in Chrome), and local models (Ollama) are there for when scoring moves
+past rules.
 
 ## One-time setup (Windows, PowerShell)
 
@@ -40,6 +40,6 @@ rules.
 
 ## Which scheduler runs what
 
-Run the social feeds here. If the GitHub Actions sweep is also on, point it at
-`sam-painting` and `inbox` only, so the two don't both sweep Reddit. The board
-rejects repeats either way.
+GitHub Actions sweeps email, Reddit replies and SAM.gov, and sends the digest.
+This machine runs the inbound listener, plus any RSS feeds you turn on. If both
+end up sweeping the same listener, the board rejects the repeats.

@@ -19,10 +19,15 @@ people who posted.
 | Nextdoor (Vinny's neighborhoods and nearby) | same terms | behind login, no feed |
 | eVA (eva.virginia.gov), open solicitations | painting, coating, courier/delivery services | state bids; needs a session |
 | City/county procurement pages: Richmond, Henrico, Chesterfield, Norfolk, Virginia Beach, Chesapeake | open bids for painting and courier/delivery | inconsistent pages, few feeds |
-| Reddit (only when the feed listener is being throttled) | r/rva, r/norfolk, r/VirginiaBeach, r/HamptonRoads | residential browser isn't rate-limited |
 
 New good sources go in the Build Card's Log (`[cross]`) so they can become a
 feed listener, or stay on this list.
+
+**Reddit is Vinny's, not yours.** On Reddit, Vinny posts as himself and
+the leads come back as replies (the `reddit-replies` email listener catches
+them). Don't sweep Reddit. If Vinny asks, you may open his own posts and
+summarize the feedback in the comments, or draft a post for him to
+publish himself. Never post, comment or message on Reddit.
 
 ## What counts as a lead
 

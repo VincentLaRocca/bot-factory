@@ -8,10 +8,9 @@ name: Lead sweep
 #   SAM_API_KEY, LEADS_IMAP_USER, LEADS_IMAP_PASSWORD,
 #   LEAD_BOARD_API_URL, SLACK_WEBHOOK_URL, GOOGLE_ALERT_PAINTING_RSS (optional)
 #
-# Reddit throttles datacenter IPs (GitHub runners included), so the social
-# feeds run from the 5090 box (leads/deploy/5090). This workflow sweeps the
-# inbox every 30 min and SAM.gov twice a day. Run social feeds here manually
-# with workflow_dispatch → only: "social-painting social-courier".
+# This workflow sweeps the inbox and Reddit reply emails every 30 min, SAM.gov
+# twice a day, and posts the morning digest. Reddit itself is human-first
+# (Vinny posts, replies arrive by email); RSS feeds are parked by default.
 
 on:
   schedule:
@@ -63,7 +62,7 @@ jobs:
           elif [ "${{ github.event.schedule }}" = "15 11,19 * * *" ]; then
             echo "only=sam-painting" >> "$GITHUB_OUTPUT"
           else
-            echo "only=inbox" >> "$GITHUB_OUTPUT"
+            echo "only=inbox reddit-replies" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Sweep

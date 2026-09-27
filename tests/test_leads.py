@@ -347,8 +347,8 @@ def test_example_config_builds_and_skips_missing_keys(monkeypatch, tmp_path):
     monkeypatch.setenv("LEADS_WEBHOOK_TOKEN", "t")
     config = config_module.load(config_module.__file__.replace("config.py", "config.example.json"))
     system = config_module.build(config, store_path=str(tmp_path / "s.db"))
-    assert {n for n, _ in system.skipped} == {"sam-painting", "inbox"}
-    assert {x.name for x in system.listeners} == {"social-painting", "social-courier"}
+    assert {n for n, _ in system.skipped} == {"sam-painting", "inbox", "reddit-replies"}
+    assert system.listeners == []               # Reddit scraping is parked: Vinny posts, replies come by email
     assert system.webhook["token"] == "t"
     assert [s.name for s in system.pipeline.sinks] == ["ledger"]    # no board/slack without URLs
 
@@ -429,3 +429,21 @@ def test_digest_reads_board_and_ranks():
     text = digest.render(picked, 24, "https://board.view")
     assert "<https://sam.gov/x|Hot job>" in text and text.endswith("https://board.view")
     assert "nothing new" in digest.render([], 24)
+
+
+def test_reddit_replies_route_by_sender_and_channel():
+    reply = EmailMessage()
+    reply["From"] = "Reddit <noreply@redditmail.com>"
+    reply["Subject"] = "u/rva_homeowner replied to your post in r/rva"
+    reply["Message-ID"] = "<r1@reddit>"
+    reply.set_content("Are you available next week? Can you give me a quote for two rooms?")
+    imap = FakeImap({3: bytes(reply), 4: bytes(make_email())})
+    replies = email_listener.EmailListener("reddit-replies", "imap", "u", "p", connect=lambda: imap,
+                                           only_from=["redditmail.com"], channel="Local Community",
+                                           tags=["reddit", "reply"])
+    found = list(replies.listen())
+    assert [x.title for x in found] == ["u/rva_homeowner replied to your post in r/rva"]
+    assert found[0].channel == "Local Community" and found[0].tags == ["reddit", "reply"]
+    inbox = email_listener.EmailListener("inbox", "imap", "u", "p", connect=lambda: FakeImap({3: bytes(reply), 4: bytes(make_email())}),
+                                         skip_from=["redditmail.com"])
+    assert [x.title for x in inbox.listen()] == ["RFQ: exterior painting, Chesapeake warehouse"]
