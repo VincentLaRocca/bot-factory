@@ -26,6 +26,8 @@ packages = [
     "aiop",
     "capabilities",
     "capabilities.anomaly",
+    "leads",
+    "leads.listeners",
     "observer",
     "profiles",
     "reasoning",
@@ -33,6 +35,7 @@ packages = [
 ]
 
 [tool.setuptools.package-data]
+leads = ["config.example.json"]
 aiop = ["context.jsonld"]
 profiles = ["context.jsonld", "asymmetry-context.jsonld", "observer-context.jsonld"]
 store = ["context.jsonld"]

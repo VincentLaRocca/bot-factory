@@ -1,0 +1,108 @@
+{
+  "_readme": "Copy to leads.config.json (repo root) and edit. ${VARS} come from the environment / GitHub Secrets. Set enabled:false to park a listener.",
+  "store": "var/leads.db",
+  "ledger": "var/leads.jsonl",
+
+  "sinks": {
+    "lead_board": { "url": "${LEAD_BOARD_API_URL}" },
+    "slack": { "url": "${SLACK_WEBHOOK_URL}", "min_urgency": "HIGH" }
+  },
+
+  "rules": {
+    "exclude_any": ["[for hire]", "for hire]", "looking for work", "resume", "mlm", "crypto giveaway"],
+    "geo_any": ["virginia", ", va", " va ", "richmond", "rva", "norfolk", "virginia beach", "chesapeake",
+                "hampton roads", "newport news", "henrico", "chesterfield", "midlothian", "petersburg",
+                "williamsburg", "suffolk", "portsmouth", "mid-atlantic", "maryland", "north carolina", "dc"],
+    "geo_points": 15,
+    "urgent_any": ["asap", "urgent", "emergency", "same day", "same-day", "today", "tonight", "rush", "hot shot", "hotshot"],
+    "min_score": 30
+  },
+
+  "listeners": [
+    {
+      "name": "sam-painting",
+      "kind": "sam",
+      "enabled": true,
+      "api_key": "${SAM_API_KEY}",
+      "naics": ["238320"],
+      "set_asides": ["SDVOSBC", "SDVOSBS", "SBA"],
+      "states": ["VA", "MD", "NC", "DC"],
+      "lookback_days": 3,
+      "min_interval_minutes": 480,
+      "rules": {
+        "require_any": [],
+        "boost": { "sdvosb": 30, "service-disabled": 30, "total small business": 10, "solicitation": 10,
+                   "combined synopsis": 10, "sources sought": 5, "painting": 10, "coating": 5 },
+        "min_score": 20
+      }
+    },
+
+    {
+      "name": "inbox",
+      "kind": "email",
+      "enabled": true,
+      "host": "imap.gmail.com",
+      "user": "${LEADS_IMAP_USER}",
+      "password": "${LEADS_IMAP_PASSWORD}",
+      "folder": "Leads",
+      "only_from": [],
+      "rules": {
+        "require_any": ["paint", "quote", "estimate", "bid", "rfq", "rfp", "delivery", "courier", "pickup",
+                        "haul", "move", "job", "project", "proposal", "invitation to bid"],
+        "boost": { "rfq": 15, "rfp": 15, "invitation to bid": 20, "quote": 10, "estimate": 10, "sdvosb": 20 },
+        "min_score": 30
+      }
+    },
+
+    {
+      "name": "social-painting",
+      "kind": "feed",
+      "enabled": true,
+      "channel": "Local Community",
+      "reddit": [
+        { "subreddit": "rva",            "query": "painter OR painting OR \"paint my\"" },
+        { "subreddit": "norfolk",        "query": "painter OR painting" },
+        { "subreddit": "VirginiaBeach",  "query": "painter OR painting" },
+        { "subreddit": "HamptonRoads",   "query": "painter OR painting" }
+      ],
+      "urls": ["${GOOGLE_ALERT_PAINTING_RSS:-}"],
+      "rules": {
+        "require_title_any": ["painter", "painting", "paint ", "painted", "repaint"],
+        "intent_any": ["looking for", "need a", "need someone", "recommend", "recommendation", "anyone know",
+                       "iso ", "in search of", "quote", "hire", "hiring", "who do you use", "suggestions"],
+        "boost": { "recommend": 10, "looking for": 15, "need a": 15, "quote": 10, "hire": 10, "anyone know": 5 },
+        "exclude_any": ["[for hire]", "art class", "paint night", "painting class", "car paint", "paintball"],
+        "min_score": 35
+      }
+    },
+
+    {
+      "name": "social-courier",
+      "kind": "feed",
+      "enabled": true,
+      "channel": "Local Community",
+      "reddit": [
+        { "subreddit": "rva",      "query": "courier OR delivery OR \"pick up\" OR movers OR haul" },
+        { "subreddit": "norfolk",  "query": "courier OR delivery OR movers OR haul" },
+        { "subreddit": "forhire",  "query": "courier OR delivery Virginia" }
+      ],
+      "rules": {
+        "require_title_any": ["courier", "deliver", "delivery", "pick up", "pickup", "haul", "movers",
+                              "moving help", "transport", "hot shot", "hotshot"],
+        "intent_any": ["looking for", "need a", "need someone", "need help", "recommend", "anyone know",
+                       "iso ", "in search of", "[hiring]", "hiring", "will pay", "paying", "who do you use"],
+        "boost": { "[hiring]": 20, "need": 10, "looking for": 15, "pay": 10, "paid": 10 },
+        "exclude_any": ["[for hire]", "doordash", "uber eats", "instacart", "amazon flex"],
+        "min_score": 35
+      }
+    },
+
+    {
+      "name": "inbound",
+      "kind": "webhook",
+      "enabled": true,
+      "token": "${LEADS_WEBHOOK_TOKEN}",
+      "rules": { "min_score": 0 }
+    }
+  ]
+}

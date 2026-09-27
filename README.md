@@ -43,6 +43,8 @@ observer/     the motherboard — identity, capability registry, missions,
               authority, invocation and execution records; no domain anywhere
 capabilities/ interchangeable plug-ins — anomaly/ detects, research/
               investigates what anomaly/ produced
+leads/        the lead system — bid, email, social and inbound listeners
+              into one dedupe/score/route pipeline (docs/LEADS.md)
 agents/       the Asymmetry Analyst, built on the layers below
 profiles/     domain layer — the demo, asymmetry, observer and research
               profiles, their views, calculation schemas and formulas, and

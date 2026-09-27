@@ -130,7 +130,7 @@ const intake = post({
   window_deadline: "Pickup by 12:40 PM"
 });
 assert.strictEqual(intake.status, "SUCCESS");
-assert.strictEqual(intake.row.length, 15);
+assert.strictEqual(intake.row.length, 18);
 assert.strictEqual(intake.row[10], 4.17);
 
 const board = JSON.parse(context.doGet({parameter: {}}).getContent());
@@ -146,10 +146,31 @@ assert.deepStrictEqual(accepted, {
   triage_status: "ACCEPTED"
 });
 
+const listenerLead = {
+  lead_id: "LD-SAMPAI-ABC123", listener_channel: "Open Boards", source_medium: "Board Scraping",
+  cargo_summary: "Interior painting, VA Medical Center", detail_url: "https://sam.gov/opp/abc/view",
+  lead_score: 85, source_system: "sam-painting", urgency_level: "HIGH"
+};
+const first = post(listenerLead);
+assert.strictEqual(first.status, "SUCCESS");
+assert.strictEqual(first.row[15], "https://sam.gov/opp/abc/view");
+assert.strictEqual(first.row[16], 85);
+const again = post(listenerLead);
+assert.deepStrictEqual(again, {status: "DUPLICATE", lead_id: "LD-SAMPAI-ABC123"});
+const unsafe = post({cargo_summary: "x", detail_url: "javascript:alert(1)"});
+assert.strictEqual(unsafe.row[15], "");
+
+const oldSheet = spreadsheet.getSheetByName("LiveQueue");
+oldSheet.rows[0].length = 15;  // simulate a sheet created before the new columns
+context.doGet({parameter: {}});
+assert.strictEqual(oldSheet.rows[0][17], "source_system");
+
 const missing = post({action: "triage", lead_id: "LD-missing", triage_action: "ACCEPT"});
 assert.deepStrictEqual(missing, {status: "ERROR", message: "lead not found"});
 
-console.log("PASS intake: 15 columns, computed rate 4.17");
+console.log("PASS intake: 18 columns, computed rate 4.17");
+console.log("PASS listener lead: link + score stored, resend is DUPLICATE, unsafe link dropped");
+console.log("PASS header migration: old sheets gain the new columns");
 console.log("PASS doGet: returned the intake lead");
 console.log("PASS triage ACCEPT: status changed to ACCEPTED");
 console.log("PASS unknown lead: returned lead not found");

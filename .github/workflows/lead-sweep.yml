@@ -1,0 +1,87 @@
+name: Lead sweep
+
+# Runs the pull listeners on a schedule and routes new leads to the lead board
+# and Slack. Listeners whose secrets are missing are skipped, not failed, so
+# this is safe to merge before every key exists.
+#
+# Secrets (Settings → Secrets and variables → Actions):
+#   SAM_API_KEY, LEADS_IMAP_USER, LEADS_IMAP_PASSWORD,
+#   LEAD_BOARD_API_URL, SLACK_WEBHOOK_URL, GOOGLE_ALERT_PAINTING_RSS (optional)
+#
+# Reddit throttles datacenter IPs (GitHub runners included), so the social
+# feeds are best run from the always-on box — see docs/LEADS.md. They are
+# still attempted here; a 429 is logged and the rest of the sweep continues.
+
+on:
+  schedule:
+    - cron: "7,37 11-23 * * *"   # every 30 min, 7am–7pm ET: email + feeds
+    - cron: "15 11,19 * * *"     # twice a day: SAM.gov (small daily API quota)
+  workflow_dispatch:
+    inputs:
+      only:
+        description: "Listener names, space-separated (blank = all)"
+        required: false
+        default: ""
+      dry_run:
+        description: "Score and log only; send nothing"
+        type: boolean
+        default: false
+
+concurrency:
+  group: lead-sweep
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # The seen-store is what makes every sweep "new leads only". Each run
+      # saves a fresh cache entry and restores the most recent one.
+      - name: Restore seen-store
+        uses: actions/cache/restore@v4
+        with:
+          path: var
+          key: leads-store-${{ github.run_id }}
+          restore-keys: leads-store-
+
+      - name: Pick listeners
+        id: pick
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "only=${{ inputs.only }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event.schedule }}" = "15 11,19 * * *" ]; then
+            echo "only=sam-painting" >> "$GITHUB_OUTPUT"
+          else
+            echo "only=inbox social-painting social-courier" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Sweep
+        env:
+          SAM_API_KEY: ${{ secrets.SAM_API_KEY }}
+          LEADS_IMAP_USER: ${{ secrets.LEADS_IMAP_USER }}
+          LEADS_IMAP_PASSWORD: ${{ secrets.LEADS_IMAP_PASSWORD }}
+          LEAD_BOARD_API_URL: ${{ secrets.LEAD_BOARD_API_URL }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          GOOGLE_ALERT_PAINTING_RSS: ${{ secrets.GOOGLE_ALERT_PAINTING_RSS }}
+        run: |
+          CONFIG=leads.config.json
+          [ -f "$CONFIG" ] || CONFIG=leads/config.example.json
+          ARGS=""
+          [ -n "${{ steps.pick.outputs.only }}" ] && ARGS="--only ${{ steps.pick.outputs.only }}"
+          [ "${{ inputs.dry_run }}" = "true" ] && ARGS="$ARGS --dry-run"
+          python -m leads --config "$CONFIG" check
+          python -m leads --config "$CONFIG" sweep $ARGS
+
+      - name: Save seen-store
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: var
+          key: leads-store-${{ github.run_id }}
