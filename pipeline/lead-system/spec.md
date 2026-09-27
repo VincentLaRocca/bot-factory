@@ -91,3 +91,4 @@ Conventions: pipeline/README.md. Station name on every entry; `[cross]` marks a 
 - 2026-09-27 · Claude web · [cross]: Desktop also holds the sessions with Vinny and brings the different lenses that pull reality into focus. For this card: are the routed leads ones Vinny would actually chase?
 - 2026-09-27 · Claude web · Session 1: First session of the pipeline, with Vinny. Set the roles and the loose rules (pipeline/README.md), and took the lead system from idea to PR #10. Next: judge verdict (fresh Claude Code session, Grok optional), then desktop's reality check with Vinny.
 - 2026-09-27 · Claude web · [cross]: Vinny: borrow from our own work, ask Gemini for theirs, and bring Grok in to assist. Borrow list added.
+- 2026-09-27 · Claude web · [5090]: Reddit feeds returned 429 from cloud IPs. Escalated: run `social-*` listeners on the 5090 box (`python -m leads loop --every 1800 --serve`, Cloudflare Tunnel for `/leads`).

@@ -45,6 +45,18 @@ desktop flags it with its lens, logged as `[cross]`.
 side of the work, and Grok for help. Reuse or adapt beats a rewrite. The card
 lists what was borrowed and from where.
 
+**Roadblock → take it to the 5090 level.** When a cloud surface hits a wall
+(a rate limit, a blocked site, a sandbox that can't reach something, API
+costs or quotas, a model that won't run small enough), escalate to Vinny's
+5090 machine instead of working around it or shrinking the idea: a residential
+IP, full local compute, local models, his real files and apps. Log the
+escalation as `[5090]` in the card with what hit the wall and what moved.
+Examples from Session 1:
+
+- Reddit throttles cloud IPs (HTTP 429) → the social feeds run from the 5090 box
+- LLM scoring (v1) → a local model on the 5090 instead of paid API calls
+- Anything needing a long-running process or GPU → the 5090, exposed with a Cloudflare Tunnel
+
 What stays fixed:
 
 - **Vinny's gates:** greenlight before building, merge before it goes live.
