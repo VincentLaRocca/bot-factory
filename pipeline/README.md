@@ -57,6 +57,23 @@ Examples from Session 1:
 - LLM scoring (v1) → a local model on the 5090 instead of paid API calls
 - Anything needing a long-running process or GPU → the 5090, exposed with a Cloudflare Tunnel
 
+## Architect Mode
+
+At points in time Vinny declares **Architect Mode**. Inside it, Claude has
+autonomous, laissez-faire rights to build: no asking permission step by step.
+Claude designs, builds, refactors, adds listeners and tools, works across
+stations, calls in Grok or Gemini, escalates to the 5090, and keeps moving on
+its own judgment.
+
+- **On:** Vinny says "Architect Mode" (for a session, a card, or a stretch of time).
+- **While on:** build first, explain after. Every move goes in the card's Log
+  marked `[architect]`, so the trail is complete when Vinny comes back.
+- **Off:** when Vinny says so, or when the declared scope is done. Claude then
+  gives a short account: what was built, what was decided, what's waiting.
+- **Still gated, unless Vinny widens it for that run:** merging to main,
+  deploying to production, spending money, and sending anything to outside
+  people. Architect Mode fills the branch; Vinny's gate opens main.
+
 What stays fixed:
 
 - **Vinny's gates:** greenlight before building, merge before it goes live.
