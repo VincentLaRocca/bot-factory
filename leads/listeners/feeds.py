@@ -39,6 +39,13 @@ def reddit_url(subreddit: str, query: str = "", sort: str = "new") -> str:
     return f"https://www.reddit.com/r/{sub}/{sort}/.rss"
 
 
+def google_news_url(query: str, days: int = 7) -> str:
+    """Google News search as RSS: the same keyword-pair searches Vinny runs by hand."""
+    q = f"{query} when:{days}d" if days else query
+    return "https://news.google.com/rss/search?" + urllib.parse.urlencode(
+        {"q": q, "hl": "en-US", "gl": "US", "ceid": "US:en"})
+
+
 def _text(node: Optional[ET.Element]) -> str:
     return (node.text or "").strip() if node is not None else ""
 
@@ -87,7 +94,7 @@ class FeedListener:
 
     def __init__(self, name: str, urls: List[str], channel: str = "Local Community",
                  location: str = "", tags: Optional[List[str]] = None, max_items: int = 50,
-                 fetcher: Optional[Fetch] = None, pause: float = 2.0):
+                 fetcher: Optional[Fetch] = None, pause: float = 2.0, decipher: bool = False):
         self.name = name
         self.urls = urls
         self.channel = channel
@@ -97,6 +104,7 @@ class FeedListener:
         self.fetch = fetcher or default_fetch
         self.pause = pause if fetcher is None else 0.0
         self.errors: List[str] = []
+        self.decipher = decipher
 
     @classmethod
     def from_config(cls, name: str, config: Dict, fetcher: Optional[Fetch] = None) -> "FeedListener":
@@ -104,9 +112,12 @@ class FeedListener:
         for spec in config.get("reddit", []) if isinstance(config.get("reddit"), list) else \
                 ([config["reddit"]] if config.get("reddit") else []):
             urls.append(reddit_url(spec["subreddit"], spec.get("query", ""), spec.get("sort", "new")))
+        for query in config.get("google_news", []):
+            urls.append(google_news_url(query, int(config.get("news_days", 7))))
         return cls(name, urls, channel=config.get("channel", "Local Community"),
                    location=config.get("location", ""), tags=config.get("tags"),
-                   max_items=int(config.get("max_items", 50)), fetcher=fetcher)
+                   max_items=int(config.get("max_items", 50)), fetcher=fetcher,
+                   decipher=bool(config.get("decipher", bool(config.get("google_news")))))
 
     def listen(self) -> Iterator[Lead]:
         self.errors = []
@@ -124,16 +135,26 @@ class FeedListener:
             host = urllib.parse.urlparse(url).netloc.replace("www.", "")
             for item in items[: self.max_items]:
                 body = html_to_text(item["summary"])
+                found = {}
+                title = item["title"]
+                if "news.google.com" in url:  # Google News titles end in " - Publisher"; keep the story, note the source
+                    title, _, publisher = title.rpartition(" - ") if " - " in title else (title, "", "")
+                    item = {**item, "author": item["author"] or publisher}
+                if self.decipher:  # read the clip like a human would: who, where, how much, by when
+                    from ..decipher import by_rules
+                    found = by_rules(title + ". " + body)
                 yield Lead(
                     source=self.name,
                     external_id=item["id"] or item["link"] or item["title"],
-                    title=clean(item["title"], 200),
+                    title=clean(title, 200),
                     channel=self.channel,
                     medium="Board Scraping",
                     body=clean(body, 2000),
                     url=item["link"],
-                    contact=clean(" · ".join(x for x in (item["author"], host) if x)),
-                    location=self.location,
+                    contact=clean(" · ".join(x for x in (found.get("contact"), item["author"], host) if x)),
+                    location=found.get("location") or self.location,
+                    value=float(found.get("value") or 0),
+                    deadline=found.get("deadline", ""),
                     posted_at=item["published"],
                     tags=list(self.tags) + [host],
                     raw={"feed": url.split("?")[0]},

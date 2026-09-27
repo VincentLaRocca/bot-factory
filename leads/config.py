@@ -68,7 +68,7 @@ def build_listener(spec: Dict[str, Any], store: SeenStore, fetcher: Optional[Fet
             folder=spec.get("folder", "INBOX"), only_from=spec.get("only_from"),
             max_messages=int(spec.get("max_messages", 50)), port=int(spec.get("port", 993)), store=store,
             channel=spec.get("channel", "Commercial / B2B"), tags=spec.get("tags"),
-            skip_from=spec.get("skip_from"), spot=spec.get("spot"))
+            skip_from=spec.get("skip_from"), spot=spec.get("spot"), decipher=bool(spec.get("decipher", False)))
     if kind == "ebay":
         return EbayHuntListener(
             name, spec.get("client_id", ""), spec.get("client_secret", ""), spec.get("queries", []),

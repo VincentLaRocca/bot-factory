@@ -27,6 +27,7 @@ PLACES = ["Richmond", "Midlothian", "Glen Allen", "Mechanicsville", "Petersburg"
           "Chesapeake", "Portsmouth", "Suffolk", "Hampton", "Newport News", "Yorktown", "Smithfield",
           "Fredericksburg", "Charlottesville", "Alexandria", "Arlington", "Fairfax", "Quantico", "Lynchburg",
           "Roanoke", "Henrico", "Chesterfield", "Hampton Roads", "Baltimore", "Annapolis", "Raleigh", "Durham", "Washington, DC"]
+REGIONS = {"Henrico", "Chesterfield", "Hampton Roads"}
 _PHONE = re.compile(r"(?:\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}")
 _EMAIL = re.compile(r"[\w.+-]+@[\w-]+\.[\w.-]+")
 _MONEY = re.compile(r"\$\s?\d[\d,]*(?:\.\d{2})?(?:\s?(?:k|m|million|thousand))?", re.I)
@@ -63,7 +64,9 @@ def by_rules(clip: str) -> Dict:
     email = _EMAIL.search(text)
     contact = " · ".join(x for x in (name.group(1) if name else "", email.group(0) if email else "",
                                       phone.group(0) if phone else "") if x)
-    place = next((p for p in PLACES if re.search(r"\b" + re.escape(p) + r"\b", text, re.I)), "")
+    hits = [(m.start(), p) for p in PLACES for m in [re.search(r"\b" + re.escape(p) + r"\b", text, re.I)] if m]
+    towns = [h for h in hits if h[1] not in REGIONS]
+    place = min(towns or hits)[1] if hits else ""   # the first town mentioned; counties/regions only as a fallback
     state = re.search(r",\s*(VA|MD|NC|DC|Virginia|Maryland|North Carolina)\b", text)
     location = place + (f", {state.group(1)}" if place and state else ", VA" if place and place not in ("Baltimore", "Annapolis", "Raleigh", "Durham", "Washington, DC") else "")
     deadline = _DATE.search(text)

@@ -62,7 +62,7 @@ jobs:
           elif [ "${{ github.event.schedule }}" = "15 11,19 * * *" ]; then
             echo "only=sam-painting" >> "$GITHUB_OUTPUT"
           else
-            echo "only=inbox reddit-replies x-replies" >> "$GITHUB_OUTPUT"
+            echo "only=inbox reddit-replies x-replies news-distributors" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Sweep

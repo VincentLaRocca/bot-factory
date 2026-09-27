@@ -347,8 +347,9 @@ def test_example_config_builds_and_skips_missing_keys(monkeypatch, tmp_path):
     monkeypatch.setenv("LEADS_WEBHOOK_TOKEN", "t")
     config = config_module.load(config_module.__file__.replace("config.py", "config.example.json"))
     system = config_module.build(config, store_path=str(tmp_path / "s.db"))
-    assert {n for n, _ in system.skipped} == {"sam-painting", "inbox", "reddit-replies", "x-replies"}
-    assert system.listeners == []               # Reddit scraping is parked: Vinny posts, replies come by email
+    assert {n for n, _ in system.skipped} == {"sam-painting", "inbox", "google-alerts", "reddit-replies", "x-replies"}
+    assert [x.name for x in system.listeners] == ["news-distributors"]   # Reddit scraping parked; news runs keyless
+    assert "google-alerts" in {n for n, _ in system.skipped}
     assert system.webhook["token"] == "t"
     assert [s.name for s in system.pipeline.sinks] == ["ledger"]    # no board/slack without URLs
 
@@ -629,7 +630,7 @@ def test_ebay_needs_keys_and_hunt_config_loads(monkeypatch, tmp_path):
     monkeypatch.setenv("EBAY_CLIENT_SECRET", "b")
     config = config_module.load(config_module.__file__.replace("config.py", "hunts.example.json"))
     system = config_module.build(config, store_path=str(tmp_path / "h.db"))
-    assert {x.name for x in system.listeners} == {"ebay-jewelry", "ebay-metals", "ebay-gems", "ebay-refurb", "gsa-auctions"}
+    assert {x.name for x in system.listeners} == {"ebay-jewelry", "ebay-metals", "ebay-gems", "ebay-refurb", "gsa-auctions", "estate-news"}
     assert "estate-mail" in {n for n, _ in system.skipped}      # needs the inbox login
 
 
@@ -924,3 +925,35 @@ def test_paste_a_clip_through_the_listener(live_server):
     assert sink.sent[-1].location == "Glen Allen, VA" and sink.sent[-1].value == 45000.0
     with urllib.request.urlopen(base + "/intake?token=s3cret", timeout=5) as reply:
         assert "Decipher &amp; send" in reply.read().decode()
+
+
+def test_google_news_keyword_pairs_become_deciphered_leads():
+    from leads.listeners.feeds import google_news_url
+    url = google_news_url('"Richmond" distributors')
+    assert url.startswith("https://news.google.com/rss/search?q=%22Richmond%22+distributors+when%3A7d")
+    rss = """<rss version="2.0"><channel><item>
+      <title>Acme Foodservice Distributors opens new Chesterfield distribution center - Richmond Times-Dispatch</title>
+      <link>https://news.example.com/acme</link><guid>g1</guid>
+      <description>The $30 million, 200,000-square-foot facility in Chesterfield will add 120 jobs. Contact Dana Reid, dreid@acme.com.</description>
+      <pubDate>Fri, 25 Sep 2026 10:00:00 GMT</pubDate></item></channel></rss>"""
+    listener = FeedListener.from_config("news-distributors", {"google_news": ['"Richmond" distributors'],
+                                                              "channel": "Commercial / B2B"}, fetcher=FakeWeb({"https://news.google.com": rss}))
+    story = next(listener.listen())
+    assert story.location == "Chesterfield, VA" and story.value == 30_000_000.0
+    assert "Dana Reid" in story.contact and story.channel == "Commercial / B2B"
+    rules = RuleSet.from_config({"require_any": ["distribution"], "boost": {"opens": 15, "distribution center": 15,
+                                                                            "chesterfield": 10}, "min_score": 35})
+    assert Pipeline(SeenStore(), rules, []).process([story]).routed
+
+
+def test_google_alert_emails_are_deciphered():
+    alert = EmailMessage()
+    alert["From"] = "Google Alerts <googlealerts-noreply@google.com>"
+    alert["Subject"] = "Google Alert - \"Richmond\" distributors"
+    alert["Message-ID"] = "<ga1@google>"
+    alert.set_content("Beacon Supply Distributors opens Midlothian warehouse, $12 million, bids due Oct 30. https://news.example/beacon")
+    listener = email_listener.EmailListener("google-alerts", "imap", "u", "p", connect=lambda: FakeImap({4: bytes(alert)}),
+                                            only_from=["googlealerts-noreply@google.com"], decipher=True)
+    found = next(listener.listen())
+    assert found.location == "Midlothian, VA" and found.value == 12_000_000.0
+    assert "Oct 30" in found.deadline and found.url == "https://news.example/beacon"

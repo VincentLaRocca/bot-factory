@@ -75,7 +75,7 @@ class EmailListener:
     def __init__(self, name: str, host: str, user: str, password: str, folder: str = "INBOX",
                  only_from: Optional[List[str]] = None, max_messages: int = 50, port: int = 993,
                  channel: str = "Commercial / B2B", tags: Optional[List[str]] = None,
-                 skip_from: Optional[List[str]] = None, spot: Optional[dict] = None,
+                 skip_from: Optional[List[str]] = None, spot: Optional[dict] = None, decipher: bool = False,
                  connect: Optional[Callable[[], imaplib.IMAP4]] = None, store=None):
         if not (user and password):
             raise ValueError("email listener needs LEADS_IMAP_USER and LEADS_IMAP_PASSWORD")
@@ -86,6 +86,7 @@ class EmailListener:
         self.only_from = [x.lower() for x in (only_from or [])]
         self.skip_from = [x.lower() for x in (skip_from or [])]
         self.spot = {k: float(v) for k, v in (spot or {}).items() if str(v).strip()}
+        self.decipher = decipher
         self.max_messages = max_messages
         self.connect = connect or (lambda: imaplib.IMAP4_SSL(self.host, self.port))
         self.store = store  # SeenStore, for the UID cursor; optional
@@ -118,6 +119,13 @@ class EmailListener:
                 newest = max(newest, int(uid))
                 if self.allowed(message):
                     found = to_lead(message, self.name, uid.decode(), self.channel, self.tags)
+                    if self.decipher:  # alerts/newsletters: read who, where, how much from the text
+                        from ..decipher import by_rules
+                        read = by_rules(found.body + ". " + found.title)  # body first: alert subjects just echo the search terms
+                        found.location = found.location or read["location"]
+                        found.value = found.value or float(read["value"] or 0)
+                        found.deadline = found.deadline or read["deadline"]
+                        found.url = found.url or read["url"]
                     if self.spot:  # estate/auction mail: read metal content from subject + body
                         from ..valuation import metal_bonus
                         found.bonus, facts = metal_bonus(found.title + " " + found.body, 0, self.spot)

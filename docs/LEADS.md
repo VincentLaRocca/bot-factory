@@ -95,6 +95,13 @@ local subs, technical groups, the groups we own. The thread listener reads
 what comes back. Claude can help draft; Vinny edits, owns and posts. Follow
 each subreddit's rules on self-promotion and AI-assisted posts.
 
+**Keyword-pair news searches.** `news-distributors` runs Vinny's hand searches
+("Richmond" distributors, "Virginia" distributors, distribution center,
+warehouse opening…) as Google News RSS every sweep, and deciphers each story.
+The same pairs can be **Google Alerts in the Human Network (HMTCHS) account**,
+delivered to its inbox. The `google-alerts` listener reads and deciphers those
+(Gmail filter: from `googlealerts-noreply@google.com` → Leads).
+
 **Paste a clip, get a lead.** Same move as the ChatGPT RSS-leads window: paste a
 news clip, email, post or bid notice into the **Paste a clip** box on
 `/intake?token=…`, or send `{"clip": "..."}` to `/leads`, and `leads/decipher.py`

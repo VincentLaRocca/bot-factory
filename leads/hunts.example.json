@@ -266,7 +266,7 @@
       "name": "estate-mail",
       "kind": "email",
       "enabled": true,
-      "_note": "Estate sale & auction alerts (EstateSales.NET, HiBid, AuctionZip, local auction houses) sent to the Human Network inbox and labeled 'Estate' by a Gmail filter. The email listener is unchanged; only its folder and rules differ.",
+      "_note": "Estate sale & auction alerts (EstateSales.NET, HiBid, AuctionZip, local auction houses) sent to the Human Network inbox and labeled 'Estate' by a Gmail filter. The email listener is unchanged; only its folder and rules differ. Also takes Google Alerts from the HMTCHS account ('Richmond estate sale', 'Henrico estate auction', \u2026) when labeled Estate.",
       "host": "imap.gmail.com",
       "user": "${LEADS_IMAP_USER}",
       "password": "${LEADS_IMAP_PASSWORD}",
@@ -329,7 +329,9 @@
           "williamsburg": 10
         },
         "min_score": 35
-      }
+      },
+      "only_from": [],
+      "decipher": true
     },
     {
       "name": "gsa-auctions",
@@ -488,6 +490,69 @@
           "empty case"
         ],
         "min_score": 45
+      }
+    },
+    {
+      "name": "estate-news",
+      "kind": "feed",
+      "enabled": true,
+      "_note": "Richmond-area estate sale & estate auction searches (Google News RSS, last 7 days, deciphered). The same searches can be Google Alerts in the HMTCHS account; those arrive via estate-mail. News is a thin source for estate sales. The estate-sale sites' own email alerts (estate-mail) are the main feed; this only catches notable auctions.",
+      "channel": "Local Community",
+      "tags": [
+        "estate",
+        "news"
+      ],
+      "google_news": [
+        "\"Richmond\" estate sale",
+        "\"Richmond\" estate auction",
+        "Henrico estate sale",
+        "Chesterfield estate sale",
+        "\"Hampton Roads\" estate sale",
+        "Virginia estate auction jewelry coins"
+      ],
+      "news_days": 7,
+      "max_items": 30,
+      "min_interval_minutes": 120,
+      "rules": {
+        "require_title_any": [
+          "estate sale",
+          "estate sales",
+          "estate auction",
+          "auction",
+          "liquidation",
+          "collection"
+        ],
+        "exclude_any": [
+          "real estate",
+          "richmond, ca",
+          "california",
+          "obituary",
+          "crore",
+          "lakh",
+          "india",
+          "hyderabad",
+          "england",
+          "uk"
+        ],
+        "boost": {
+          "sterling": 10,
+          "silver": 10,
+          "gold": 10,
+          "14k": 10,
+          "10k": 10,
+          "18k": 10,
+          "jewelry": 10,
+          "coins": 10,
+          "coin": 10,
+          "diamond": 10,
+          "estate jewelry": 10,
+          "bullion": 10,
+          "richmond": 10,
+          "henrico": 10,
+          "chesterfield": 10,
+          "hampton roads": 5
+        },
+        "min_score": 40
       }
     }
   ]
