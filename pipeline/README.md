@@ -6,7 +6,7 @@ Several Claudes, one repo, Vinny at the gates.
 | --- | --- | --- |
 | **Idea Forge** | Claude web | research, framing, drafting the Build Card |
 | **Listener / internet worker** | Claude in Chrome | works the internet layer in Vinny's real browser: watches sites, reads what has no feed or API, fills forms, and hands findings to the factory (e.g. `POST /leads`) |
-| **Desktop hand** | Claude desktop | desktop duties: local files, apps, the 5090, running and testing things on Vinny's machine |
+| **Desktop: sessions and reality lens** | Claude desktop | holds the working sessions with Vinny. Brings the different lenses that pull reality into focus: does this match the real world, the real market, what Vinny actually meant? Also handles desktop duties: local files, apps, the 5090, running and testing things on Vinny's machine |
 | **Judge** | Claude Code | the factory's judge: checks work against the Build Card's "Done means", runs the tests, rules pass / rework, and builds or fixes code when that's the fastest route |
 | **Second opinion** | Grok (sometimes) | called in when an outside read helps, such as a Breaker pass on a Maker's work or a tie-break between Claudes. Its reading is logged like any other |
 
@@ -28,6 +28,11 @@ Decisions get cross-bred:
 - **Disagreement stays visible.** A station that disagrees with an earlier
   call logs its reading beside the earlier one and doesn't overwrite it.
   Vinny picks.
+
+Where the roles meet: Chrome brings in what's out there, Claude Code judges
+whether the work meets the card, and desktop checks both against reality with
+Vinny. A judge's PASS on code that misses the real point is still a miss;
+desktop flags it with its lens, logged as `[cross]`.
 
 What stays fixed:
 

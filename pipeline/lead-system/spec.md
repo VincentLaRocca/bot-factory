@@ -8,7 +8,7 @@
 | **Listener (internet layer)** | Claude in Chrome |
 | **Station 1 (Idea Forge)** | Claude web, 2026-09-27 |
 | **Build** | Claude Code, 2026-09-27 — branch `leads/full-lead-system` |
-| **Desktop testing** | Claude desktop — checklist below |
+| **Sessions and reality lens** | Claude desktop: works with Vinny, tests on his machine (checklist below), and checks the leads against the real world |
 | **Gates** | Vinny: greenlight after Station 1, merge after Station 3 |
 
 ## Problem
@@ -75,3 +75,4 @@ Conventions: pipeline/README.md. Station name on every entry; `[cross]` marks a 
 - 2026-09-27 · Claude Code: Built at Station 2. 24 new tests, full suite green (294 passed). Live dry run against Reddit: gates dropped the off-topic posts, and the cloud IP got 429s on some feeds (expected; see docs/LEADS.md).
 - 2026-09-27 · Claude web · [cross]: Vinny set the pipeline as all-Claude (web → Code → desktop), loose rather than strict. Stations can work across each other's lanes, and cross-station decisions are logged here.
 - 2026-09-27 · Claude web · [cross]: Vinny set the roles: Chrome = listener and worker at the internet layer, desktop = desktop duties, Claude Code = judge, Grok = occasional outside read. Chrome feeds leads through `POST /leads`.
+- 2026-09-27 · Claude web · [cross]: Desktop also holds the sessions with Vinny and brings the different lenses that pull reality into focus. For this card: are the routed leads ones Vinny would actually chase?
