@@ -138,7 +138,7 @@
       "tags": ["x", "reply"],
       "rules": {
         "exclude_any": ["new login", "password", "verify", "security", "confirm your", "highlights", "trending", "who to follow", "your weekly", "recommended"],
-        "boost": { "replied": 10, "mentioned you": 10, "sent you a direct message": 20, "quote": 10, "quote": 10, "how much": 15, "are you available": 20, "interested": 15, "dm": 10, "painter": 10, "courier": 10, "silver": 5, "gold": 5 },
+        "boost": { "replied": 10, "mentioned you": 10, "sent you a direct message": 20, "quote": 10, "how much": 15, "are you available": 20, "interested": 15, "dm": 10, "painter": 10, "courier": 10, "silver": 5, "gold": 5 },
         "min_score": 0
       }
     },
