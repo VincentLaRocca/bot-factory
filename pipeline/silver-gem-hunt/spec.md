@@ -1,4 +1,4 @@
-# Build Card: Silver, gold & gem hunt (eBay)
+# Build Card: Silver, gold & gem hunt (eBay, estate sales, surplus auctions)
 
 | | |
 | --- | --- |
@@ -46,3 +46,5 @@ the ones worth a look.
 - 2026-09-27 · Claude Code · [architect]: Built `leads/valuation.py` (coins, junk face, g/dwt/ozt × purity × qty; gem stone/ct/cert; misspellings; fakes vetoed) and `leads/listeners/ebay.py` (Browse API, client-credentials token, evidence points via `Lead.bonus`). `leads/hunts.example.json`, `hunt-sweep.yml` (every 30 min, 7:44am digest), docs/HUNTS.md. Tests: 318 passed.
 - 2026-09-27 · Claude Code · open: spot prices are manual for v0. A live spot feed and learning from Vinny's actual buys are v1.
 - 2026-09-27 · Claude Code · [cross]: eBay's Production keyset (`prelucky`) arrives disabled until account-deletion compliance is met. Chose the no-persistence path: the hunter now drops seller usernames (it keeps listing + feedback numbers only), so the exemption is truthful. Also built `/ebay/account-deletion` (challenge + purge) on the inbound listener as the fallback. Tests 320 passed.
+- 2026-09-27 · Claude web · [cross]: Vinny: "the bid system is repurposed for estate sales" and "email lead is flexible enough to not need changing." So: `estate-mail` is the unchanged email listener with an Estate label, precious rules and melt reading. New `gsa-auctions` listener (official GSA Auctions API, api.data.gov key). Chrome estate playbook sets up alerts on EstateSales.NET/.org, HiBid, AuctionZip and LiveAuctioneers. SAM.gov listener stays in the code, idle.
+- 2026-09-27 · Claude Code · fix: mixed-metal text ("14k jewelry, sterling flatware 1200 grams") read the weight as 14k gold, overvaluing it roughly 30×. Each weight now pairs with the nearest purity mention; `.999` takes its metal from the nearest "gold"/"silver". Regression tests added. Live GSA dry run: 678 lots in VA/MD/NC/DC, 0 precious, all dropped. Tests 325 passed.

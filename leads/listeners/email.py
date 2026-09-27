@@ -75,7 +75,7 @@ class EmailListener:
     def __init__(self, name: str, host: str, user: str, password: str, folder: str = "INBOX",
                  only_from: Optional[List[str]] = None, max_messages: int = 50, port: int = 993,
                  channel: str = "Commercial / B2B", tags: Optional[List[str]] = None,
-                 skip_from: Optional[List[str]] = None,
+                 skip_from: Optional[List[str]] = None, spot: Optional[dict] = None,
                  connect: Optional[Callable[[], imaplib.IMAP4]] = None, store=None):
         if not (user and password):
             raise ValueError("email listener needs LEADS_IMAP_USER and LEADS_IMAP_PASSWORD")
@@ -85,6 +85,7 @@ class EmailListener:
         self.folder = folder
         self.only_from = [x.lower() for x in (only_from or [])]
         self.skip_from = [x.lower() for x in (skip_from or [])]
+        self.spot = {k: float(v) for k, v in (spot or {}).items() if str(v).strip()}
         self.max_messages = max_messages
         self.connect = connect or (lambda: imaplib.IMAP4_SSL(self.host, self.port))
         self.store = store  # SeenStore, for the UID cursor; optional
@@ -116,7 +117,13 @@ class EmailListener:
                 message = email.message_from_bytes(raw, policy=email.policy.default)
                 newest = max(newest, int(uid))
                 if self.allowed(message):
-                    yield to_lead(message, self.name, uid.decode(), self.channel, self.tags)
+                    found = to_lead(message, self.name, uid.decode(), self.channel, self.tags)
+                    if self.spot:  # estate/auction mail: read metal content from subject + body
+                        from ..valuation import metal_bonus
+                        found.bonus, facts = metal_bonus(found.title + " " + found.body, 0, self.spot)
+                        if facts:
+                            found.body = " · ".join(facts) + " | " + found.body
+                    yield found
             if self.store and newest > last:
                 self.store.set_cursor(self.name, str(newest))
         finally:

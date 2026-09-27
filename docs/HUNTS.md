@@ -1,4 +1,4 @@
-# Hunts: silver, gold and gems on eBay
+# Hunts: silver, gold and gems (eBay, estate sales, surplus auctions)
 
 Same engine as the lead system (`leads/`), different prey. The eBay listener
 searches through the official Browse API with an application token. It reads
@@ -42,6 +42,16 @@ says so instead of guessing.
 A title is a claim, not a test. Weighted sterling, stones in gold rings, and
 seller mistakes all move the real number. Check photos and the description
 before you buy.
+
+## Estate sales and auctions: the bid system, repurposed
+
+| Listener | Source | Needs |
+| --- | --- | --- |
+| `estate-mail` | Estate-sale and auction **email alerts** (EstateSales.NET, EstateSales.org, HiBid, AuctionZip, LiveAuctioneers, local houses) in the Human Network inbox, label **Estate** | same IMAP login. The email listener is unchanged; it just gets a folder and precious-metal rules. Stated weights in an alert get a melt reading |
+| `gsa-auctions` | Federal surplus through the official **GSA Auctions API** (VA/MD/NC/DC by default) | `DATA_GOV_API_KEY` from api.data.gov (`DEMO_KEY` works for a trial) |
+| Chrome | Sets up the alerts, then looks closer at promising sales on request | `pipeline/silver-gem-hunt/chrome-estate.md` |
+
+A live trial run against GSA returned 678 lots in the four states, none of them precious that day. So the gate works.
 
 ## Where deals go
 

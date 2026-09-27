@@ -523,6 +523,9 @@ from leads import valuation  # noqa: E402
     ("10k gold ring 3.2 dwt", "gold", 0.0667),
     ("1/10 oz Gold American Eagle 2021", "gold", 0.1),
     ("Vintage sterlng silver spoon 40g", "silver", 1.1896),
+    (".999 fine gold bar 1 oz", "gold", 0.999),
+    ("1 oz .999 Fine Silver Round", "silver", 0.999),
+    ("Estate: 14k jewelry, sterling flatware service 1200 grams", "silver", 35.6873),
 ])
 def test_read_metal(title, metal, ozt):
     reading = valuation.read_metal(title)
@@ -623,7 +626,8 @@ def test_ebay_needs_keys_and_hunt_config_loads(monkeypatch, tmp_path):
     monkeypatch.setenv("EBAY_CLIENT_SECRET", "b")
     config = config_module.load(config_module.__file__.replace("config.py", "hunts.example.json"))
     system = config_module.build(config, store_path=str(tmp_path / "h.db"))
-    assert {x.name for x in system.listeners} == {"ebay-metals", "ebay-gems"}
+    assert {x.name for x in system.listeners} == {"ebay-metals", "ebay-gems", "gsa-auctions"}
+    assert "estate-mail" in {n for n, _ in system.skipped}      # needs the inbox login
 
 
 def test_ebay_hunt_keeps_no_seller_username():
@@ -665,3 +669,39 @@ def test_ebay_deletion_challenge_and_purge(monkeypatch):
         assert store.counts() == {"ROUTED": 1}
     finally:
         server.shutdown()
+
+
+def test_gsa_auctions_listener_reads_lots_and_melt():
+    from leads.listeners.gsa_auctions import GsaAuctionsListener
+    rows = {"Results": [
+        {"SaleNo": "31QSCI26", "LotNo": "101", "ItemName": "14K Gold Rings 20 grams", "LotDescript": "Seized jewelry",
+         "PropertyCity": "Norfolk", "PropertyState": "VA", "AuctionStatus": "A", "HighBidAmount": "400.00",
+         "BiddersCount": 3, "AucEndDt": "2026-10-02 15:00", "ItemDescURL": "https://gsaauctions.gov/lot/101",
+         "AgencyName": "Treasury"},
+        {"SaleNo": "31QSCI26", "LotNo": "102", "ItemName": "Sterling silver flatware", "PropertyState": "TX",
+         "AuctionStatus": "A", "HighBidAmount": "0"},
+        {"SaleNo": "31QSCI26", "LotNo": "103", "ItemName": "Office chairs", "PropertyState": "VA", "AuctionStatus": "A"},
+    ]}
+    web = FakeWeb({"https://api.gsa.gov/assets/gsaauctions": rows})
+    listener = GsaAuctionsListener("gsa-auctions", "", states=["VA"], spot={"gold": "2500"}, fetcher=web)
+    found = {x.external_id: x for x in listener.listen()}
+    assert set(found) == {"31QSCI26-101", "31QSCI26-103"}          # TX lot filtered by state
+    assert "DEMO_KEY" in web.calls[0]["url"] and "format=JSON" in web.calls[0]["url"]
+    ring = found["31QSCI26-101"]
+    assert ring.location == "Norfolk, VA" and ring.value == 400.0
+    assert any("under melt" in r for _, r in ring.bonus)           # 20g 14k ~ $940 melt vs $400
+    rules = RuleSet.from_config({"require_any": ["gold", "silver", "jewelry"], "min_score": 35})
+    routed = {x.external_id for x in Pipeline(SeenStore(), rules, []).process(found.values()).routed}
+    assert routed == {"31QSCI26-101"}
+
+
+def test_estate_mail_reads_metal_from_alerts():
+    alert = EmailMessage()
+    alert["From"] = "EstateSales.NET <alerts@estatesales.net>"
+    alert["Subject"] = "New sale near you: Henrico estate - sterling flatware, 14k jewelry"
+    alert["Message-ID"] = "<e1@esn>"
+    alert.set_content("Sterling silver flatware service 1200 grams. Online only, no reserve.")
+    listener = email_listener.EmailListener("estate-mail", "imap", "u", "p", connect=lambda: FakeImap({8: bytes(alert)}),
+                                            channel="Local Community", tags=["estate"], spot={"silver": "30"})
+    found = next(listener.listen())
+    assert "ozt silver" in found.body and any("melt" in r for _, r in found.bonus)

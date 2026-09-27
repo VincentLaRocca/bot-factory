@@ -1,5 +1,5 @@
 {
-  "_readme": "Silver, gold & gem hunt on eBay. Run: python -m leads --config leads/hunts.example.json sweep --dry-run. Never bids or buys. Set spot prices and per-carat limits yourself.",
+  "_readme": "Silver, gold & gem hunt: eBay (Browse API), estate-sale/auction email alerts, and GSA surplus auctions. Run: python -m leads --config leads/hunts.example.json sweep --dry-run. Never bids or buys.",
   "store": "var/hunts.db",
   "ledger": "var/hunts.jsonl",
   "sinks": {
@@ -120,6 +120,125 @@
           "moissanite"
         ],
         "min_score": 45
+      }
+    },
+    {
+      "name": "estate-mail",
+      "kind": "email",
+      "enabled": true,
+      "_note": "Estate sale & auction alerts (EstateSales.NET, HiBid, AuctionZip, local auction houses) sent to the Human Network inbox and labeled 'Estate' by a Gmail filter. The email listener is unchanged; only its folder and rules differ.",
+      "host": "imap.gmail.com",
+      "user": "${LEADS_IMAP_USER}",
+      "password": "${LEADS_IMAP_PASSWORD}",
+      "folder": "Estate",
+      "channel": "Local Community",
+      "tags": [
+        "estate",
+        "email"
+      ],
+      "spot": {
+        "silver": "${SILVER_SPOT_USD:-}",
+        "gold": "${GOLD_SPOT_USD:-}"
+      },
+      "rules": {
+        "require_any": [
+          "sterling",
+          "silver",
+          "gold",
+          "14k",
+          "10k",
+          "18k",
+          "karat",
+          "jewelry",
+          "jewellery",
+          "coin",
+          "coins",
+          "bullion",
+          "diamond",
+          "gem",
+          "gemstone",
+          "ruby",
+          "sapphire",
+          "emerald",
+          ".925",
+          "925",
+          "estate jewelry"
+        ],
+        "boost": {
+          "sterling": 15,
+          "14k": 15,
+          "18k": 15,
+          "10k": 10,
+          "gold": 10,
+          "coins": 10,
+          "coin collection": 20,
+          "jewelry": 10,
+          "estate jewelry": 15,
+          "bullion": 20,
+          "silver flatware": 20,
+          "tea set": 10,
+          "diamond": 10,
+          "no reserve": 15,
+          "online only": 5,
+          "richmond": 10,
+          "henrico": 10,
+          "chesterfield": 10,
+          "norfolk": 10,
+          "virginia beach": 10,
+          "chesapeake": 10,
+          "williamsburg": 10
+        },
+        "min_score": 35
+      }
+    },
+    {
+      "name": "gsa-auctions",
+      "kind": "gsa_auctions",
+      "enabled": true,
+      "_note": "Federal surplus via the official GSA Auctions API. DATA_GOV_API_KEY from api.data.gov (DEMO_KEY works for a trial).",
+      "api_key": "${DATA_GOV_API_KEY:-DEMO_KEY}",
+      "states": [
+        "VA",
+        "MD",
+        "NC",
+        "DC"
+      ],
+      "spot": {
+        "silver": "${SILVER_SPOT_USD:-}",
+        "gold": "${GOLD_SPOT_USD:-}"
+      },
+      "min_interval_minutes": 120,
+      "rules": {
+        "require_any": [
+          "sterling",
+          "silver",
+          "gold",
+          "14k",
+          "10k",
+          "18k",
+          "karat",
+          "jewelry",
+          "jewellery",
+          "coin",
+          "coins",
+          "bullion",
+          "diamond",
+          "gem",
+          "gemstone",
+          "ruby",
+          "sapphire",
+          "emerald",
+          ".925",
+          "925",
+          "estate jewelry"
+        ],
+        "boost": {
+          "jewelry": 15,
+          "coins": 15,
+          "gold": 10,
+          "silver": 10
+        },
+        "min_score": 35
       }
     }
   ]

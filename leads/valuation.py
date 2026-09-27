@@ -138,43 +138,47 @@ def read_metal(title: str) -> Optional[Metal]:
         dollars = float(face.group(1))
         return Metal("silver", round(dollars * 0.715, 4), f"${dollars:g} face of 90% silver")
 
-    # 3. Purity + weight.
-    metal, purity = None, None
-    karat = re.search(r"\b(10|14|18|22|24)\s?k(?:t|arat)?\b", text)
-    if karat:
-        metal, purity = "gold", KARATS[karat.group(1)]
-    elif re.search(r"\bsterling\b", text):
-        metal, purity = "silver", 0.925
-    elif re.search(r"\bcoin silver\b", text):
-        metal, purity = "silver", 0.900
-    elif re.search(r"\bfine silver\b", text):
-        metal, purity = "silver", 0.999
-    else:
-        mark = re.search(r"(?<![\d.])\.?(999|925|900|800|750|585|417|916)(?![\d])", text)
-        if mark:
-            metal, purity = FINENESS[mark.group(1)]
-            if metal == "silver" and "gold" in text and "silver" not in text:
-                return None  # a bare 999/925 next to "gold" is ambiguous
-    if not metal:
+    # 3. Purity + weight. Text can mention several metals ("14k jewelry, sterling
+    #    flatware 1200 grams"), so each weight is paired with the purity mention
+    #    nearest to it, never just the first one found.
+    marks = []  # (position, metal, purity, label)
+    for m in re.finditer(r"\b(10|14|18|22|24)\s?k(?:t|arat)?\b", text):
+        marks.append((m.start(), "gold", KARATS[m.group(1)], f"{m.group(1)}k gold"))
+    for m in re.finditer(r"\bsterling\b", text):
+        marks.append((m.start(), "silver", 0.925, "925 silver"))
+    for m in re.finditer(r"\bcoin silver\b", text):
+        marks.append((m.start(), "silver", 0.900, "900 silver"))
+    for m in re.finditer(r"\bfine silver\b", text):
+        marks.append((m.start(), "silver", 0.999, "999 silver"))
+    for m in re.finditer(r"(?<![\d.$])\.?(999|925|900|800|750|585|417|916)(?![\d])", text):
+        metal, purity = FINENESS[m.group(1)]
+        if m.group(1) == "999":  # fine gold or fine silver: let the nearest metal word decide
+            words = [(abs(w.start() - m.start()), w.group(1)) for w in re.finditer(r"\b(gold|silver)\b", text)]
+            if not words:
+                continue  # a bare .999 names no metal
+            metal = min(words)[1]
+        marks.append((m.start(), metal, purity, f"{m.group(1)} {metal}"))
+    if not marks:
         return None
-    grams = None
-    by_gram = re.search(_NUM + r"\s*(?:g|gr|grams?|gm|gms)\b", text)
-    by_dwt = re.search(_NUM + r"\s*dwt\b", text)
-    by_ozt = re.search(_NUM + r"\s*(?:ozt|troy\s*oz|troy\s*ounces?)\b", text)
-    by_oz = re.search(_NUM + r"\s*(?:oz|ounces?)\b", text)
-    if by_gram:
-        grams, how = _number(by_gram.group(1)), f"{by_gram.group(1)} g"
-    elif by_dwt:
-        grams, how = _number(by_dwt.group(1)) * GRAMS_PER_DWT, f"{by_dwt.group(1)} dwt"
-    elif by_ozt:
-        grams, how = _number(by_ozt.group(1)) * GRAMS_PER_OZT, f"{by_ozt.group(1)} ozt"
-    elif by_oz and purity >= 0.999:  # bullion "1 oz" means troy
-        grams, how = _number(by_oz.group(1)) * GRAMS_PER_OZT, f"{by_oz.group(1)} oz"
-    if not grams:
-        return None
-    ozt = grams / GRAMS_PER_OZT * purity * qty
-    label = f"{int(purity * 1000)} {metal}" if metal == "silver" else f"{karat.group(1)}k gold" if karat else f".{int(purity*1000)} gold"
-    return Metal(metal, round(ozt, 4), f"{qty} × {how} of {label}" if qty > 1 else f"{how} of {label}")
+    weights = []  # (position, grams, how, bullion_oz)
+    for m in re.finditer(_NUM + r"\s*(?:g|gr|grams?|gm|gms)\b", text):
+        weights.append((m.start(), _number(m.group(1)), f"{m.group(1)} g", False))
+    for m in re.finditer(_NUM + r"\s*dwt\b", text):
+        weights.append((m.start(), _number(m.group(1)) * GRAMS_PER_DWT, f"{m.group(1)} dwt", False))
+    for m in re.finditer(_NUM + r"\s*(?:ozt|troy\s*oz|troy\s*ounces?)\b", text):
+        weights.append((m.start(), _number(m.group(1)) * GRAMS_PER_OZT, f"{m.group(1)} ozt", False))
+    for m in re.finditer(_NUM + r"\s*(?:oz|ounces?)\b(?!t)", text):
+        weights.append((m.start(), _number(m.group(1)) * GRAMS_PER_OZT, f"{m.group(1)} oz", True))
+    for position, grams, how, bullion in weights:
+        nearest = min(marks, key=lambda mark: abs(mark[0] - position))
+        _, metal, purity, label = nearest
+        if bullion and purity < 0.999:
+            continue  # a plain "oz" on jewelry is usually avoirdupois; only trust it for bullion
+        if not grams:
+            continue
+        ozt = grams / GRAMS_PER_OZT * purity * qty
+        return Metal(metal, round(ozt, 4), f"{qty} × {how} of {label}" if qty > 1 else f"{how} of {label}")
+    return None
 
 
 def read_gem(title: str) -> Gem:
@@ -201,3 +205,27 @@ def read_gem(title: str) -> Gem:
 def misspelled(title: str) -> List[str]:
     text = title.lower()
     return [f"{w}→{r}" for w, r in MISSPELLINGS.items() if re.search(r"\b" + w + r"\b", text)]
+
+
+def metal_bonus(text: str, cost: float, spot: Dict[str, float], margin: float = 0.10):
+    """(bonus list, facts list) for any listing text + price: shared by eBay, GSA and estate listeners."""
+    bonus, facts = [], []
+    metal = read_metal(text)
+    if not metal:
+        return bonus, facts
+    facts.append(f"{metal.ozt:g} ozt {metal.metal} ({metal.basis})")
+    melt = metal.melt(spot)
+    if not melt:
+        facts.append(f"no {metal.metal} spot price set")
+        bonus.append((10, f"{metal.metal} content stated"))
+        return bonus, facts
+    facts.append(f"melt ${melt:,.2f}" + (f" vs ${cost:,.2f}" if cost else ""))
+    if not cost:
+        bonus.append((25, f"{metal.metal} worth ~${melt:,.0f} melt, no bid yet"))
+        return bonus, facts
+    under = (melt - cost) / melt
+    if under >= margin:
+        bonus.append((40 + min(40, int(under * 100)), f"{under:.0%} under melt"))
+    elif under < 0:
+        bonus.append((-30, f"{-under:.0%} over melt"))
+    return bonus, facts
