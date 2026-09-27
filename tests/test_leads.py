@@ -817,3 +817,57 @@ def test_gem_value_by_carat_quality_clarity_and_origin():
     assert gem_value(unheated, base)[0] > 2 * 200 * 1.5 * 2                # size, color, clarity and no-heat stack up
     assert filled.treatment == "glass filled" and gem_value(filled, base)[0] == 0.0   # no base set for ruby
     assert gem_value(read_gem("CZ 3ct"), base) == (0.0, "simulant: no gem value")
+
+
+def test_gsa_live_camelcase_fields():
+    from leads.listeners.gsa_auctions import GsaAuctionsListener
+    rows = [{"saleNo": "41QSCI", "lotNo": "7", "itemName": "2015 Ford F-150 pickup, runs", "propertyCity": "Norfolk",
+             "propertyState": "VA", "auctionStatus": "Active", "highBidAmount": 250.0, "itemDescURL": "https://x/7"}]
+    web = FakeWeb({"https://api.gsa.gov": rows})
+    lot = next(GsaAuctionsListener("gsa", "", states=["VA"], fetcher=web).listen())
+    assert lot.title.startswith("2015 Ford") and lot.location == "Norfolk, VA" and "vehicle" in lot.tags
+    assert any("money back" in r for _, r in lot.bonus)     # $250 bid under a pickup's scrap floor
+
+
+# ------------------------------------------------------------ appraisers
+def test_appraisers_pick_the_right_domain():
+    from leads.appraisers import detect
+    assert detect("2019 Chevrolet Silverado 2500HD 4WD Double Cab") == "vehicle"
+    assert detect("FORKLIFT, 6000 LB") == "equipment"
+    assert detect("Dump truck 2008 International") == "equipment"
+    assert detect("Lot of 25 Dell Latitude laptops") == "electronics"
+    assert detect("14k gold ring 5 grams") == "jewelry"
+    assert detect("Office chairs") is None
+
+
+def test_vehicle_appraisal_floor_estimate_and_condition():
+    from leads.appraisers import appraise, score
+    from leads.appraisers.comps import Comp
+    comps = [Comp("vehicle", ["ford", "f-150"], 2015, 2020, 20000, "test comp")]
+    runner = appraise("2017 Ford F150 XLT runs and drives 90,000 miles", 6000, comps=comps)
+    assert runner.domain == "vehicle" and runner.estimate == 20000 and runner.confidence == 0.7
+    bonus, facts = score(runner, 6000)
+    assert any("upside" in r for _, r in bonus) and not any(p < 0 for p, _ in bonus)   # scrap floor never vetoes a runner
+    dead = appraise("2017 Ford F150 does not run, salvage", 300, comps=comps)
+    assert dead.estimate == 20000 * 0.4 and dead.floor > 300
+    assert any("money back" in r for _, r in score(dead, 300)[0])
+    no_cat = appraise("2003 Dodge van catalytic converter removed", 0, comps=[])
+    assert "no converter" in no_cat.facts[0]
+
+
+def test_equipment_and_electronics_appraisals():
+    from leads.appraisers import appraise, score
+    from leads.appraisers.comps import Comp
+    lift = appraise("Forklift 6000 lb 12,000 hours runs", 700, comps=[Comp("equipment", ["forklift"], None, None, 9000, "")])
+    assert lift.estimate == 9000 * 1.0 * 0.5 and "12,000 hrs" in lift.facts[1]
+    laptops = appraise("Lot of 25 Dell Latitude 5490 laptops, no hard drives", 400,
+                       comps=[Comp("electronics", ["latitude"], None, None, 90, "")])
+    assert laptops.item == "25 × laptop" and laptops.estimate == 90 * 25 * 0.8
+    monitors = appraise("Monitors (40)", 50, comps=[Comp("electronics", ["monitor"], None, None, 20, "")])
+    assert monitors.estimate == 40 * 20 * 0.7 and any("money back" in r for _, r in score(monitors, 50)[0])
+
+
+def test_rule_words_are_whole_words():
+    score_, _, reasons = RuleSet.from_config({"boost": {"silver": 10, "ram": 5}}).score(
+        lead("2019 Chevrolet Silverado with new programming"))
+    assert score_ == 20 and not reasons

@@ -40,7 +40,18 @@ BASE_SCORE = 20
 
 
 def _hits(text: str, terms) -> List[str]:
-    return [t for t in terms if t and t.lower() in text]
+    """Whole-word(ish) matches: "silver" must not fire on "Silverado", "ram" not on "program"."""
+    import re
+    found = []
+    for term in terms:
+        if not term:
+            continue
+        t = term.lower()
+        left = r"(?<![a-z0-9])" if t[:1].isalnum() else ""
+        right = r"(?![a-z0-9])" if t[-1:].isalnum() else ""
+        if re.search(left + re.escape(t) + right, text):
+            found.append(term)
+    return found
 
 
 @dataclass
@@ -113,7 +124,7 @@ class RuleSet:
 
         score = BASE_SCORE
         for term, points in self.boost.items():
-            if term.lower() in text:
+            if _hits(text, [term]):
                 score += points
                 reasons.append(f"{'+' if points >= 0 else ''}{points} {term}")
         geo = _hits(text, self.geo_any)

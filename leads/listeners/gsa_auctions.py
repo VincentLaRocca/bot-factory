@@ -1,4 +1,7 @@
-"""Estate & surplus listener: GSA Auctions (government surplus), official API.
+"""Surplus listener: GSA Auctions (government surplus), official API. Virginia is a hotbed.
+
+Every lot goes through the appraisers (jewelry, vehicle, equipment; picked
+automatically from the lot text) and gets the same money-back / upside scoring.
 
 Part of the bid system's repurposing for estate sales: the same "find the lot
 before others do" job, pointed at precious metals, jewelry and coins instead
@@ -17,6 +20,8 @@ from typing import Any, Dict, Iterator, List, Optional
 from ..http import Fetch, fetch as default_fetch
 from ..model import Lead, clean
 from .. import valuation
+from .. import appraisers
+from ..appraisers import comps as comps_module
 
 ENDPOINT = "https://api.gsa.gov/assets/gsaauctions/v2/auctions"
 
@@ -33,6 +38,11 @@ def _rows(data: Any) -> List[Dict]:
     return []
 
 
+class _Caseless(dict):
+    def get(self, key, default=None):
+        return super().get(str(key).lower(), default)
+
+
 def _money(value: Any) -> float:
     try:
         return float(str(value).replace("$", "").replace(",", "") or 0)
@@ -45,13 +55,17 @@ class GsaAuctionsListener:
 
     def __init__(self, name: str, api_key: str = "DEMO_KEY", states: Optional[List[str]] = None,
                  spot: Optional[Dict[str, Any]] = None, margin: float = 0.10, fetcher: Optional[Fetch] = None,
-                 recovery: Optional["valuation.Recovery"] = None):
+                 recovery: Optional["valuation.Recovery"] = None, appraiser: str = "auto",
+                 scrap_per_ton: float = 180.0, cat_value: float = 100.0, comps_csv: Optional[str] = None):
         self.name = name
         self.api_key = api_key or "DEMO_KEY"
         self.states = {s.upper() for s in (states or []) if s}
         self.spot = {k: float(v) for k, v in (spot or {}).items() if str(v).strip()}
         self.margin = margin
         self.recovery = recovery or valuation.Recovery()
+        self.appraiser = None if appraiser in ("", "auto") else appraiser
+        self.settings = {"spot": self.spot, "recovery": self.recovery, "scrap_per_ton": scrap_per_ton,
+                         "cat_value": cat_value, "comps": comps_module.load(comps_csv)}
         self.fetch = fetcher or default_fetch
         self.errors: List[str] = []
 
@@ -62,15 +76,20 @@ class GsaAuctionsListener:
         except Exception as error:
             self.errors.append(str(error))
             return
-        for row in _rows(data):
+        for raw in _rows(data):
+            # The live API answers in camelCase (itemName) while the docs say ItemName: match either.
+            row = {str(k).lower(): v for k, v in raw.items()}
+            row = _Caseless(row)
             state = str(row.get("PropertyState") or row.get("LocationST") or "").upper()
             if self.states and state and state not in self.states:
                 continue
-            if str(row.get("AuctionStatus", "")).strip().upper() not in ("A", "P", ""):
+            status = str(row.get("AuctionStatus") or "").strip().upper()[:1]   # live: "Active"/"Preview"; docs: A/P
+            if status not in ("A", "P", ""):
                 continue
             text = " ".join(clean(row.get(k)) for k in ("ItemName", "LotDescript"))
             high = _money(row.get("HighBidAmount"))
-            bonus, facts = valuation.break_down(text, high, self.spot, self.recovery)
+            appraisal = appraisers.appraise(text, high, self.appraiser, **self.settings)
+            bonus, facts = appraisers.score(appraisal, high, self.recovery.cushion)
             yield Lead(
                 source=self.name,
                 external_id=f"{row.get('SaleNo')}-{row.get('LotNo')}",
@@ -82,6 +101,6 @@ class GsaAuctionsListener:
                 contact=f"GSA · {clean(row.get('AgencyName'))}",
                 location=", ".join(x for x in (clean(row.get("PropertyCity")), state) if x),
                 value=high, deadline=str(row.get("AucEndDt") or ""), posted_at=str(row.get("AucStartDt") or ""),
-                tags=["gsa", "auction", "estate"], bonus=bonus,
+                tags=["gsa", "auction"] + ([appraisal.domain] if appraisal else []), bonus=bonus,
                 raw={"sale": row.get("SaleNo"), "lot": row.get("LotNo"), "image": row.get("ImageURL")},
             )

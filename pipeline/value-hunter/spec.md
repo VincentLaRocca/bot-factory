@@ -2,9 +2,17 @@
 
 | | |
 | --- | --- |
-| **Status** | idea, not greenlit |
+| **Status** | building (v0): appraiser framework live on GSA surplus |
 | **Spec origin** | Vinny, 2026-09-27: "Is that enough to build a value hunter? We can use this for other things too: cars, heavy-duty equipment for businesses, etc." |
 | **Gates** | Vinny greenlights scope; every bid or buy is his |
+
+## Our arena
+
+Vinny: "asymmetrical opportunities created by constraints being removed by AI and me: that's our arena."
+The constraint here: nobody can read and appraise every lot, listing and alert
+by hand. The appraisers remove that constraint. Vinny supplies the judgment,
+the price sheet, and the buy. bot-factory's Asymmetry Analyst (`agents/asymmetry/`)
+is the natural next reader of what the appraisers find.
 
 ## The idea
 
@@ -45,3 +53,6 @@ Slack, the digest, the 5090 kit, and Chrome playbooks.
 ## Log
 
 - 2026-09-27 · Claude web · [cross]: Vinny: "the appraiser is the heart of the opportunity finder." Framing: this is an **opportunity finder**. Sources feed listings in, **appraisers** (one per domain) say what each is worth and how sure they are, and the value test decides. Borrow note: bot-factory already has `Opportunity` objects and the Asymmetry Analyst (`agents/asymmetry/`). An appraised listing could become an AIOP Opportunity with its evidence and provenance attached (v1).
+- 2026-09-27 · Claude Code · [architect]: Built `leads/appraisers/` with one `Appraisal` shape and one `score()` for every domain (money back on the floor, upside on the estimate, weighted by confidence). Appraisers: **jewelry** (melt + gems, designer exception), **vehicle** (curb-weight scrap + converter floor; price-sheet comp × condition × mileage), **equipment** (typical-weight scrap floor; comp × condition × hours), **electronics** (Vinny's old refurb trade: per-unit parts floor × count; comp × count × condition, e.g. "no hard drives"). Price sheet is `leads/appraisers/comps.example.csv` (PLACEHOLDER values; set `VALUE_COMPS_CSV` to his own). GSA listener now auto-appraises every lot.
+- 2026-09-27 · Claude Code · fix (found on live data): the GSA API answers in camelCase (`itemName`) with statuses "Active"/"Preview", not the documented `ItemName` and A/P, so every lot had been silently skipped. Fixed; regression test added. Rule keywords are now whole-word ("silver" no longer fires on "Silverado").
+- 2026-09-27 · Claude Code · first live run (VA/MD/NC/DC, 29 lots, placeholder comps): 5 flagged. 2003 Dodge van at a $250 bid (under its ~$404 scrap + converter floor); generator in Richmond at $175; 6,000 lb forklift at $700 in Hillsborough NC; trailer in Richmond at $1,000; 2023 F-150 4x4 in Chatham VA at $1,100 (bidding still early). Office furniture and toner were correctly dropped. Tests 337 passed.

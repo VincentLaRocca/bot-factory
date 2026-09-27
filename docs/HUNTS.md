@@ -114,3 +114,20 @@ only), never the courier lead board. `python -m leads --config
 leads/hunts.example.json digest --send` gives the top deals of the last 24h.
 In GitHub Actions: `.github/workflows/hunt-sweep.yml` runs every 30 minutes,
 7am–7pm ET, with a 7:44am digest.
+
+## Appraisers: the heart of the opportunity finder
+
+`leads/appraisers/` holds one appraiser per domain, auto-picked from the listing text:
+
+| Appraiser | Floor (money back if broken down) | Estimate (whole) |
+| --- | --- | --- |
+| jewelry | gram weight melted at spot + gem value | designer/period flagged for comps |
+| vehicle | curb weight × scrap yield × $/ton + catalytic converter | price-sheet comp × condition (runs … parts only) × mileage |
+| equipment | typical weight × scrap yield × $/ton | comp × condition × hours |
+| electronics | per-unit parts/e-scrap × count | comp per unit × count × condition ("no hard drives", untested…) |
+
+Scoring is the same everywhere: money back on the floor scores high; upside on the
+estimate scores by how sure the appraisal is; a working machine is never marked down
+for being worth more than its scrap. Your numbers: `SCRAP_PER_TON`,
+`CAT_CONVERTER_VALUE`, and a price sheet CSV (`VALUE_COMPS_CSV`, same columns as
+`leads/appraisers/comps.example.csv`; every example value there is a PLACEHOLDER).

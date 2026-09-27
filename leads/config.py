@@ -78,7 +78,9 @@ def build_listener(spec: Dict[str, Any], store: SeenStore, fetcher: Optional[Fet
     if kind == "gsa_auctions":
         return GsaAuctionsListener(name, spec.get("api_key", "DEMO_KEY"), states=spec.get("states"),
                                    spot=spec.get("spot"), margin=float(spec.get("margin", 0.10)), fetcher=fetcher,
-                                   recovery=_recovery(spec))
+                                   recovery=_recovery(spec), appraiser=spec.get("appraiser", "auto"),
+                                   scrap_per_ton=float(spec.get("scrap_per_ton") or 180),
+                                   cat_value=float(spec.get("cat_value") or 100), comps_csv=spec.get("comps_csv") or None)
     if kind == "reddit_threads":
         return RedditThreadListener(
             name, spec.get("username", ""), watch_days=int(spec.get("watch_days", 7)),
