@@ -51,3 +51,4 @@ the ones worth a look.
 - 2026-09-27 · Claude Code: Vinny has a Sandbox keyset too. App IDs containing `-SBX-` now route to api.sandbox.ebay.com automatically (test listings only; proves the wiring while Production waits on the exemption). Keys stay out of the repo.
 - 2026-09-27 · Claude Code: Sandbox keyset tested live. OAuth token OK; Browse search returned 200 test listings across two queries; the appraiser read each one (sandbox items are test data, so nothing routed). Wiring proven end to end. Keys were used in memory only and are not stored anywhere.
 - 2026-09-27 · Claude web · correction: the "Exempted from Marketplace Account Deletion" line Vinny saw is the toggle's label, not a granted exemption. Exemption not yet applied; the keyset is still disabled.
+- 2026-09-27 · Vinny: applied for the eBay Marketplace Account Deletion exemption (not persisting eBay data). Waiting for the Production keyset to show enabled.
