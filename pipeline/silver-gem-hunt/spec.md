@@ -21,7 +21,7 @@ the ones worth a look.
 ## Done means
 
 1. `python -m leads --config leads/hunts.example.json sweep` searches eBay through the official Browse API (App ID + Cert ID from Vinny's developer account, OAuth client credentials).
-2. **Silver and gold:** the title parser finds weight (g, dwt, ozt, oz), purity (sterling/.925, .999, 10–24k, 90% coin) and known coins. It computes melt from the spot price and flags listings whose price plus shipping is under melt by a set margin.
+2. **Silver and gold (the value test: "if it were broken into elements, could we get our money back?"):** the title parser finds weight (g, dwt, ozt, oz), purity (sterling/.925, .999, 10–24k, 90% coin) and known coins. It computes melt from the spot price and flags listings whose price plus shipping is under melt by a set margin.
 3. **Gems:** certified stones (GIA/AGS/IGI), price per carat under the limits Vinny sets per stone, misspelled titles, and auctions ending within 24h with no bids get flagged.
 4. **Fakes and lookalikes are vetoed:** plated, filled, "tone", nickel/German/Tibetan silver, lab-created, simulated, CZ, moissanite, glass, replica.
 5. Deals go to their own Slack channel and ledger, never the courier lead board, plus a daily deal digest.
@@ -53,3 +53,4 @@ the ones worth a look.
 - 2026-09-27 · Claude web · correction: the "Exempted from Marketplace Account Deletion" line Vinny saw is the toggle's label, not a granted exemption. Exemption not yet applied; the keyset is still disabled.
 - 2026-09-27 · Vinny: applied for the eBay Marketplace Account Deletion exemption (not persisting eBay data). Waiting for the Production keyset to show enabled.
 - 2026-09-27 · Claude Code · [architect]: Vinny: "on eBay we're looking for mispriced jewelry… and silver." New `jewelry` hunt (metal + gem reading + mispricing clues: fine metal filed under Fashion/Costume, seller-unsure wording, designer/period names tagged verify, platinum). `ebay-jewelry` listener with 14 gold/silver jewelry queries every 20 min is now the main hunt. Tests 328 passed.
+- 2026-09-27 · Claude Code · [architect] [cross]: Vinny's value test: "if it were broken into elements, could we get our money back?" Scoring switched from raw melt to break-down value (melt × refiner payout + stones at his per-carat recovery) vs all-in cost (price + ship + tax + fee). Defaults are conservative placeholders (gold 80%, silver 70%, 6% tax). Exception, per Vinny ("except for designer"): designer/period pieces can't be vetoed by the break-down test; they're tagged for sold-comps checks. Tests updated to the stricter test, e.g. a 400 g sterling lot at $265 no longer passes.

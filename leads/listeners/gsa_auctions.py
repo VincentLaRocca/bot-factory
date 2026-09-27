@@ -44,12 +44,14 @@ class GsaAuctionsListener:
     kind = "gsa_auctions"
 
     def __init__(self, name: str, api_key: str = "DEMO_KEY", states: Optional[List[str]] = None,
-                 spot: Optional[Dict[str, Any]] = None, margin: float = 0.10, fetcher: Optional[Fetch] = None):
+                 spot: Optional[Dict[str, Any]] = None, margin: float = 0.10, fetcher: Optional[Fetch] = None,
+                 recovery: Optional["valuation.Recovery"] = None):
         self.name = name
         self.api_key = api_key or "DEMO_KEY"
         self.states = {s.upper() for s in (states or []) if s}
         self.spot = {k: float(v) for k, v in (spot or {}).items() if str(v).strip()}
         self.margin = margin
+        self.recovery = recovery or valuation.Recovery(cushion=margin)
         self.fetch = fetcher or default_fetch
         self.errors: List[str] = []
 
@@ -68,7 +70,7 @@ class GsaAuctionsListener:
                 continue
             text = " ".join(clean(row.get(k)) for k in ("ItemName", "LotDescript"))
             high = _money(row.get("HighBidAmount"))
-            bonus, facts = valuation.metal_bonus(text, high, self.spot, self.margin)
+            bonus, facts = valuation.break_down(text, high, self.spot, self.recovery)
             yield Lead(
                 source=self.name,
                 external_id=f"{row.get('SaleNo')}-{row.get('LotNo')}",

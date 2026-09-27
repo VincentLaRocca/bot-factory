@@ -43,6 +43,13 @@ class System:
     webhook: Optional[Dict[str, Any]]
 
 
+def _recovery(spec: Dict[str, Any]):
+    from .valuation import Recovery
+    data = dict(spec.get("recovery") or {})
+    data.setdefault("cushion", spec.get("margin", 0.10))
+    return Recovery.from_config(data)
+
+
 def build_listener(spec: Dict[str, Any], store: SeenStore, fetcher: Optional[Fetch] = None):
     from .listeners.email import EmailListener
     from .listeners.feeds import FeedListener
@@ -68,10 +75,12 @@ def build_listener(spec: Dict[str, Any], store: SeenStore, fetcher: Optional[Fet
         return EbayHuntListener(
             name, spec.get("client_id", ""), spec.get("client_secret", ""), spec.get("queries", []),
             spot=spec.get("spot"), margin=float(spec.get("margin", 0.10)), max_ppc=spec.get("max_price_per_carat"),
-            limit=int(spec.get("limit", 100)), fetcher=fetcher)
+            limit=int(spec.get("limit", 100)), fetcher=fetcher,
+            recovery=_recovery(spec))
     if kind == "gsa_auctions":
         return GsaAuctionsListener(name, spec.get("api_key", "DEMO_KEY"), states=spec.get("states"),
-                                   spot=spec.get("spot"), margin=float(spec.get("margin", 0.10)), fetcher=fetcher)
+                                   spot=spec.get("spot"), margin=float(spec.get("margin", 0.10)), fetcher=fetcher,
+                                   recovery=_recovery(spec))
     if kind == "reddit_threads":
         return RedditThreadListener(
             name, spec.get("username", ""), watch_days=int(spec.get("watch_days", 7)),

@@ -590,14 +590,14 @@ def test_ebay_hunt_end_to_end():
     assert search_call["headers"]["Authorization"] == "Bearer T"
     assert "price%3A%5B..500%5D" in search_call["url"]
 
-    assert "26% under melt" in " ".join(r for _, r in found["1"].bonus)
-    assert found["1"].value == 265.0 and "melt $356" in found["1"].body
+    # 400 g sterling for $265: melt $357, but a refiner pays ~70% ($250) vs $281 all-in, so no money back.
+    assert found["1"].value == 265.0 and "melt $356" in found["1"].body and "short by" in found["1"].body
     assert any(p < 0 for p, _ in found["2"].bonus)
     assert "weight/purity not in title" in found["3"].body
 
     pipeline = Pipeline(SeenStore(), RuleSet.from_config({"min_score": 45}), [])
     routed = {x.external_id for x in pipeline.process(found.values()).routed}
-    assert routed == {"1", "4", "5"}   # the metal reader spots gold even when it turns up in a silver search
+    assert routed == {"4", "5"}   # gold ring breaks down above cost; the sterling lot doesn't clear the money-back test
     assert any("misspelled" in r for _, r in found["5"].bonus)
     assert any("$60/ct" in r for _, r in found["5"].bonus)
 
@@ -612,7 +612,7 @@ def test_ebay_gold_auction_ending_soon():
                             spot={"gold": 2500}, fetcher=web, now=datetime(2026, 9, 27, 12, tzinfo=timezone.utc))
     lead_ = next(hunt.listen())
     reasons = " ".join(r for _, r in lead_.bonus)
-    assert "under melt" in reasons and "no bids" in reasons and "ending-soon" in lead_.tags
+    assert "money back" in reasons and "no bids" in reasons and "ending-soon" in lead_.tags
     assert "sort=endingSoonest" in web.calls[1]["url"]
     score, urgency, _ = RuleSet.from_config({"min_score": 45}).score(lead_)
     assert score >= 70 and urgency in ("HIGH", "CRITICAL")
@@ -689,7 +689,7 @@ def test_gsa_auctions_listener_reads_lots_and_melt():
     assert "DEMO_KEY" in web.calls[0]["url"] and "format=JSON" in web.calls[0]["url"]
     ring = found["31QSCI26-101"]
     assert ring.location == "Norfolk, VA" and ring.value == 400.0
-    assert any("under melt" in r for _, r in ring.bonus)           # 20g 14k ~ $940 melt vs $400
+    assert any("money back" in r for _, r in ring.bonus)           # 20g 14k: ~$750 to a refiner vs $424 all-in
     rules = RuleSet.from_config({"require_any": ["gold", "silver", "jewelry"], "min_score": 35})
     routed = {x.external_id for x in Pipeline(SeenStore(), rules, []).process(found.values()).routed}
     assert routed == {"31QSCI26-101"}
@@ -704,7 +704,7 @@ def test_estate_mail_reads_metal_from_alerts():
     listener = email_listener.EmailListener("estate-mail", "imap", "u", "p", connect=lambda: FakeImap({8: bytes(alert)}),
                                             channel="Local Community", tags=["estate"], spot={"silver": "30"})
     found = next(listener.listen())
-    assert "ozt silver" in found.body and any("melt" in r for _, r in found.bonus)
+    assert "ozt silver" in found.body and any("breaks down" in r for _, r in found.bonus)
 
 
 def test_ebay_sandbox_keys_use_sandbox_endpoints():
@@ -746,9 +746,38 @@ def test_jewelry_hunt_flags_mispriced_pieces():
                             spot={"gold": 2500, "silver": 30}, fetcher=web, now=datetime(2026, 9, 27, tzinfo=timezone.utc))
     found = {x.external_id: x for x in hunt.listen()}
     why = {k: " | ".join(r for _, r in v.bonus) for k, v in found.items()}
-    assert "under melt" in why["j1"] and "Fashion Jewelry" in why["j1"]
+    assert "money back" in why["j1"] and "Fashion Jewelry" in why["j1"]
     assert "seller unsure" in why["j2"]
     assert "verify, fakes are common" in why["j3"]
     rules = RuleSet.from_config({"exclude_any": ["gold plated", "style"], "min_score": 45})
     routed = {x.external_id for x in Pipeline(SeenStore(), rules, []).process(found.values()).routed}
     assert {"j1", "j2"} <= routed and "j4" not in routed and "j5" not in routed
+
+
+def test_money_back_test_math():
+    from leads.valuation import Recovery, break_down
+    rec = Recovery(payout={"gold": 0.80, "silver": 0.70}, tax_rate=0.06, fee=0, cushion=0.10)
+    # 10 g 14k at $2500 spot: melt 469.9 → refiner 375.9; $250 + 6% tax = $265 all-in → +42%
+    got, facts = break_down("14k ring 10 grams", 250, {"gold": 2500}, rec)
+    assert got[0][0] >= 40 and "money back" in got[0][1] and "all-in $265.00" in facts[-1]
+    # Same ring at $360: $381.60 all-in vs $375.92 → short by ~$6: no points, just the fact
+    got, facts = break_down("14k ring 10 grams", 360, {"gold": 2500}, rec)
+    assert got == [] and "short by" in facts[-1]
+    # Stones count only at Vinny's recovery value
+    from leads.valuation import read_gem
+    rec2 = Recovery(payout={"gold": 0.8}, stone_per_ct={"sapphire": 50}, tax_rate=0)
+    got, facts = break_down("14k sapphire ring 2 ct 5 grams", 250, {"gold": 2500}, rec2, read_gem("14k sapphire ring 2 ct 5 grams"))
+    assert "stones ~$100.00" in " ".join(facts)
+
+
+def test_designer_pieces_skip_the_break_down_veto():
+    from datetime import datetime, timezone
+    from leads.listeners.ebay import EbayHuntListener
+    item = _ebay_item("d1", "Tiffany & Co sterling silver bracelet 20g", 180)   # far above scrap value
+    web = FakeWeb({"https://api.ebay.com/identity": {"access_token": "T"},
+                   "https://api.ebay.com/buy/browse": {"itemSummaries": [item]}})
+    hunt = EbayHuntListener("ebay-jewelry", "id", "secret", [{"hunt": "jewelry", "q": "x"}], spot={"silver": 30},
+                            fetcher=web, now=datetime(2026, 9, 27, tzinfo=timezone.utc))
+    found = next(hunt.listen())
+    assert all(p >= 0 for p, _ in found.bonus) and "designer" in found.tags
+    assert any("break-down test doesn't apply" in r for _, r in found.bonus)

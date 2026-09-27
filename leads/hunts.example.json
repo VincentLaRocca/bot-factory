@@ -127,6 +127,16 @@
           "dupe"
         ],
         "min_score": 45
+      },
+      "recovery": {
+        "_note": "The money-back test. Placeholders: set payout from real refiner/scrap-buyer quotes, tax to your rate, stone_per_ct only for stones you could truly resell.",
+        "payout": {
+          "gold": "${GOLD_PAYOUT:-0.80}",
+          "silver": "${SILVER_PAYOUT:-0.70}"
+        },
+        "tax_rate": 0.06,
+        "fee": 0,
+        "stone_per_ct": {}
       }
     },
     {
@@ -184,7 +194,17 @@
           "q": "18k gold dwt",
           "max_price": 1500
         }
-      ]
+      ],
+      "recovery": {
+        "_note": "The money-back test. Placeholders: set payout from real refiner/scrap-buyer quotes, tax to your rate, stone_per_ct only for stones you could truly resell.",
+        "payout": {
+          "gold": "${GOLD_PAYOUT:-0.80}",
+          "silver": "${SILVER_PAYOUT:-0.70}"
+        },
+        "tax_rate": 0.06,
+        "fee": 0,
+        "stone_per_ct": {}
+      }
     },
     {
       "name": "ebay-gems",
@@ -235,6 +255,16 @@
           "moissanite"
         ],
         "min_score": 45
+      },
+      "recovery": {
+        "_note": "The money-back test. Placeholders: set payout from real refiner/scrap-buyer quotes, tax to your rate, stone_per_ct only for stones you could truly resell.",
+        "payout": {
+          "gold": "${GOLD_PAYOUT:-0.80}",
+          "silver": "${SILVER_PAYOUT:-0.70}"
+        },
+        "tax_rate": 0.06,
+        "fee": 0,
+        "stone_per_ct": {}
       }
     },
     {
@@ -354,6 +384,16 @@
           "silver": 10
         },
         "min_score": 35
+      },
+      "recovery": {
+        "_note": "The money-back test. Placeholders: set payout from real refiner/scrap-buyer quotes, tax to your rate, stone_per_ct only for stones you could truly resell.",
+        "payout": {
+          "gold": "${GOLD_PAYOUT:-0.80}",
+          "silver": "${SILVER_PAYOUT:-0.70}"
+        },
+        "tax_rate": 0.06,
+        "fee": 0,
+        "stone_per_ct": {}
       }
     }
   ]

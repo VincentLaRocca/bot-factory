@@ -26,6 +26,23 @@ human look. **It never bids, buys, offers, or messages a seller.**
 4. Set your **price-per-carat limits** in `leads/hunts.example.json` → `max_price_per_carat`. The example values are placeholders, not advice.
 5. Try it: `python -m leads --config leads/hunts.example.json sweep --dry-run --json`
 
+## The value test: could we get our money back?
+
+Vinny's rule: **if it were broken into its elements, would we get our money
+back?** Every metal listing is judged that way, not by raw melt:
+
+- **Break-down value** = melt (ozt x spot) x what a refiner or scrap buyer actually pays (`payout`, default gold 80%, silver 70%), plus stones only at *your* per-carat recovery value (`stone_per_ct`, default none).
+- **All-in cost** = (price + shipping) x (1 + sales tax, default 6%) + any flat refining/shipping fee.
+- Break-down beats all-in by the cushion (default 10%): **+40 plus the %**, "money back". Beats it by less: **+15**, thin cushion. Short by under 15%: no points, noted. Worse: **−30**.
+
+The payout numbers are placeholders. Set them from a real refiner quote in the
+`recovery` block of `hunts.example.json` (or `GOLD_PAYOUT` / `SILVER_PAYOUT`).
+
+**Exception: designer pieces.** A Tiffany or Yurman piece can be worth more
+whole than broken down. For designer and period pieces, the break-down test
+can't veto: negative points are dropped, and the listing is tagged
+"value beyond its elements, check sold comps" for a human look.
+
 ## Mispriced jewelry (gold and silver): the main hunt
 
 `ebay-jewelry` runs every 20 minutes across rings, chains, class rings, sterling

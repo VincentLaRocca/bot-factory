@@ -9,8 +9,9 @@ Each query in config names what it's hunting (``silver``, ``gold`` or
 ``gem``). Every listing that comes back is read by :mod:`leads.valuation`
 and gets evidence points (``Lead.bonus``) the rules add up:
 
-- metals: price + shipping vs melt (ozt × spot). Under melt by the margin → big
-  points; over melt → negative points
+- Vinny's value test: if we broke it into its elements, would we get our money
+  back? Metal melt x refiner payout (+ stones at his per-carat recovery) vs
+  all-in cost (price + shipping + tax + fees). See ``valuation.break_down``.
 - gems: certified, price per carat under Vinny's limit for that stone
 - both: misspelled title, auction ending within 24h with no bids, and a
   penalty for thin-feedback sellers
@@ -62,7 +63,8 @@ class EbayHuntListener:
     def __init__(self, name: str, client_id: str, client_secret: str, queries: List[Dict[str, Any]],
                  spot: Optional[Dict[str, float]] = None, margin: float = 0.10,
                  max_ppc: Optional[Dict[str, float]] = None, marketplace: str = "EBAY_US",
-                 limit: int = 100, fetcher: Optional[Fetch] = None, now: Optional[datetime] = None):
+                 limit: int = 100, fetcher: Optional[Fetch] = None, now: Optional[datetime] = None,
+                 recovery: Optional["valuation.Recovery"] = None):
         if not (client_id and client_secret):
             raise ValueError("eBay hunt needs EBAY_CLIENT_ID and EBAY_CLIENT_SECRET (App ID / Cert ID)")
         self.name = name
@@ -70,6 +72,7 @@ class EbayHuntListener:
         self.queries = queries
         self.spot = {k: float(v) for k, v in (spot or {}).items() if str(v).strip()}
         self.margin = margin
+        self.recovery = recovery or valuation.Recovery(cushion=margin)
         self.max_ppc = {k.lower(): float(v) for k, v in (max_ppc or {}).items()}
         self.marketplace = marketplace
         self.limit = limit
@@ -139,25 +142,15 @@ class EbayHuntListener:
         seller = item.get("seller") or {}
         bonus, facts, tags = [], [], ["ebay", hunt]
 
+        gem = valuation.read_gem(title) if hunt in ("gem", "jewelry") else None
         if hunt in ("silver", "gold", "jewelry"):
+            got, said = valuation.break_down(title, cost, self.spot, self.recovery, gem)
+            bonus.extend(got)
+            facts.extend(said or ["weight/purity not in title"])
             metal = valuation.read_metal(title)
             if metal:
-                melt = metal.melt(self.spot)
-                facts.append(f"{metal.ozt:g} ozt {metal.metal} ({metal.basis})")
-                if melt:
-                    under = (melt - cost) / melt
-                    facts.append(f"melt ${melt:,.2f} vs cost ${cost:,.2f} ({under:+.0%})")
-                    if under >= self.margin:
-                        bonus.append((40 + min(40, int(under * 100)), f"{under:.0%} under melt"))
-                    elif under < 0:
-                        bonus.append((-30, f"{-under:.0%} over melt"))
-                else:
-                    facts.append(f"no {metal.metal} spot price set")
                 tags.append(metal.metal)
-            else:
-                facts.append("weight/purity not in title")
-        if hunt in ("gem", "jewelry"):
-            gem = valuation.read_gem(title)
+        if gem is not None:
             if "fake" in gem.signals:
                 bonus.append((-100, "lab/simulant/glass"))
             if gem.certified:
@@ -176,6 +169,12 @@ class EbayHuntListener:
             bonus.extend(clues)
             if clues:
                 tags.append("jewelry")
+            # Vinny's exception: a designer piece can be worth more whole than
+            # broken down, so the money-back test doesn't get to veto it.
+            if any("designer/period" in why for _, why in clues):
+                bonus[:] = [(p, why) for p, why in bonus if p >= 0]
+                bonus.append((15, "designer: value beyond its elements, so the break-down test doesn't apply; check sold comps"))
+                tags.append("designer")
 
         wrong = valuation.misspelled(title)
         if wrong:
