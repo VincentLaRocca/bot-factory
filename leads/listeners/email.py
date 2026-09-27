@@ -123,7 +123,7 @@ class EmailListener:
                         from ..decipher import by_rules
                         read = by_rules(found.body + ". " + found.title)  # body first: alert subjects just echo the search terms
                         found.location = found.location or read["location"]
-                        found.value = found.value or float(read["value"] or 0)
+                        found.value = max(found.value, float(read["value"] or 0))  # "$12 million" beats a bare "$12"
                         found.deadline = found.deadline or read["deadline"]
                         found.url = found.url or read["url"]
                     if self.spot:  # estate/auction mail: read metal content from subject + body
