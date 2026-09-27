@@ -26,6 +26,22 @@ human look. **It never bids, buys, offers, or messages a seller.**
 4. Set your **price-per-carat limits** in `leads/hunts.example.json` → `max_price_per_carat`. The example values are placeholders, not advice.
 5. Try it: `python -m leads --config leads/hunts.example.json sweep --dry-run --json`
 
+## Mispriced jewelry (gold and silver): the main hunt
+
+`ebay-jewelry` runs every 20 minutes across rings, chains, class rings, sterling
+lots, Navajo silver, estate lots, "unmarked" and "grandma's" lots, and
+designer sterling. On top of the melt math and the gem reading, it adds:
+
+| Clue | Points |
+| --- | --- |
+| Fine metal ("14k", "sterling", "925", "platinum") filed under **Fashion/Costume** jewelry | **+25** |
+| Seller unsure ("unmarked", "untested", "not sure if real", "tests as gold", "grandma's", "junk drawer", "unsearched") | **+20**, tagged *steal or fake, check photos* |
+| Designer or period name (Tiffany, Cartier, Yurman, Georg Jensen, Spratling, Navajo, Art Deco…) | **+10**, tagged *verify, fakes are common* |
+| Platinum mentioned | **+10** |
+
+Plated, filled, "tone", "style", "inspired", "dupe", replica, lab and simulant
+listings are vetoed outright.
+
 ## How a listing is read
 
 | Hunt | What it reads from the title | Points |

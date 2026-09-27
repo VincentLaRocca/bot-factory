@@ -139,7 +139,7 @@ class EbayHuntListener:
         seller = item.get("seller") or {}
         bonus, facts, tags = [], [], ["ebay", hunt]
 
-        if hunt in ("silver", "gold"):
+        if hunt in ("silver", "gold", "jewelry"):
             metal = valuation.read_metal(title)
             if metal:
                 melt = metal.melt(self.spot)
@@ -156,7 +156,7 @@ class EbayHuntListener:
                 tags.append(metal.metal)
             else:
                 facts.append("weight/purity not in title")
-        else:
+        if hunt in ("gem", "jewelry"):
             gem = valuation.read_gem(title)
             if "fake" in gem.signals:
                 bonus.append((-100, "lab/simulant/glass"))
@@ -170,6 +170,12 @@ class EbayHuntListener:
                     bonus.append((30, f"${ppc:,.0f}/ct under your ${limit:,.0f}/ct {gem.stone} limit"))
             if gem.stone:
                 tags.append(gem.stone)
+        if hunt == "jewelry":
+            categories = [c.get("categoryName", "") for c in item.get("categories") or [] if isinstance(c, dict)]
+            clues = valuation.jewelry_clues(title, categories)
+            bonus.extend(clues)
+            if clues:
+                tags.append("jewelry")
 
         wrong = valuation.misspelled(title)
         if wrong:

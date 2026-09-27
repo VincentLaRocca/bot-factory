@@ -1,5 +1,5 @@
 {
-  "_readme": "Silver, gold & gem hunt: eBay (Browse API), estate-sale/auction email alerts, and GSA surplus auctions. Run: python -m leads --config leads/hunts.example.json sweep --dry-run. Never bids or buys.",
+  "_readme": "Mispriced jewelry (gold, silver), bullion, gems: eBay (Browse API), estate-sale alerts, GSA surplus. Run: python -m leads --config leads/hunts.example.json sweep --dry-run. Never bids or buys.",
   "store": "var/hunts.db",
   "ledger": "var/hunts.jsonl",
   "sinks": {
@@ -14,6 +14,121 @@
     "min_score": 45
   },
   "listeners": [
+    {
+      "name": "ebay-jewelry",
+      "kind": "ebay",
+      "enabled": true,
+      "_note": "Mispriced jewelry, gold AND silver: under melt, fine metal filed under fashion/costume, seller-unsure wording, designer/period names (verify), misspellings, dead auctions.",
+      "client_id": "${EBAY_CLIENT_ID}",
+      "client_secret": "${EBAY_CLIENT_SECRET}",
+      "spot": {
+        "silver": "${SILVER_SPOT_USD:-}",
+        "gold": "${GOLD_SPOT_USD:-}"
+      },
+      "max_price_per_carat": {
+        "sapphire": 100,
+        "ruby": 100,
+        "emerald": 80,
+        "diamond": 300
+      },
+      "margin": 0.1,
+      "min_interval_minutes": 20,
+      "queries": [
+        {
+          "hunt": "jewelry",
+          "q": "14k gold ring grams",
+          "max_price": 800
+        },
+        {
+          "hunt": "jewelry",
+          "q": "10k gold class ring",
+          "max_price": 600
+        },
+        {
+          "hunt": "jewelry",
+          "q": "18k gold jewelry",
+          "max_price": 1500
+        },
+        {
+          "hunt": "jewelry",
+          "q": "gold chain grams",
+          "max_price": 1500,
+          "buying": "AUCTION"
+        },
+        {
+          "hunt": "jewelry",
+          "q": "sterling silver jewelry lot grams",
+          "max_price": 300
+        },
+        {
+          "hunt": "jewelry",
+          "q": "sterling silver bracelet heavy",
+          "max_price": 250
+        },
+        {
+          "hunt": "jewelry",
+          "q": "navajo sterling turquoise",
+          "max_price": 300
+        },
+        {
+          "hunt": "jewelry",
+          "q": "estate jewelry lot gold silver",
+          "max_price": 400,
+          "buying": "AUCTION"
+        },
+        {
+          "hunt": "jewelry",
+          "q": "(unmarked, untested) gold ring",
+          "max_price": 400
+        },
+        {
+          "hunt": "jewelry",
+          "q": "grandmas jewelry lot",
+          "max_price": 200
+        },
+        {
+          "hunt": "jewelry",
+          "q": "junk drawer jewelry lot unsearched",
+          "max_price": 150
+        },
+        {
+          "hunt": "jewelry",
+          "q": "14k costume jewelry",
+          "max_price": 300
+        },
+        {
+          "hunt": "jewelry",
+          "q": "(tiffany, yurman, georg jensen) sterling",
+          "max_price": 300
+        },
+        {
+          "hunt": "jewelry",
+          "q": "platinum ring",
+          "max_price": 800
+        }
+      ],
+      "rules": {
+        "exclude_any": [
+          "lab created",
+          "lab-created",
+          "lab grown",
+          "simulated",
+          "cz",
+          "cubic zirconia",
+          "moissanite",
+          "gold plated",
+          "gold filled",
+          "gold tone",
+          "silver plated",
+          "silver tone",
+          "replica",
+          "inspired",
+          "style",
+          "dupe"
+        ],
+        "min_score": 45
+      }
+    },
     {
       "name": "ebay-metals",
       "kind": "ebay",

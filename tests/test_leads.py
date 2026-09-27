@@ -626,7 +626,7 @@ def test_ebay_needs_keys_and_hunt_config_loads(monkeypatch, tmp_path):
     monkeypatch.setenv("EBAY_CLIENT_SECRET", "b")
     config = config_module.load(config_module.__file__.replace("config.py", "hunts.example.json"))
     system = config_module.build(config, store_path=str(tmp_path / "h.db"))
-    assert {x.name for x in system.listeners} == {"ebay-metals", "ebay-gems", "gsa-auctions"}
+    assert {x.name for x in system.listeners} == {"ebay-jewelry", "ebay-metals", "ebay-gems", "gsa-auctions"}
     assert "estate-mail" in {n for n, _ in system.skipped}      # needs the inbox login
 
 
@@ -729,3 +729,26 @@ def test_x_replies_route_and_inbox_skips_them():
     inbox = email_listener.EmailListener("inbox", "imap", "u", "p", connect=lambda: FakeImap({2: bytes(note)}),
                                          skip_from=["x.com", "twitter.com"])
     assert list(inbox.listen()) == []
+
+
+def test_jewelry_hunt_flags_mispriced_pieces():
+    from datetime import datetime, timezone
+    from leads.listeners.ebay import EbayHuntListener
+    costume = _ebay_item("j1", "Vintage 14k ring 6 grams", 180)
+    costume["categories"] = [{"categoryName": "Jewelry & Watches"}, {"categoryName": "Fashion Jewelry"}]
+    unsure = _ebay_item("j2", "Grandma's unmarked gold ring, not sure if real", 40)
+    designer = _ebay_item("j3", "Tiffany sterling silver heart tag bracelet 25g", 45)
+    plated = _ebay_item("j4", "Gold plated 14k style chain", 10)
+    boring = _ebay_item("j5", "Sterling silver ring 3g", 60)
+    web = FakeWeb({"https://api.ebay.com/identity": {"access_token": "T"},
+                   "https://api.ebay.com/buy/browse": {"itemSummaries": [costume, unsure, designer, plated, boring]}})
+    hunt = EbayHuntListener("ebay-jewelry", "id", "secret", [{"hunt": "jewelry", "q": "x"}],
+                            spot={"gold": 2500, "silver": 30}, fetcher=web, now=datetime(2026, 9, 27, tzinfo=timezone.utc))
+    found = {x.external_id: x for x in hunt.listen()}
+    why = {k: " | ".join(r for _, r in v.bonus) for k, v in found.items()}
+    assert "under melt" in why["j1"] and "Fashion Jewelry" in why["j1"]
+    assert "seller unsure" in why["j2"]
+    assert "verify, fakes are common" in why["j3"]
+    rules = RuleSet.from_config({"exclude_any": ["gold plated", "style"], "min_score": 45})
+    routed = {x.external_id for x in Pipeline(SeenStore(), rules, []).process(found.values()).routed}
+    assert {"j1", "j2"} <= routed and "j4" not in routed and "j5" not in routed

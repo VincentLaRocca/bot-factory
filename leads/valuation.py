@@ -229,3 +229,39 @@ def metal_bonus(text: str, cost: float, spot: Dict[str, float], margin: float = 
     elif under < 0:
         bonus.append((-30, f"{-under:.0%} over melt"))
     return bonus, facts
+
+
+# -- mispriced jewelry --------------------------------------------------------
+# The seller may not know what they have. Could be a steal; could be a fake.
+SELLER_UNSURE = [
+    "unmarked", "untested", "not tested", "not sure if real", "unsure if real", "don't know if real",
+    "dont know if real", "may be gold", "might be gold", "may be silver", "might be silver", "tests as gold",
+    "tested gold", "acid tested", "tests as silver", "tests positive", "no hallmark", "unknown metal",
+    "grandma's", "grandmas", "grandmother's", "junk drawer", "unsearched", "unsorted", "found in estate",
+    "estate find", "storage unit", "barn find", "as is", "don't know much", "no idea",
+]
+DESIGNERS = [
+    "tiffany", "cartier", "david yurman", "yurman", "georg jensen", "van cleef", "bulgari", "bvlgari",
+    "john hardy", "lagos", "mikimoto", "harry winston", "chanel", "hermes", "buccellati", "kieselstein",
+    "elsa peretti", "paloma picasso", "spratling", "navajo", "zuni", "taxco", "art deco", "victorian", "edwardian",
+]
+FINE_MARKS = r"\b(?:10|14|18|22|24)\s?k(?:t|arat)?\b|\bsterling\b|\b925\b|\b585\b|\b750\b|\bplatinum\b|\bpt950\b"
+
+
+def jewelry_clues(title: str, categories: List[str]) -> List[tuple]:
+    """Evidence points for a jewelry listing being mispriced. Returns [(points, reason)]."""
+    text = " " + title.lower() + " "
+    clues = []
+    unsure = _words(text, SELLER_UNSURE)
+    if unsure:
+        clues.append((20, f"seller unsure ({unsure[0]}): steal or fake, check photos"))
+    marked = re.search(FINE_MARKS, text)
+    cats = " ".join(categories).lower()
+    if marked and any(c in cats for c in ("fashion", "costume", "vintage & antique jewelry > costume")):
+        clues.append((25, f"'{marked.group(0).strip()}' listed under {categories[-1] if categories else 'fashion/costume'}"))
+    designer = _words(text, DESIGNERS)
+    if designer:
+        clues.append((10, f"designer/period '{designer[0]}': verify, fakes are common"))
+    if re.search(r"\bplatinum\b|\bpt ?950\b|\bpt ?900\b", text):
+        clues.append((10, "platinum mentioned"))
+    return clues
