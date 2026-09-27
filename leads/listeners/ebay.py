@@ -33,6 +33,8 @@ from typing import Any, Dict, Iterator, List, Optional
 from ..http import Fetch, fetch as default_fetch
 from ..model import Lead, clean
 from .. import valuation
+from .. import appraisers
+from ..appraisers import comps as comps_module
 
 TOKEN_URL = "https://api.ebay.com/identity/v1/oauth2/token"
 SEARCH_URL = "https://api.ebay.com/buy/browse/v1/item_summary/search"
@@ -73,6 +75,7 @@ class EbayHuntListener:
         self.spot = {k: float(v) for k, v in (spot or {}).items() if str(v).strip()}
         self.margin = margin
         self.recovery = recovery or valuation.Recovery()
+        self.comps = comps_module.load()
         self.max_ppc = {k.lower(): float(v) for k, v in (max_ppc or {}).items()}
         self.marketplace = marketplace
         self.limit = limit
@@ -142,6 +145,15 @@ class EbayHuntListener:
         seller = item.get("seller") or {}
         bonus, facts, tags = [], [], ["ebay", hunt]
 
+        if hunt in ("vehicle", "equipment", "electronics", "auto"):
+            appraisal = appraisers.appraise(title + " " + str(item.get("condition", "")), cost,
+                                            None if hunt == "auto" else hunt, comps=self.comps,
+                                            spot=self.spot, recovery=self.recovery)
+            got, said = appraisers.score(appraisal, cost, self.recovery.cushion)
+            bonus.extend(got)
+            facts.extend(said or ["no appraisal: item not recognised"])
+            if appraisal:
+                tags.append(appraisal.domain)
         gem = valuation.read_gem(title) if hunt in ("gem", "jewelry") else None
         if hunt in ("silver", "gold", "jewelry"):
             got, said = valuation.break_down(title, cost, self.spot, self.recovery, gem)

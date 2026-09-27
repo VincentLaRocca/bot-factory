@@ -629,7 +629,7 @@ def test_ebay_needs_keys_and_hunt_config_loads(monkeypatch, tmp_path):
     monkeypatch.setenv("EBAY_CLIENT_SECRET", "b")
     config = config_module.load(config_module.__file__.replace("config.py", "hunts.example.json"))
     system = config_module.build(config, store_path=str(tmp_path / "h.db"))
-    assert {x.name for x in system.listeners} == {"ebay-jewelry", "ebay-metals", "ebay-gems", "gsa-auctions"}
+    assert {x.name for x in system.listeners} == {"ebay-jewelry", "ebay-metals", "ebay-gems", "ebay-refurb", "gsa-auctions"}
     assert "estate-mail" in {n for n, _ in system.skipped}      # needs the inbox login
 
 
@@ -871,3 +871,18 @@ def test_rule_words_are_whole_words():
     score_, _, reasons = RuleSet.from_config({"boost": {"silver": 10, "ram": 5}}).score(
         lead("2019 Chevrolet Silverado with new programming"))
     assert score_ == 20 and not reasons
+
+
+def test_ebay_refurb_lots_use_the_appraisers():
+    from datetime import datetime, timezone
+    from leads.listeners.ebay import EbayHuntListener
+    from leads.appraisers.comps import Comp
+    web = FakeWeb({"https://api.ebay.com/identity": {"access_token": "T"},
+                   "https://api.ebay.com/buy/browse": {"itemSummaries": [
+                       _ebay_item("r1", "Lot of 20 Dell Latitude 7490 laptops i5 no hard drives", 500, ship=60)]}})
+    hunt = EbayHuntListener("ebay-refurb", "id", "secret", [{"hunt": "electronics", "q": "x"}], fetcher=web,
+                            now=datetime(2026, 9, 27, tzinfo=timezone.utc))
+    hunt.comps = [Comp("electronics", ["latitude"], None, None, 90, "")]
+    lot = next(hunt.listen())
+    assert "electronics" in lot.tags and "20 × laptop" in lot.body
+    assert any("upside" in r for _, r in lot.bonus)      # 20 × $90 × 0.8 = $1,440 vs $560

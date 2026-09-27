@@ -440,6 +440,55 @@
       "scrap_per_ton": "${SCRAP_PER_TON:-180}",
       "cat_value": "${CAT_CONVERTER_VALUE:-100}",
       "comps_csv": "${VALUE_COMPS_CSV:-}"
+    },
+    {
+      "name": "ebay-refurb",
+      "kind": "ebay",
+      "enabled": true,
+      "_note": "Vinny's old trade: bulk computer lots to refurbish or part out. Appraised per unit x count against your price sheet.",
+      "client_id": "${EBAY_CLIENT_ID}",
+      "client_secret": "${EBAY_CLIENT_SECRET}",
+      "min_interval_minutes": 60,
+      "queries": [
+        {
+          "hunt": "electronics",
+          "q": "lot laptops dell latitude",
+          "max_price": 1500
+        },
+        {
+          "hunt": "electronics",
+          "q": "lot thinkpad laptops",
+          "max_price": 1500
+        },
+        {
+          "hunt": "electronics",
+          "q": "lot optiplex desktops",
+          "max_price": 1000
+        },
+        {
+          "hunt": "electronics",
+          "q": "laptop lot no hard drive",
+          "max_price": 800,
+          "buying": "AUCTION"
+        },
+        {
+          "hunt": "electronics",
+          "q": "government surplus computers lot",
+          "max_price": 1500
+        },
+        {
+          "hunt": "electronics",
+          "q": "poweredge server lot",
+          "max_price": 1500
+        }
+      ],
+      "rules": {
+        "exclude_any": [
+          "for parts only screens",
+          "empty case"
+        ],
+        "min_score": 45
+      }
     }
   ]
 }
