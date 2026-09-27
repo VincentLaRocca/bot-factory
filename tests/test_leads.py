@@ -534,7 +534,7 @@ def test_read_metal(title, metal, ozt):
 
 @pytest.mark.parametrize("title", ["Silver plated tray 500g", "Gold filled 14k 1/20 bracelet 10g",
                                    "Silver tone necklace", "Weighted sterling candlesticks 900g",
-                                   "Sterling silver ring (no weight)"])
+                                   "Sterling silver (no item, no weight)"])
 def test_read_metal_refuses_fakes_and_guesses(title):
     assert valuation.read_metal(title) is None
 
@@ -543,7 +543,9 @@ def test_read_gem():
     gem = valuation.read_gem("GIA Certified 1.52 ct Natural Blue Saphire")
     assert (gem.stone, gem.carats, gem.certified) == ("sapphire", 1.52, "GIA")
     assert gem.signals and "saphire" in gem.signals[0]
-    assert valuation.read_gem("Lab Created Ruby 5ct").signals == ["fake"]
+    lab = valuation.read_gem("Lab Created Ruby 5ct")
+    assert lab.natural is False and "synthetic" in lab.signals
+    assert valuation.read_gem("CZ solitaire 2ct").signals == ["fake"]
 
 
 def _ebay_item(item_id, title, price, ship=0.0, auction=False, bids=0, ends="2026-09-27T20:00:00.000Z",
@@ -765,9 +767,9 @@ def test_money_back_test_math():
     assert got == [] and "short by" in facts[-1]
     # Gems add their value per carat when Vinny sets one
     rec = Recovery(stone_per_ct={"sapphire": 50})
-    got, facts = break_down("14k sapphire ring 2 ct 5 grams", 300, {"gold": 2500}, rec,
-                            read_gem("14k sapphire ring 2 ct 5 grams"))
-    assert "gems ~$100.00" in " ".join(facts) and "money back" in got[0][1]   # $235 melt + $100 gems > $300
+    title = "14k natural sapphire ring 2 ct 5 grams"
+    got, facts = break_down(title, 300, {"gold": 2500}, rec, read_gem(title))
+    assert "2 ct natural sapphire ≈ $150" in " ".join(facts) and "money back" in got[0][1]  # $235 melt + $150 gems
     # Optional strictness knobs still work
     strict = Recovery(payout={"gold": 0.8}, tax_rate=0.06, cushion=0.10)
     got, facts = break_down("14k ring 10 grams", 360, {"gold": 2500}, strict)
@@ -785,3 +787,33 @@ def test_designer_pieces_skip_the_break_down_veto():
     found = next(hunt.listen())
     assert all(p >= 0 for p, _ in found.bonus) and "designer" in found.tags
     assert any("break-down test doesn't apply" in r for _, r in found.bonus)
+
+
+def test_gram_weights_are_guesstimated_when_missing():
+    from leads.valuation import break_down, read_metal
+    ring = read_metal("Vintage 14k gold class ring size 10")
+    assert ring.estimated and "~7 g est. class ring" in ring.basis and ring.metal == "gold"
+    lot = read_metal("Lot of 5 sterling silver spoons")
+    assert lot.estimated and lot.ozt == pytest.approx(5 * 25 / 31.1035 * 0.925, abs=1e-3)
+    assert not read_metal("14k gold ring 5 grams").estimated          # stated weights win
+    got, facts = break_down("Vintage 14k gold class ring", 150, {"gold": 2500})
+    assert got and got[0][0] <= 40 and "estimated weight" in got[0][1]   # 7 g 14k ≈ $329 melt vs $150
+    got, facts = break_down("14k gold ring", 500, {"gold": 2500})
+    assert got == [] and "estimated weight" in facts[-1]                # a guess never earns a penalty
+
+
+def test_gem_value_by_carat_quality_clarity_and_origin():
+    from leads.valuation import gem_value, read_gem
+    base = {"diamond": 1000, "sapphire": 200}
+    fine = read_gem("GIA natural diamond 1.5 ct G VS1 excellent")
+    assert (fine.natural, fine.color, fine.clarity, fine.certified) == (True, "g", "vs1", "GIA")
+    value, why = gem_value(fine, base)
+    assert value == pytest.approx(1.5 * 1000 * 1.5 * 1.2 * 1.25 * 1.15, rel=1e-3) and "GIA" in why
+    lab = read_gem("lab grown diamond 1.5 ct G VS1")
+    assert gem_value(lab, base)[0] < value * 0.05                       # synthetic ≈ 3% of natural
+    unheated = read_gem("natural unheated royal blue sapphire 2 ct eye clean")
+    filled = read_gem("natural glass filled ruby 2 ct")
+    assert (unheated.treatment, unheated.color, unheated.clarity) == ("unheated", "royal blue", "eye clean")
+    assert gem_value(unheated, base)[0] > 2 * 200 * 1.5 * 2                # size, color, clarity and no-heat stack up
+    assert filled.treatment == "glass filled" and gem_value(filled, base)[0] == 0.0   # no base set for ruby
+    assert gem_value(read_gem("CZ 3ct"), base) == (0.0, "simulant: no gem value")

@@ -128,7 +128,7 @@
         "min_score": 45
       },
       "recovery": {
-        "_note": "Vinny's value test: gram weight melted down at spot + gem value vs price + shipping. Set stone_per_ct to what you'd count each stone at per carat. Optional: payout < 1, tax_rate, fee, cushion.",
+        "_note": "Vinny's value test: gram weight melted at spot + gem value vs price + shipping. stone_per_ct = YOUR base $/ct for a clean, natural, untreated ~1 ct stone; size, clarity, color, treatment, natural-vs-lab and certificate adjust it (leads/valuation.py GEM_FACTORS, overridable in gem_factors). 0 = stones not counted.",
         "stone_per_ct": {
           "diamond": 0,
           "sapphire": 0,
@@ -193,7 +193,7 @@
         }
       ],
       "recovery": {
-        "_note": "Vinny's value test: gram weight melted down at spot + gem value vs price + shipping. Set stone_per_ct to what you'd count each stone at per carat. Optional: payout < 1, tax_rate, fee, cushion.",
+        "_note": "Vinny's value test: gram weight melted at spot + gem value vs price + shipping. stone_per_ct = YOUR base $/ct for a clean, natural, untreated ~1 ct stone; size, clarity, color, treatment, natural-vs-lab and certificate adjust it (leads/valuation.py GEM_FACTORS, overridable in gem_factors). 0 = stones not counted.",
         "stone_per_ct": {
           "diamond": 0,
           "sapphire": 0,
@@ -253,7 +253,7 @@
         "min_score": 45
       },
       "recovery": {
-        "_note": "Vinny's value test: gram weight melted down at spot + gem value vs price + shipping. Set stone_per_ct to what you'd count each stone at per carat. Optional: payout < 1, tax_rate, fee, cushion.",
+        "_note": "Vinny's value test: gram weight melted at spot + gem value vs price + shipping. stone_per_ct = YOUR base $/ct for a clean, natural, untreated ~1 ct stone; size, clarity, color, treatment, natural-vs-lab and certificate adjust it (leads/valuation.py GEM_FACTORS, overridable in gem_factors). 0 = stones not counted.",
         "stone_per_ct": {
           "diamond": 0,
           "sapphire": 0,
@@ -381,7 +381,7 @@
         "min_score": 35
       },
       "recovery": {
-        "_note": "Vinny's value test: gram weight melted down at spot + gem value vs price + shipping. Set stone_per_ct to what you'd count each stone at per carat. Optional: payout < 1, tax_rate, fee, cushion.",
+        "_note": "Vinny's value test: gram weight melted at spot + gem value vs price + shipping. stone_per_ct = YOUR base $/ct for a clean, natural, untreated ~1 ct stone; size, clarity, color, treatment, natural-vs-lab and certificate adjust it (leads/valuation.py GEM_FACTORS, overridable in gem_factors). 0 = stones not counted.",
         "stone_per_ct": {
           "diamond": 0,
           "sapphire": 0,

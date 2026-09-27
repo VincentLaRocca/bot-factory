@@ -152,12 +152,22 @@ class EbayHuntListener:
                 tags.append(metal.metal)
         if gem is not None:
             if "fake" in gem.signals:
-                bonus.append((-100, "lab/simulant/glass"))
+                bonus.append((-100, "simulant (CZ/glass/crystal): not a gemstone"))
+            elif gem.natural is False:
+                bonus.append((-60, "lab-created/synthetic: we hunt natural stones"))
+            elif gem.natural:
+                bonus.append((5, "stated natural"))
+            if gem.treatment in ("glass filled", "lead glass", "filled", "diffused", "diffusion", "dyed", "coated"):
+                bonus.append((-25, f"heavily treated ({gem.treatment})"))
+            elif gem.treatment in ("untreated", "no heat", "unheated"):
+                bonus.append((15, f"{gem.treatment}"))
             if gem.certified:
                 bonus.append((15, f"certified ({gem.certified})"))
             if gem.stone and gem.carats:
                 ppc = cost / gem.carats if gem.carats else 0
-                facts.append(f"{gem.carats:g} ct {gem.stone} · ${ppc:,.0f}/ct")
+                grade = ", ".join(x for x in (gem.color, gem.clarity, gem.treatment,
+                                              "natural" if gem.natural else "lab" if gem.natural is False else "") if x)
+                facts.append(f"{gem.carats:g} ct {gem.stone}" + (f" ({grade})" if grade else "") + f" · ${ppc:,.0f}/ct")
                 limit = self.max_ppc.get(gem.stone)
                 if limit and ppc <= limit:
                     bonus.append((30, f"${ppc:,.0f}/ct under your ${limit:,.0f}/ct {gem.stone} limit"))

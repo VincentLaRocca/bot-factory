@@ -35,7 +35,29 @@ our money back?**
 - **Cost** = price + shipping.
 - Break-down ≥ cost: **money back**, +40 plus the % it clears by. Short by under 15%: no points, noted. Worse: −30.
 
+**No weight in the title? It gets guesstimated.** Karat or sterling with no weight
+gets a low-end typical weight for the item: ring 2.5 g, men's ring 6, class ring 7,
+band 3, chain 4 (link chains 10), bracelet 5, bangle 7, cuff 20, earrings 1.5,
+pendant 2, brooch 5, spoon 25, fork 35, and so on, times the quantity in the lot.
+Estimates score lower (max +40), are labeled "confirm weight in photos/description",
+and never get a penalty. Stated weights always win.
+
 Optional knobs in each listener's `recovery` block, all off by default: `payout` (below 1.0 if you want what a refiner actually pays), `tax_rate`, `fee`, and `cushion` (demand a margin above break-even).
+
+**Gem value = carats × your base $/ct × size × clarity × color × treatment × origin × certificate.**
+You set one base price per stone type (`stone_per_ct`: a clean, natural, untreated
+~1 ct stone of ordinary color). The title then adjusts it:
+
+- **Size:** per-carat price rises with size (under 0.5 ct ×0.6 … over 3 ct ×2.6)
+- **Clarity:** diamond grades FL…I3, or "eye clean", "included", "opaque" for colored stones
+- **Color:** diamond letters D…M, or "pigeon blood", "royal blue", "cornflower", "vivid", "pale"…
+- **Treatment:** unheated/no heat ×1.5 … heated ×1 … dyed/diffused ×0.2 … glass-filled ×0.05
+- **Natural vs synthetic:** stated natural ×1; lab/created/synthetic/moissanite ×0.03; not stated ×0.6
+- **Certificate** (GIA, AGS, IGI…): ×1.15
+
+Simulants (CZ, glass, crystal, rhinestone) are worth nothing. In gem and jewelry
+hunts, lab stones lose 60 points and heavy treatments lose 25, because the hunt is for
+natural stones. All multipliers can be overridden in `recovery.gem_factors`.
 
 **Exception: designer pieces.** A Tiffany or Yurman piece can be worth more
 whole than broken down. For designer and period pieces, the break-down test

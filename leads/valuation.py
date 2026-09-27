@@ -100,6 +100,7 @@ class Metal:
     metal: str                  # "silver" | "gold"
     ozt: float                  # troy ounces of pure metal
     basis: str                  # how we got there, in words
+    estimated: bool = False     # True when the weight is a typical-weight guess, not stated
 
     def melt(self, spot: Dict[str, float]) -> Optional[float]:
         price = spot.get(self.metal)
@@ -112,6 +113,10 @@ class Gem:
     carats: Optional[float] = None
     certified: Optional[str] = None
     signals: List[str] = field(default_factory=list)
+    natural: Optional[bool] = None      # True natural/genuine/mined, False lab/synthetic/created, None unstated
+    clarity: Optional[str] = None       # diamond grade (VS1…) or a coloured-stone word (eye clean…)
+    color: Optional[str] = None         # diamond letter (D–M) or a coloured-stone word (vivid, royal blue…)
+    treatment: Optional[str] = None     # heated, filled, diffused… (or "untreated")
 
 
 def read_metal(title: str) -> Optional[Metal]:
@@ -178,28 +183,170 @@ def read_metal(title: str) -> Optional[Metal]:
             continue
         ozt = grams / GRAMS_PER_OZT * purity * qty
         return Metal(metal, round(ozt, 4), f"{qty} × {how} of {label}" if qty > 1 else f"{how} of {label}")
+
+    # 4. No weight stated: guesstimate from what the item is (low-end typical weights).
+    guess = estimate_grams(text)
+    if guess:
+        grams, item = guess
+        _, metal, purity, label = marks[0]
+        ozt = grams / GRAMS_PER_OZT * purity * qty
+        how = f"~{grams:g} g est. {item}"
+        return Metal(metal, round(ozt, 4), f"{qty} × {how} of {label}" if qty > 1 else f"{how} of {label}",
+                     estimated=True)
     return None
+
+
+# Typical weights, deliberately at the LOW end, so a guess never flatters a listing.
+# Checked in order: more specific items first.
+TYPICAL_GRAMS = [
+    (r"\bclass ring\b", 7.0, "class ring"),
+    (r"\b(?:men'?s|mens|gents?)\b.*\b(?:ring|band)\b|\bsignet\b", 6.0, "men's ring"),
+    (r"\bwedding band\b|\bband\b", 3.0, "band"),
+    (r"\bring\b", 2.5, "ring"),
+    (r"\b(?:cuban|curb|figaro|franco|miami)\b.*\bchain\b", 10.0, "link chain"),
+    (r"\brope chain\b", 6.0, "rope chain"),
+    (r"\bchain\b|\bnecklace\b", 4.0, "chain"),
+    (r"\bcuff\b", 20.0, "cuff"),
+    (r"\bbangle\b", 7.0, "bangle"),
+    (r"\btennis bracelet\b", 7.0, "tennis bracelet"),
+    (r"\bbracelet\b", 5.0, "bracelet"),
+    (r"\bhoop\b", 2.5, "hoop earrings"),
+    (r"\bearring\b|\bstud\b", 1.5, "earrings"),
+    (r"\bpendant\b|\bcharm\b|\blocket\b|\bcross\b", 2.0, "pendant/charm"),
+    (r"\bbrooch\b|\bpin\b", 5.0, "brooch"),
+    (r"\bcufflink\b", 6.0, "cufflinks"),
+    (r"\btablespoon\b|\bserving spoon\b", 45.0, "serving spoon"),
+    (r"\bteaspoon\b", 20.0, "teaspoon"),
+    (r"\bspoon\b", 25.0, "spoon"),
+    (r"\bfork\b", 35.0, "fork"),
+    (r"\bnapkin ring\b", 15.0, "napkin ring"),
+    (r"\bmoney clip\b", 12.0, "money clip"),
+]
+
+
+def estimate_grams(text: str):
+    """(grams, item) from a low-end typical-weight table, or None."""
+    no_s = re.sub(r"\b(\w{3,})s\b", r"\1", text)       # "spoons" → "spoon", "bangles" → "bangle"
+    no_es = re.sub(r"\b(\w{3,})es\b", r"\1", text)     # "brooches" → "brooch"
+    for pattern, grams, item in TYPICAL_GRAMS:
+        if any(re.search(pattern, t) for t in (text, no_s, no_es)):
+            return grams, item
+    return None
+
+
+SIMULANTS = ["simulated", "simulant", "cz", "cubic zirconia", "glass", "imitation", "faux", "diamonique",
+             "costume", "crystal", "rhinestone", "resin", "acrylic", "plastic", "paste"]
+SYNTHETICS = ["lab created", "lab-created", "lab grown", "lab-grown", "created", "synthetic", "man made",
+              "man-made", "cultured diamond", "cvd", "hpht", "moissanite"]
+NATURAL_WORDS = ["natural", "genuine", "mined", "earth mined", "earth-mined", "real"]
+DIAMOND_CLARITY = ["fl", "if", "vvs1", "vvs2", "vvs", "vs1", "vs2", "vs", "si1", "si2", "si3", "si", "i1", "i2", "i3"]
+STONE_CLARITY = ["eye clean", "loupe clean", "transparent", "translucent", "included", "heavily included", "opaque", "cloudy"]
+STONE_COLOR = ["pigeon blood", "royal blue", "cornflower", "padparadscha", "vivid", "intense", "deep", "rich",
+               "medium", "light", "pale", "dark"]
+TREATMENTS = ["untreated", "no heat", "unheated", "heated", "heat treated", "oiled", "minor oil", "filled",
+              "glass filled", "lead glass", "fracture filled", "diffused", "diffusion", "irradiated", "dyed",
+              "coated", "enhanced", "treated"]
 
 
 def read_gem(title: str) -> Gem:
     text = " " + title.lower() + " "
     gem = Gem()
-    if _words(text, GEM_FAKES):
-        gem.signals.append("fake")
+    # "glass filled" / "lead glass" rubies are real (heavily treated) stones, not glass
+    if _words(re.sub(r"glass[- ]filled|lead[- ]glass", " ", text), SIMULANTS):
+        gem.signals.append("fake")          # not a gemstone at all
         return gem
     spelled = [f"{wrong}→{right}" for wrong, right in MISSPELLINGS.items() if re.search(r"\b" + wrong + r"\b", text)]
     if spelled:
         gem.signals.append("misspelled: " + ", ".join(spelled))
     for fixed, right in MISSPELLINGS.items():
         text = re.sub(r"\b" + fixed + r"\b", right, text)
-    gem.stone = next((s for s in STONES if re.search(r"\b" + s + r"s?\b", text)), None)
+    gem.stone = next((st for st in STONES if re.search(r"\b" + st + r"s?\b", text)), None)
+    if _words(text, SYNTHETICS):
+        gem.natural = False
+        gem.signals.append("synthetic")
+        if "moissanite" in text:
+            gem.stone = gem.stone or "moissanite"
+    elif _words(text, NATURAL_WORDS):
+        gem.natural = True
     carat = re.search(_NUM + r"\s*(?:ct|cts|carats?|cttw|ctw|tcw)\b", text)
     if carat:
         gem.carats = _number(carat.group(1))
     cert = _words(text, CERTS)
     if cert:
         gem.certified = cert[0].upper()
+    clarity = _words(text, STONE_CLARITY) or _words(text, DIAMOND_CLARITY)
+    if clarity:
+        gem.clarity = clarity[0]
+    letter = re.search(r"\b([d-m])\s*(?:color|colour)\b|\b(?:color|colour)\s*:?\s*([d-m])\b"
+                       r"|\b([d-m])\s*[/,]?\s*(?:fl|if|vvs\d?|vs\d?|si\d?|i\d)\b", text)
+    if letter:
+        gem.color = next(g for g in letter.groups() if g)
+    else:
+        words = _words(text, STONE_COLOR)
+        if words:
+            gem.color = max(words, key=len)
+    treatment = _words(text, TREATMENTS)
+    if treatment:
+        gem.treatment = max(treatment, key=len)   # "glass filled" beats "filled"
     return gem
+
+
+# Price-per-carat multipliers. Vinny sets the BASE $/ct per stone (a clean,
+# natural, untreated, ~1 ct stone of ordinary color); these adjust it. All are
+# overridable in the hunt config ("gem_factors").
+GEM_FACTORS = {
+    "synthetic": 0.03,          # lab/created stones: a few % of natural
+    "unstated_origin": 0.6,     # neither "natural" nor "lab" stated: discount the doubt
+    "certified": 1.15,
+    "size": [(0.5, 0.6), (1.0, 1.0), (2.0, 1.5), (3.0, 2.0), (99, 2.6)],   # (up to ct, x per-ct price)
+    "clarity": {"fl": 2.0, "if": 1.8, "vvs1": 1.5, "vvs2": 1.4, "vvs": 1.4, "vs1": 1.2, "vs2": 1.1, "vs": 1.1,
+                "si1": 0.9, "si2": 0.75, "si3": 0.6, "si": 0.8, "i1": 0.5, "i2": 0.35, "i3": 0.25,
+                "eye clean": 1.2, "loupe clean": 1.4, "transparent": 1.1, "translucent": 0.6,
+                "included": 0.6, "heavily included": 0.35, "opaque": 0.2, "cloudy": 0.4},
+    "color": {"d": 1.6, "e": 1.5, "f": 1.4, "g": 1.25, "h": 1.1, "i": 1.0, "j": 0.9, "k": 0.75, "l": 0.65, "m": 0.55,
+              "pigeon blood": 2.5, "royal blue": 2.2, "cornflower": 1.8, "padparadscha": 2.5, "vivid": 1.6,
+              "intense": 1.3, "deep": 1.2, "rich": 1.2, "medium": 1.0, "light": 0.7, "pale": 0.5, "dark": 0.6},
+    "treatment": {"untreated": 1.5, "no heat": 1.5, "unheated": 1.5, "heated": 1.0, "heat treated": 1.0,
+                  "minor oil": 1.0, "oiled": 0.9, "enhanced": 0.7, "treated": 0.7, "irradiated": 0.6,
+                  "coated": 0.3, "dyed": 0.2, "diffused": 0.2, "diffusion": 0.2, "filled": 0.15,
+                  "glass filled": 0.05, "lead glass": 0.05, "fracture filled": 0.3},
+}
+
+
+def gem_value(gem: Gem, base_per_ct: Dict[str, float], factors: Optional[Dict] = None):
+    """(value, explanation) for a stone: carats x base $/ct x size x clarity x color x treatment x origin x cert.
+
+    Returns (0, reason) when there's nothing to value (no base price set, no carat weight, a simulant).
+    """
+    f = {**GEM_FACTORS, **(factors or {})}
+    if "fake" in gem.signals:
+        return 0.0, "simulant: no gem value"
+    if not gem.stone or not gem.carats:
+        return 0.0, ""
+    base = base_per_ct.get(gem.stone, 0.0)
+    if not base:
+        return 0.0, f"{gem.carats:g} ct {gem.stone}: no base $/ct set"
+    per_ct, why = base, [f"base ${base:,.0f}/ct"]
+    size = next(mult for limit, mult in f["size"] if gem.carats <= limit)
+    if size != 1.0:
+        per_ct *= size
+        why.append(f"size x{size:g}")
+    for key, value in (("clarity", gem.clarity), ("color", gem.color), ("treatment", gem.treatment)):
+        mult = f[key].get(value) if value else None
+        if mult and mult != 1.0:
+            per_ct *= mult
+            why.append(f"{value} x{mult:g}")
+    if gem.natural is False:
+        per_ct *= f["synthetic"]
+        why.append(f"synthetic x{f['synthetic']:g}")
+    elif gem.natural is None:
+        per_ct *= f["unstated_origin"]
+        why.append(f"origin unstated x{f['unstated_origin']:g}")
+    if gem.certified:
+        per_ct *= f["certified"]
+        why.append(f"{gem.certified} x{f['certified']:g}")
+    value = round(gem.carats * per_ct, 2)
+    return value, f"{gem.carats:g} ct {'natural' if gem.natural else 'lab' if gem.natural is False else ''} {gem.stone} ≈ ${value:,.0f} ({', '.join(why)})".replace("  ", " ")
 
 
 def misspelled(title: str) -> List[str]:
@@ -221,7 +368,8 @@ class Recovery:
     """
 
     payout: Dict[str, float] = field(default_factory=lambda: {"gold": 1.0, "silver": 1.0})
-    stone_per_ct: Dict[str, float] = field(default_factory=dict)
+    stone_per_ct: Dict[str, float] = field(default_factory=dict)   # BASE $/ct per stone (see GEM_FACTORS)
+    gem_factors: Dict = field(default_factory=dict)
     tax_rate: float = 0.0
     fee: float = 0.0
     cushion: float = 0.0           # 0 = money back at break-even
@@ -233,6 +381,7 @@ class Recovery:
         payout = {**base.payout, **{k: float(v) for k, v in (data.get("payout") or {}).items() if str(v).strip()}}
         return cls(payout=payout,
                    stone_per_ct={k.lower(): float(v) for k, v in (data.get("stone_per_ct") or {}).items()},
+                   gem_factors=dict(data.get("gem_factors") or {}),
                    tax_rate=float(data.get("tax_rate", base.tax_rate)), fee=float(data.get("fee", base.fee)),
                    cushion=float(data.get("cushion", base.cushion)))
 
@@ -246,9 +395,9 @@ def break_down(text: str, cost: float, spot: Dict[str, float], recovery: Optiona
     recovery = recovery or Recovery()
     bonus, facts = [], []
     metal = read_metal(text)
-    stones = 0.0
-    if gem and gem.stone and gem.carats and "fake" not in gem.signals:
-        stones = round(gem.carats * recovery.stone_per_ct.get(gem.stone, 0.0), 2)
+    stones, stone_note = 0.0, ""
+    if gem:
+        stones, stone_note = gem_value(gem, recovery.stone_per_ct, recovery.gem_factors)
     if not metal and not stones:
         return bonus, facts
     metal_value = 0.0
@@ -263,8 +412,8 @@ def break_down(text: str, cost: float, spot: Dict[str, float], recovery: Optiona
         else:
             metal_value = round(melt * recovery.payout.get(metal.metal, 1.0), 2)
             facts.append(f"melt ${melt:,.2f}" + (f" → payout ~${metal_value:,.2f}" if metal_value != melt else ""))
-    if stones:
-        facts.append(f"gems ~${stones:,.2f} at your per-carat value")
+    if stone_note:
+        facts.append(("gems " if stones else "") + stone_note)
     floor = round(metal_value + stones, 2)
     if not floor:
         return bonus, facts
@@ -274,6 +423,12 @@ def break_down(text: str, cost: float, spot: Dict[str, float], recovery: Optiona
     all_in = round(cost * (1 + recovery.tax_rate) + recovery.fee, 2)
     margin = floor - all_in
     pct = margin / all_in if all_in else 0.0
+    if metal and metal.estimated:
+        facts.append(f"break-down ~${floor:,.2f} (estimated weight) vs cost ${all_in:,.2f} ({pct:+.0%})")
+        if pct >= recovery.cushion:
+            bonus.append((20 + min(20, int(pct * 50)),
+                          f"money back on estimated weight (~${floor:,.0f} vs ${all_in:,.0f}): confirm weight in photos/description"))
+        return bonus, facts  # a guess never earns a penalty
     facts.append(f"break-down ${floor:,.2f} vs cost ${all_in:,.2f} ({pct:+.0%})")
     if pct >= recovery.cushion:
         bonus.append((40 + min(40, int(pct * 100)), f"money back: breaks down to ${floor:,.0f} vs ${all_in:,.0f} cost (+{pct:.0%})"))
