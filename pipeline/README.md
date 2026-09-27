@@ -15,6 +15,7 @@ that speed doesn't cost trust.
 | **Judge** | Claude Code | the factory's judge: checks work against the Build Card's "Done means", runs the tests, rules pass / rework, and builds or fixes code when that's the fastest route |
 | **Assist** | Grok (sometimes) | called in when an outside read or extra hands help, such as a Breaker pass on a Maker's work, a tie-break between Claudes, or a piece of the build. Its input is logged like any other |
 | **Library** | Gemini | keeper of the NotebookLM library. Asked what already exists (their specs, notebooks and prior work) before anything new is built |
+| **Site builds** | ChatGPT (Apps SDK sites) | when a piece needs a hosted web app or site, borrow ChatGPT's site skills, as with the Mid-Atlantic Lead Board and the RSS feed leads app. The factory talks to them over their webhooks/feeds |
 
 ## Loose, not completely loose
 

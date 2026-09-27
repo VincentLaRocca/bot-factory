@@ -57,6 +57,7 @@ Already ours, to fold in instead of rebuilding:
 
 - `lead-board/`: the Apps Script board is the triage queue (in use)
 - Mid-Atlantic Lead Board (ChatGPT Apps SDK): has an authenticated `POST /api/webhooks/leads`. It could be a second sink next to the Apps Script board.
+- RSS feed leads app (ChatGPT Apps SDK): already built. If it publishes an RSS/Atom URL, it plugs straight into a `feed` listener; if it takes webhooks, it's another `sinks.webhooks` entry. Need its URL.
 - Courier SMS listener on Fly.io and the Courier Alerts Slack app (`#courier-bids`): reuse the Fly app and Slack webhook instead of new ones
 - `capabilities/anomaly` and `capabilities/research`: later, to flag unusual leads and research promising ones (v1, not v0)
 
@@ -104,3 +105,4 @@ Conventions: pipeline/README.md. Station name on every entry; `[cross]` marks a 
 - 2026-09-27 · Chrome · setup: The Human Network inbox (HMTCHS Gmail) is set as the lead inbox. Leads label + Reddit filter + Reddit email notifications done in Vinny's browser. App Password and `.env` are Vinny's step (never through an AI). The address stays out of this public repo.
 - 2026-09-27 · Claude web · [cross]: Setback: Vinny pushed too hard on Reddit and got pushback. Plan: find out the exact action, send an honest note to the mods or one appeal, then rebuild slowly. No new accounts to get around a ban. `reddit-threads` and `owned-groups` paused until he's in good standing; `reddit-replies` (his own inbox) stays on. Other lead channels unaffected.
 - 2026-09-27 · Claude web · [cross]: Vinny: "switch human touch to Twitter." X is now the human-first posting channel. New `x-replies` email listener (X notification emails in the Human Network inbox; only_from x.com/twitter.com; login/security/digest mail excluded). The inbox skips X mail. No X API (paid) and no scraping. Chrome never acts on X; it drafts only. Reddit stays paused.
+- 2026-09-27 · Claude web · [cross]: Vinny: for site builds, borrow ChatGPT's site skills (as with the lead board); the RSS feed leads app lives there too. Added ChatGPT as a site-build role in pipeline/README.md, and the RSS app to the borrow list.
