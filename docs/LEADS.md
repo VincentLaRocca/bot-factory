@@ -63,6 +63,14 @@ sweeper: Actions, the 5090 box, Chrome, and inbound forms.
 | Reddit replies | `email` (`reddit-replies`) | same IMAP login | **Reddit is human-first:** Vinny posts as himself, and people reply. Reddit's reply and message notification emails land in the Leads label, and every reply is routed (`min_score: 0`) as feedback to look at. |
 | Inbound | `webhook` | `LEADS_WEBHOOK_TOKEN` | `POST /leads` takes one JSON object or an array — common form field names (`name`, `phone`, `service`, `message`, `budget`, `zip`…) are mapped automatically. `POST /sms` takes Twilio's inbound webhook as-is. Auth by `Authorization: Bearer` or `?token=`. |
 
+**Human touch moved to X/Twitter.** Vinny posts on X in his own voice;
+replies, mentions, quote-posts and DMs arrive as X's notification emails in the
+Human Network inbox, and `x-replies` puts them on the board (every one routes,
+minus login/security/digest mail). No X API (reads are paid), and no scraping.
+Turn on X's email notifications for replies, mentions and DMs, and add a Gmail
+filter: from `x.com OR twitter.com` → label Leads. Claude can draft posts and
+threads; Vinny edits and posts them himself.
+
 **Reddit: Vinny posts, the system listens for replies.** Scraping Reddit
 from servers gets throttled, and cold-reading strangers' posts is the weaker
 channel anyway. Vinny posts in local and tribe subreddits as a real

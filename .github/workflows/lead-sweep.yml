@@ -8,7 +8,7 @@ name: Lead sweep
 #   SAM_API_KEY, LEADS_IMAP_USER, LEADS_IMAP_PASSWORD,
 #   LEAD_BOARD_API_URL, SLACK_WEBHOOK_URL, GOOGLE_ALERT_PAINTING_RSS (optional)
 #
-# This workflow sweeps the inbox and Reddit reply emails every 30 min, SAM.gov
+# This workflow sweeps the inbox and Reddit/X reply emails every 30 min, SAM.gov
 # twice a day, and posts the morning digest. Reddit itself is human-first
 # (Vinny posts, replies arrive by email); RSS feeds are parked by default.
 
@@ -62,7 +62,7 @@ jobs:
           elif [ "${{ github.event.schedule }}" = "15 11,19 * * *" ]; then
             echo "only=sam-painting" >> "$GITHUB_OUTPUT"
           else
-            echo "only=inbox reddit-replies" >> "$GITHUB_OUTPUT"
+            echo "only=inbox reddit-replies x-replies" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Sweep

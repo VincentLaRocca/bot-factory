@@ -347,7 +347,7 @@ def test_example_config_builds_and_skips_missing_keys(monkeypatch, tmp_path):
     monkeypatch.setenv("LEADS_WEBHOOK_TOKEN", "t")
     config = config_module.load(config_module.__file__.replace("config.py", "config.example.json"))
     system = config_module.build(config, store_path=str(tmp_path / "s.db"))
-    assert {n for n, _ in system.skipped} == {"sam-painting", "inbox", "reddit-replies"}
+    assert {n for n, _ in system.skipped} == {"sam-painting", "inbox", "reddit-replies", "x-replies"}
     assert system.listeners == []               # Reddit scraping is parked: Vinny posts, replies come by email
     assert system.webhook["token"] == "t"
     assert [s.name for s in system.pipeline.sinks] == ["ledger"]    # no board/slack without URLs
@@ -714,3 +714,18 @@ def test_ebay_sandbox_keys_use_sandbox_endpoints():
     hunt = EbayHuntListener("x", "someone-app-SBX-abc123-def", "secret", [{"q": "sterling"}], fetcher=web)
     assert list(hunt.listen()) == [] and hunt.sandbox
     assert all(call["url"].startswith("https://api.sandbox.ebay.com/") for call in web.calls)
+
+
+def test_x_replies_route_and_inbox_skips_them():
+    note = EmailMessage()
+    note["From"] = "X <notify@x.com>"
+    note["Subject"] = "@rva_builder replied to your post"
+    note["Message-ID"] = "<x1@x>"
+    note.set_content("Are you available to haul a sofa Saturday? How much?")
+    replies = email_listener.EmailListener("x-replies", "imap", "u", "p", connect=lambda: FakeImap({2: bytes(note)}),
+                                           only_from=["x.com", "twitter.com"], channel="Local Community", tags=["x", "reply"])
+    found = list(replies.listen())
+    assert len(found) == 1 and found[0].tags == ["x", "reply"]
+    inbox = email_listener.EmailListener("inbox", "imap", "u", "p", connect=lambda: FakeImap({2: bytes(note)}),
+                                         skip_from=["x.com", "twitter.com"])
+    assert list(inbox.listen()) == []

@@ -51,7 +51,7 @@
       "password": "${LEADS_IMAP_PASSWORD}",
       "folder": "Leads",
       "only_from": [],
-      "skip_from": ["redditmail.com", "reddit.com"],
+      "skip_from": ["redditmail.com", "reddit.com", "x.com", "twitter.com"],
       "rules": {
         "require_any": ["paint", "quote", "estimate", "bid", "rfq", "rfp", "delivery", "courier", "pickup",
                         "haul", "move", "job", "project", "proposal", "invitation to bid"],
@@ -120,6 +120,25 @@
       "rules": {
         "exclude_any": ["upvoted", "trending", "top posts", "digest", "you have a new follower"],
         "boost": { "quote": 15, "how much": 15, "interested": 15, "can you": 10, "dm": 10, "message you": 10, "available": 10 },
+        "min_score": 0
+      }
+    },
+
+    {
+      "name": "x-replies",
+      "kind": "email",
+      "enabled": true,
+      "_note": "Human touch on X/Twitter: Vinny posts as himself. Replies, mentions, quote-posts and DMs arrive as X notification emails in the Human Network inbox (Gmail filter: from x.com OR twitter.com, label Leads). No X API (paid, and not needed), and no scraping.",
+      "host": "imap.gmail.com",
+      "user": "${LEADS_IMAP_USER}",
+      "password": "${LEADS_IMAP_PASSWORD}",
+      "folder": "Leads",
+      "only_from": ["x.com", "twitter.com"],
+      "channel": "Local Community",
+      "tags": ["x", "reply"],
+      "rules": {
+        "exclude_any": ["new login", "password", "verify", "security", "confirm your", "highlights", "trending", "who to follow", "your weekly", "recommended"],
+        "boost": { "replied": 10, "mentioned you": 10, "sent you a direct message": 20, "quote": 10, "quote": 10, "how much": 15, "are you available": 20, "interested": 15, "dm": 10, "painter": 10, "courier": 10, "silver": 5, "gold": 5 },
         "min_score": 0
       }
     },

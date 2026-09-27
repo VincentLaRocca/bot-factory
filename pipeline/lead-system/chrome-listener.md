@@ -23,6 +23,11 @@ people who posted.
 New good sources go in the Build Card's Log (`[cross]`) so they can become a
 feed listener, or stay on this list.
 
+**X/Twitter is Vinny's human touch, not yours.** He posts there as himself;
+replies come in by email (`x-replies`). Don't browse X for leads, and never
+post, reply, like, follow or DM. On request you may summarize the replies on
+one of his posts, or draft a post or thread for him to publish.
+
 **Reddit is Vinny's, not yours.** On Reddit, Vinny posts as himself and
 the leads come back as replies (the `reddit-replies` email listener catches
 them). Don't sweep Reddit. If Vinny asks, you may open his own posts and
