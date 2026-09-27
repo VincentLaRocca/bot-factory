@@ -47,6 +47,7 @@ def build_listener(spec: Dict[str, Any], store: SeenStore, fetcher: Optional[Fet
     from .listeners.email import EmailListener
     from .listeners.feeds import FeedListener
     from .listeners.reddit_threads import RedditThreadListener
+    from .listeners.ebay import EbayHuntListener
     from .listeners.sam import SamListener
 
     kind, name = spec.get("kind"), spec["name"]
@@ -62,6 +63,11 @@ def build_listener(spec: Dict[str, Any], store: SeenStore, fetcher: Optional[Fet
             max_messages=int(spec.get("max_messages", 50)), port=int(spec.get("port", 993)), store=store,
             channel=spec.get("channel", "Commercial / B2B"), tags=spec.get("tags"),
             skip_from=spec.get("skip_from"))
+    if kind == "ebay":
+        return EbayHuntListener(
+            name, spec.get("client_id", ""), spec.get("client_secret", ""), spec.get("queries", []),
+            spot=spec.get("spot"), margin=float(spec.get("margin", 0.10)), max_ppc=spec.get("max_price_per_carat"),
+            limit=int(spec.get("limit", 100)), fetcher=fetcher)
     if kind == "reddit_threads":
         return RedditThreadListener(
             name, spec.get("username", ""), watch_days=int(spec.get("watch_days", 7)),

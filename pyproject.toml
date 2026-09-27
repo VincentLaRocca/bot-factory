@@ -35,7 +35,7 @@ packages = [
 ]
 
 [tool.setuptools.package-data]
-leads = ["config.example.json"]
+leads = ["config.example.json", "hunts.example.json"]
 aiop = ["context.jsonld"]
 profiles = ["context.jsonld", "asymmetry-context.jsonld", "observer-context.jsonld"]
 store = ["context.jsonld"]

@@ -64,6 +64,8 @@ class Lead:
     posted_at: str = ""
     tags: List[str] = field(default_factory=list)
     raw: Dict[str, Any] = field(default_factory=dict)
+    # Evidence points a listener computed itself (e.g. "22% under melt"), each with its reason.
+    bonus: List[Any] = field(default_factory=list)   # [(points, reason), ...]
     # Filled in by the pipeline, never by a listener:
     score: int = 0
     urgency: str = "MEDIUM"

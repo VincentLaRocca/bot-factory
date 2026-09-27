@@ -1,0 +1,126 @@
+{
+  "_readme": "Silver, gold & gem hunt on eBay. Run: python -m leads --config leads/hunts.example.json sweep --dry-run. Never bids or buys. Set spot prices and per-carat limits yourself.",
+  "store": "var/hunts.db",
+  "ledger": "var/hunts.jsonl",
+  "sinks": {
+    "slack": {
+      "url": "${HUNT_SLACK_WEBHOOK_URL}",
+      "min_urgency": "HIGH"
+    }
+  },
+  "rules": {
+    "exclude_any": [],
+    "urgent_any": [],
+    "min_score": 45
+  },
+  "listeners": [
+    {
+      "name": "ebay-metals",
+      "kind": "ebay",
+      "enabled": true,
+      "client_id": "${EBAY_CLIENT_ID}",
+      "client_secret": "${EBAY_CLIENT_SECRET}",
+      "spot": {
+        "silver": "${SILVER_SPOT_USD:-}",
+        "gold": "${GOLD_SPOT_USD:-}"
+      },
+      "margin": 0.1,
+      "min_interval_minutes": 30,
+      "queries": [
+        {
+          "hunt": "silver",
+          "q": "sterling silver grams",
+          "max_price": 500,
+          "buying": "FIXED_PRICE"
+        },
+        {
+          "hunt": "silver",
+          "q": "sterling silver scrap",
+          "max_price": 500,
+          "buying": "AUCTION"
+        },
+        {
+          "hunt": "silver",
+          "q": "90% junk silver face",
+          "max_price": 600
+        },
+        {
+          "hunt": "silver",
+          "q": "morgan silver dollar lot",
+          "max_price": 800
+        },
+        {
+          "hunt": "silver",
+          "q": "(sterlng, silvr, sliver) 925",
+          "max_price": 500
+        },
+        {
+          "hunt": "gold",
+          "q": "14k gold scrap grams",
+          "max_price": 1500
+        },
+        {
+          "hunt": "gold",
+          "q": "10k gold ring grams",
+          "max_price": 800
+        },
+        {
+          "hunt": "gold",
+          "q": "18k gold dwt",
+          "max_price": 1500
+        }
+      ]
+    },
+    {
+      "name": "ebay-gems",
+      "kind": "ebay",
+      "enabled": true,
+      "client_id": "${EBAY_CLIENT_ID}",
+      "client_secret": "${EBAY_CLIENT_SECRET}",
+      "_limits_note": "PLACEHOLDERS - set max_price_per_carat to what you'd actually pay per stone. Not advice.",
+      "max_price_per_carat": {
+        "sapphire": 100,
+        "ruby": 100,
+        "emerald": 80,
+        "tanzanite": 60,
+        "opal": 40,
+        "diamond": 300
+      },
+      "min_interval_minutes": 60,
+      "queries": [
+        {
+          "hunt": "gem",
+          "q": "GIA certified natural sapphire loose",
+          "max_price": 1000
+        },
+        {
+          "hunt": "gem",
+          "q": "natural ruby loose ct",
+          "max_price": 500
+        },
+        {
+          "hunt": "gem",
+          "q": "estate jewelry lot gemstones",
+          "max_price": 300,
+          "buying": "AUCTION"
+        },
+        {
+          "hunt": "gem",
+          "q": "(saphire, emrald, rubie, dimond)",
+          "max_price": 500
+        }
+      ],
+      "rules": {
+        "exclude_any": [
+          "lab created",
+          "lab-created",
+          "lab grown",
+          "simulated",
+          "cz",
+          "moissanite"
+        ],
+        "min_score": 45
+      }
+    }
+  ]
+}

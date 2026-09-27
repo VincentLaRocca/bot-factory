@@ -509,3 +509,118 @@ def test_owned_groups_watch_every_thread():
     found = list(listener.listen())
     assert len(found) == 3 and all("recruit" in x.tags for x in found)
     assert not any("/user/" in call["url"] for call in web.calls)
+
+
+# --------------------------------------------------------- eBay metal & gem hunt
+from leads import valuation  # noqa: E402
+
+
+@pytest.mark.parametrize("title, metal, ozt", [
+    ("Sterling Silver Scrap Lot 125 grams", "silver", 3.7174),
+    ("LOT OF 10 Morgan Silver Dollars", "silver", 7.734),
+    ("$10 FACE 90% Junk Silver Dimes", "silver", 7.15),
+    ("14K Yellow Gold Chain 12.4 grams", "gold", 0.2332),
+    ("10k gold ring 3.2 dwt", "gold", 0.0667),
+    ("1/10 oz Gold American Eagle 2021", "gold", 0.1),
+    ("Vintage sterlng silver spoon 40g", "silver", 1.1896),
+])
+def test_read_metal(title, metal, ozt):
+    reading = valuation.read_metal(title)
+    assert reading.metal == metal and reading.ozt == pytest.approx(ozt, abs=1e-3)
+
+
+@pytest.mark.parametrize("title", ["Silver plated tray 500g", "Gold filled 14k 1/20 bracelet 10g",
+                                   "Silver tone necklace", "Weighted sterling candlesticks 900g",
+                                   "Sterling silver ring (no weight)"])
+def test_read_metal_refuses_fakes_and_guesses(title):
+    assert valuation.read_metal(title) is None
+
+
+def test_read_gem():
+    gem = valuation.read_gem("GIA Certified 1.52 ct Natural Blue Saphire")
+    assert (gem.stone, gem.carats, gem.certified) == ("sapphire", 1.52, "GIA")
+    assert gem.signals and "saphire" in gem.signals[0]
+    assert valuation.read_gem("Lab Created Ruby 5ct").signals == ["fake"]
+
+
+def _ebay_item(item_id, title, price, ship=0.0, auction=False, bids=0, ends="2026-09-27T20:00:00.000Z",
+               feedback="99.8", score=1500):
+    item = {"itemId": item_id, "title": title, "price": {"value": str(price), "currency": "USD"},
+            "shippingOptions": [{"shippingCost": {"value": str(ship)}}],
+            "buyingOptions": ["AUCTION"] if auction else ["FIXED_PRICE"], "bidCount": bids,
+            "itemWebUrl": f"https://www.ebay.com/itm/{item_id}", "condition": "Pre-owned",
+            "seller": {"username": "estate_seller", "feedbackPercentage": feedback, "feedbackScore": score},
+            "itemLocation": {"postalCode": "232**", "country": "US"}}
+    if auction:
+        item["currentBidPrice"] = {"value": str(price)}
+        item["itemEndDate"] = ends
+    return item
+
+
+def test_ebay_hunt_end_to_end():
+    from datetime import datetime, timezone
+    from leads.listeners.ebay import EbayHuntListener
+    search = {"itemSummaries": [
+        _ebay_item("1", "Sterling Silver Flatware Lot 400 grams", 250, ship=15),        # melt 356.8 → 26% under
+        _ebay_item("2", "Sterling Silver Bracelet 20g", 60, ship=5),                    # melt 17.8 → way over
+        _ebay_item("3", "Silver plated tray 900g", 20),                                  # plated → no reading
+        _ebay_item("4", "14k gold ring 5 grams", 150, auction=True, bids=0),            # melt 235 → 36% under, ends soon
+    ]}
+    gems = {"itemSummaries": [
+        _ebay_item("5", "Natural Blue Saphire 2.0 ct loose", 120),                      # $60/ct, misspelled
+        _ebay_item("6", "Lab Created Sapphire 10 ct", 20),
+    ]}
+    web = FakeWeb({"https://api.ebay.com/identity": {"access_token": "T", "expires_in": 7200},
+                   "https://api.ebay.com/buy/browse/v1/item_summary/search?q=sterling": search,
+                   "https://api.ebay.com/buy/browse/v1/item_summary/search?q=saphire": gems})
+    now = datetime(2026, 9, 27, 12, tzinfo=timezone.utc)
+    metals = EbayHuntListener("ebay-metals", "id", "secret", [{"hunt": "silver", "q": "sterling", "max_price": 500}],
+                              spot={"silver": "30", "gold": "2500"}, fetcher=web, now=now)
+    stones = EbayHuntListener("ebay-gems", "id", "secret", [{"hunt": "gem", "q": "saphire"}],
+                              max_ppc={"sapphire": 100}, fetcher=web, now=now)
+    found = {x.external_id: x for x in list(metals.listen()) + list(stones.listen())}
+
+    token_call = web.calls[0]
+    assert token_call["method"] == "POST" and token_call["headers"]["Authorization"].startswith("Basic ")
+    assert b"client_credentials" in token_call["data"]
+    search_call = web.calls[1]
+    assert search_call["headers"]["Authorization"] == "Bearer T"
+    assert "price%3A%5B..500%5D" in search_call["url"]
+
+    assert "26% under melt" in " ".join(r for _, r in found["1"].bonus)
+    assert found["1"].value == 265.0 and "melt $356" in found["1"].body
+    assert any(p < 0 for p, _ in found["2"].bonus)
+    assert "weight/purity not in title" in found["3"].body
+
+    pipeline = Pipeline(SeenStore(), RuleSet.from_config({"min_score": 45}), [])
+    routed = {x.external_id for x in pipeline.process(found.values()).routed}
+    assert routed == {"1", "4", "5"}   # the metal reader spots gold even when it turns up in a silver search
+    assert any("misspelled" in r for _, r in found["5"].bonus)
+    assert any("$60/ct" in r for _, r in found["5"].bonus)
+
+
+def test_ebay_gold_auction_ending_soon():
+    from datetime import datetime, timezone
+    from leads.listeners.ebay import EbayHuntListener
+    web = FakeWeb({"https://api.ebay.com/identity": {"access_token": "T"},
+                   "https://api.ebay.com/buy/browse": {"itemSummaries": [
+                       _ebay_item("4", "14k gold ring 5 grams", 150, auction=True, bids=0)]}})
+    hunt = EbayHuntListener("ebay-metals", "id", "secret", [{"hunt": "gold", "q": "14k", "buying": "AUCTION"}],
+                            spot={"gold": 2500}, fetcher=web, now=datetime(2026, 9, 27, 12, tzinfo=timezone.utc))
+    lead_ = next(hunt.listen())
+    reasons = " ".join(r for _, r in lead_.bonus)
+    assert "under melt" in reasons and "no bids" in reasons and "ending-soon" in lead_.tags
+    assert "sort=endingSoonest" in web.calls[1]["url"]
+    score, urgency, _ = RuleSet.from_config({"min_score": 45}).score(lead_)
+    assert score >= 70 and urgency in ("HIGH", "CRITICAL")
+
+
+def test_ebay_needs_keys_and_hunt_config_loads(monkeypatch, tmp_path):
+    from leads.listeners.ebay import EbayHuntListener
+    with pytest.raises(ValueError):
+        EbayHuntListener("x", "", "", [])
+    monkeypatch.setenv("EBAY_CLIENT_ID", "a")
+    monkeypatch.setenv("EBAY_CLIENT_SECRET", "b")
+    config = config_module.load(config_module.__file__.replace("config.py", "hunts.example.json"))
+    system = config_module.build(config, store_path=str(tmp_path / "h.db"))
+    assert {x.name for x in system.listeners} == {"ebay-metals", "ebay-gems"}

@@ -120,6 +120,9 @@ class RuleSet:
         if geo:
             score += self.geo_points
             reasons.append(f"+{self.geo_points} in area ({geo[0].strip()})")
+        for points, why in lead.bonus or []:
+            score += int(points)
+            reasons.append(f"{'+' if points >= 0 else ''}{int(points)} {why}")
         if lead.value and lead.value > 0:
             score += 5
             reasons.append("+5 has a stated value")
