@@ -4,10 +4,11 @@
 | --- | --- |
 | **Status** | review |
 | **Spec origin** | Vinny |
-| **Build owner** | Grok Bot (away-team lead) |
+| **Build owner** | Claude Code |
 | **Station 1 (Idea Forge)** | Claude web, 2026-09-27 |
-| **Station 2 (Build Bay)** | Grok Bot owns the build. Claude drafted it on 2026-09-27 (branch `leads/full-lead-system`) for Grok Bot to review, rework or take over |
+| **Station 2 (Build Bay)** | Claude Code, 2026-09-27 — branch `leads/full-lead-system` |
 | **Station 3 (Proving Ground)** | Claude desktop — checklist below |
+| **Gates** | Vinny: greenlight after Station 1, merge after Station 3 |
 
 ## Problem
 
