@@ -1055,3 +1055,36 @@ def test_one_listing_on_several_wish_lists_is_one_lead(tmp_path, monkeypatch):
     assert {"for:Customer A", "for:Customer B"} <= set(found[0].tags)
     assert found[0].contact.startswith("wish list: Customer A, Customer B")
     assert sum(1 for _, r in found[0].bonus if "special listen" in r) == 1
+
+
+def test_wish_list_matrix_wide_and_long(tmp_path, monkeypatch):
+    from leads import watches
+    from leads.__main__ import main
+    monkeypatch.setenv("WATCHES_FILE", str(tmp_path / "w.json"))
+    wide = tmp_path / "matrix.csv"
+    wide.write_text("customer,Mazdaspeed6,Shelby GT500,Gold Rolex\n"
+                    "Customer A,15000,,9000\n"
+                    "Customer B,$12,000,x,\n".replace("$12,000", "12000"))
+    main(["watch", "add", "Syclone", "--q", "gmc syclone"])                       # Vinny's own watch survives imports
+    assert main(["watch", "import", str(wide)]) == 0
+    lists = watches.customers()
+    assert sorted((w["name"], w.get("max_price")) for w in lists["Customer A"]) == [("Gold Rolex", 9000.0), ("Mazdaspeed6", 15000.0)]
+    assert sorted((w["name"], w.get("max_price")) for w in lists["Customer B"]) == [("Mazdaspeed6", 12000.0), ("Shelby GT500", None)]
+    assert [w["name"] for w in lists[""]] == ["Syclone"]
+
+    long = tmp_path / "long.csv"                                                  # the sheet is the master
+    long.write_text('customer,item,max_price,search,hunt,zip,miles\n'
+                    'Customer A,Mazdaspeed6,14000,"(mazdaspeed6, mazdaspeed 6)",vehicle,23220,200\n')
+    main(["watch", "import", str(long)])
+    a = watches.customers()["Customer A"]
+    assert len(a) == 1 and a[0]["q"] == "(mazdaspeed6, mazdaspeed 6)" and a[0]["near"] == {"zip": "23220", "miles": 200}
+    assert "Customer B" in watches.customers()                                    # not in this sheet: untouched
+
+
+def test_matrix_from_published_google_sheet(tmp_path):
+    from leads import watches
+    sheet = "customer,Mazdaspeed6\nCustomer C,11000\n"
+    wants = watches.import_matrix("https://docs.google.com/spreadsheets/d/e/X/pub?output=csv",
+                                  str(tmp_path / "w.json"), fetcher=FakeWeb({"https://docs.google.com": sheet}))
+    assert wants == [{"name": "Mazdaspeed6", "q": "Mazdaspeed6", "hunt": "auto", "notify": "all",
+                      "customer": "Customer C", "max_price": 11000.0}]

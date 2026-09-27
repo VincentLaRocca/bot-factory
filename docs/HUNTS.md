@@ -161,3 +161,21 @@ python -m leads watch remove "Mazdaspeed6" --for "Customer A"
 - **Wish lists:** `--for` puts a watch on a customer's list. Matches are tagged `for:<customer>` and the board shows "wish list: <names>". One listing that several customers want is **one** lead naming all of them.
 - `--notify deals` only surfaces a watched item when the appraisers like the price; the default `all` surfaces every new match.
 - Watches live in `var/watches.json` (`WATCHES_FILE`): local, editable, and never committed. Customer names stay on your machine.
+
+### The matrix (customers × wants)
+
+Keep the wish lists where you already keep them, in your matrix, and let the
+hunter read it:
+
+- **Wide:** customers down the side, wants across the top, and a cell holds that customer's max price (or `x` for "any price").
+- **Long:** one row per want: `customer,item,max_price,search,hunt,zip,miles,notify`.
+
+```bash
+python -m leads watch import matrix.csv
+python -m leads watch import "https://docs.google.com/spreadsheets/d/e/…/pub?output=csv"
+```
+
+Set `WISHLIST_MATRIX` to the published Google Sheet CSV link and the watch
+listener re-reads it every sweep. **The sheet is the master:** a customer's
+wish list is replaced by whatever the sheet says now; customers not in the
+sheet and your own watches are left alone.

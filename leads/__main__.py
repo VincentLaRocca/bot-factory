@@ -98,7 +98,7 @@ def main(argv=None) -> int:
     p_digest.add_argument("--send", action="store_true", help="post to the Slack webhook")
 
     p_watch = sub.add_parser("watch", help="special listens: standing eBay watches (Shelby, Mazdaspeed6…)")
-    p_watch.add_argument("action", choices=["list", "add", "remove"])
+    p_watch.add_argument("action", choices=["list", "add", "remove", "import"])
     p_watch.add_argument("name", nargs="?")
     p_watch.add_argument("--q", help="eBay search, e.g. '(mazdaspeed6, mazdaspeed 6)'")
     p_watch.add_argument("--hunt", default="auto", help="auto | vehicle | jewelry | electronics | equipment")
@@ -126,6 +126,14 @@ def main(argv=None) -> int:
                                                f"near {w['near']['zip']}" if w.get("near") else "", w.get("notify", "all")) if x)
                 who = f"{w['customer']}: " if w.get("customer") else ""
                 print(f"{who}{w['name']:<18} {w['q']}  [{w.get('hunt', 'auto')}] {extra}")
+            return 0
+        if args.action == "import":
+            source = args.name or os.environ.get("WISHLIST_MATRIX", "")
+            if not source:
+                parser.error("watch import needs a CSV path or a published Google Sheet CSV link (or WISHLIST_MATRIX)")
+            wants = watches.import_matrix(source)
+            people = sorted({w.get("customer", "") for w in wants if w.get("customer")})
+            print(f"imported {len(wants)} wants for {len(people)} customers: {', '.join(people)}")
             return 0
         if not args.name:
             parser.error("watch add/remove needs a name")

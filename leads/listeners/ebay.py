@@ -128,7 +128,14 @@ class EbayHuntListener:
     def current_queries(self) -> List[Dict[str, Any]]:
         if not getattr(self, "watching", False):
             return self.queries
+        import os
         from .. import watches as watch_module
+        matrix = os.environ.get("WISHLIST_MATRIX", "").strip()
+        if matrix:  # the customer matrix is the master: refresh wish lists from it every sweep
+            try:
+                watch_module.import_matrix(matrix, getattr(self, "watch_file", None), fetcher=self.fetch)
+            except Exception as error:
+                self.errors.append(f"wish-list matrix: {error}")
         return [{**w, "hunt": w.get("hunt", "auto"), "watch": w["name"]}
                 for w in watch_module.seed_examples(getattr(self, "watch_file", None))]
 
