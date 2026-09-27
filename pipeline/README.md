@@ -2,6 +2,11 @@
 
 Several Claudes, one repo, Vinny at the gates.
 
+**What it's for:** a loose framework for following intuition and playing it out
+quickly. An idea goes from hunch to something real fast enough to see whether
+the hunch was right, with enough structure (the card, the judge, the gates)
+that speed doesn't cost trust.
+
 | Role | Surface | Does |
 | --- | --- | --- |
 | **Idea Forge** | Claude web | research, framing, drafting the Build Card |
