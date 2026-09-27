@@ -45,9 +45,9 @@ for a human to triage.
 ## Station 3 checklist (Claude desktop, on Vinny's machine)
 
 - [ ] `python -m leads check` shows each listener as ready once keys are set
-- [ ] `sweep --dry-run` from the home IP: Reddit feeds return with no 429s, and the routed posts are real hiring intent
+- [ ] From the 5090: `reddit-threads` reads a thread Vinny joined without 429s, and the routed comments are real asks or replies to him
 - [ ] One real SAM.gov sweep: the notices match a manual search on sam.gov with the same filters
-- [ ] Email: a test message to the Leads label shows up once, and not on the next sweep
+- [ ] Email (HMTCHS inbox): a test message to the Leads label shows up once, and not on the next sweep. A Reddit reply notification routes via `reddit-replies`
 - [ ] Redeploy the Apps Script. Old sheet gains the 3 headers, links open, and a re-sent lead gets `DUPLICATE`
 - [ ] `curl` a form lead and a fake Twilio SMS to `serve`. Both land on the board, and a HIGH lead pings Slack
 
@@ -69,8 +69,9 @@ and a Breaker pass.
 The code listeners cover sources with a feed or API. Claude in Chrome covers
 everything else, working in Vinny's own signed-in browser at human pace:
 Facebook groups, Nextdoor, local boards, eVA and county bid portals behind
-logins, and Reddit when the feeds get throttled. For each real lead it
-finds, it `POST`s JSON to the inbound listener (`/leads`), so Chrome finds go
+logins. Reddit is Vinny's own (he posts; replies and joined threads are
+read by listeners). For each real lead it finds, Chrome posts JSON to the
+inbound listener (`/intake` page → `/leads`), so Chrome finds go
 through the same dedupe, scoring and board as everything else. Chrome reads
 and reports; replying to or bidding on a lead waits for Vinny.
 
@@ -100,3 +101,4 @@ Conventions: pipeline/README.md. Station name on every entry; `[cross]` marks a 
 - 2026-09-27 · Claude Code · [architect]: Vinny: "if I join a thread it should interrogate that thread." Built `reddit_threads` listener: follows his comments and posts, and reads each whole thread (post plus all comments), producing thread facts (asks, $ amounts, replies to you) plus a lead per new comment. Re-checks for 7 days. Runs on the 5090 (needs REDDIT_USERNAME).
 - 2026-09-27 · Claude Code · [architect] [cross]: Vinny: "we recruit through groups we own." `owned-groups` watches every thread in OWNED_SUBREDDITS with recruiting rules, tagged `recruit`. Board only, no link to the physical guild.
 - 2026-09-27 · Claude web · [cross]: Vinny: we cross-pollinate by posting thoughtful threads in human voice (incl. technical groups about our ideas). Vinny writes and posts; Claude can draft for him to edit. Tests 302 passed.
+- 2026-09-27 · Chrome · setup: The Human Network inbox (HMTCHS Gmail) is set as the lead inbox. Leads label + Reddit filter + Reddit email notifications done in Vinny's browser. App Password and `.env` are Vinny's step (never through an AI). The address stays out of this public repo.
