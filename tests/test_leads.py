@@ -590,14 +590,15 @@ def test_ebay_hunt_end_to_end():
     assert search_call["headers"]["Authorization"] == "Bearer T"
     assert "price%3A%5B..500%5D" in search_call["url"]
 
-    # 400 g sterling for $265: melt $357, but a refiner pays ~70% ($250) vs $281 all-in, so no money back.
-    assert found["1"].value == 265.0 and "melt $356" in found["1"].body and "short by" in found["1"].body
+    # 400 g sterling for $265 (price + ship) melts to $357: money back.
+    assert found["1"].value == 265.0 and "melt $356" in found["1"].body
+    assert any("money back" in r for _, r in found["1"].bonus)
     assert any(p < 0 for p, _ in found["2"].bonus)
     assert "weight/purity not in title" in found["3"].body
 
     pipeline = Pipeline(SeenStore(), RuleSet.from_config({"min_score": 45}), [])
     routed = {x.external_id for x in pipeline.process(found.values()).routed}
-    assert routed == {"4", "5"}   # gold ring breaks down above cost; the sterling lot doesn't clear the money-back test
+    assert routed == {"1", "4", "5"}   # sterling lot and gold ring melt above cost; sapphire flagged on $/ct
     assert any("misspelled" in r for _, r in found["5"].bonus)
     assert any("$60/ct" in r for _, r in found["5"].bonus)
 
@@ -689,7 +690,7 @@ def test_gsa_auctions_listener_reads_lots_and_melt():
     assert "DEMO_KEY" in web.calls[0]["url"] and "format=JSON" in web.calls[0]["url"]
     ring = found["31QSCI26-101"]
     assert ring.location == "Norfolk, VA" and ring.value == 400.0
-    assert any("money back" in r for _, r in ring.bonus)           # 20g 14k: ~$750 to a refiner vs $424 all-in
+    assert any("money back" in r for _, r in ring.bonus)           # 20g 14k melts to ~$940 vs $400
     rules = RuleSet.from_config({"require_any": ["gold", "silver", "jewelry"], "min_score": 35})
     routed = {x.external_id for x in Pipeline(SeenStore(), rules, []).process(found.values()).routed}
     assert routed == {"31QSCI26-101"}
@@ -755,19 +756,22 @@ def test_jewelry_hunt_flags_mispriced_pieces():
 
 
 def test_money_back_test_math():
-    from leads.valuation import Recovery, break_down
-    rec = Recovery(payout={"gold": 0.80, "silver": 0.70}, tax_rate=0.06, fee=0, cushion=0.10)
-    # 10 g 14k at $2500 spot: melt 469.9 → refiner 375.9; $250 + 6% tax = $265 all-in → +42%
-    got, facts = break_down("14k ring 10 grams", 250, {"gold": 2500}, rec)
-    assert got[0][0] >= 40 and "money back" in got[0][1] and "all-in $265.00" in facts[-1]
-    # Same ring at $360: $381.60 all-in vs $375.92 → short by ~$6: no points, just the fact
-    got, facts = break_down("14k ring 10 grams", 360, {"gold": 2500}, rec)
+    from leads.valuation import Recovery, break_down, read_gem
+    # Vinny's default: 10 g 14k at $2500 spot melts to $469.93; bought for $250 → money back, +88%
+    got, facts = break_down("14k ring 10 grams", 250, {"gold": 2500})
+    assert got[0][0] >= 40 and "money back" in got[0][1] and "cost $250.00" in facts[-1]
+    # Same ring at $500 → short by ~$30 (under 15%): no points, just the fact
+    got, facts = break_down("14k ring 10 grams", 500, {"gold": 2500})
     assert got == [] and "short by" in facts[-1]
-    # Stones count only at Vinny's recovery value
-    from leads.valuation import read_gem
-    rec2 = Recovery(payout={"gold": 0.8}, stone_per_ct={"sapphire": 50}, tax_rate=0)
-    got, facts = break_down("14k sapphire ring 2 ct 5 grams", 250, {"gold": 2500}, rec2, read_gem("14k sapphire ring 2 ct 5 grams"))
-    assert "stones ~$100.00" in " ".join(facts)
+    # Gems add their value per carat when Vinny sets one
+    rec = Recovery(stone_per_ct={"sapphire": 50})
+    got, facts = break_down("14k sapphire ring 2 ct 5 grams", 300, {"gold": 2500}, rec,
+                            read_gem("14k sapphire ring 2 ct 5 grams"))
+    assert "gems ~$100.00" in " ".join(facts) and "money back" in got[0][1]   # $235 melt + $100 gems > $300
+    # Optional strictness knobs still work
+    strict = Recovery(payout={"gold": 0.8}, tax_rate=0.06, cushion=0.10)
+    got, facts = break_down("14k ring 10 grams", 360, {"gold": 2500}, strict)
+    assert got == [] and "payout" in " ".join(facts)
 
 
 def test_designer_pieces_skip_the_break_down_veto():

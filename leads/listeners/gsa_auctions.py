@@ -51,7 +51,7 @@ class GsaAuctionsListener:
         self.states = {s.upper() for s in (states or []) if s}
         self.spot = {k: float(v) for k, v in (spot or {}).items() if str(v).strip()}
         self.margin = margin
-        self.recovery = recovery or valuation.Recovery(cushion=margin)
+        self.recovery = recovery or valuation.Recovery()
         self.fetch = fetcher or default_fetch
         self.errors: List[str] = []
 

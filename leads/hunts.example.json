@@ -31,7 +31,6 @@
         "emerald": 80,
         "diamond": 300
       },
-      "margin": 0.1,
       "min_interval_minutes": 20,
       "queries": [
         {
@@ -129,14 +128,13 @@
         "min_score": 45
       },
       "recovery": {
-        "_note": "The money-back test. Placeholders: set payout from real refiner/scrap-buyer quotes, tax to your rate, stone_per_ct only for stones you could truly resell.",
-        "payout": {
-          "gold": "${GOLD_PAYOUT:-0.80}",
-          "silver": "${SILVER_PAYOUT:-0.70}"
-        },
-        "tax_rate": 0.06,
-        "fee": 0,
-        "stone_per_ct": {}
+        "_note": "Vinny's value test: gram weight melted down at spot + gem value vs price + shipping. Set stone_per_ct to what you'd count each stone at per carat. Optional: payout < 1, tax_rate, fee, cushion.",
+        "stone_per_ct": {
+          "diamond": 0,
+          "sapphire": 0,
+          "ruby": 0,
+          "emerald": 0
+        }
       }
     },
     {
@@ -149,7 +147,6 @@
         "silver": "${SILVER_SPOT_USD:-}",
         "gold": "${GOLD_SPOT_USD:-}"
       },
-      "margin": 0.1,
       "min_interval_minutes": 30,
       "queries": [
         {
@@ -196,14 +193,13 @@
         }
       ],
       "recovery": {
-        "_note": "The money-back test. Placeholders: set payout from real refiner/scrap-buyer quotes, tax to your rate, stone_per_ct only for stones you could truly resell.",
-        "payout": {
-          "gold": "${GOLD_PAYOUT:-0.80}",
-          "silver": "${SILVER_PAYOUT:-0.70}"
-        },
-        "tax_rate": 0.06,
-        "fee": 0,
-        "stone_per_ct": {}
+        "_note": "Vinny's value test: gram weight melted down at spot + gem value vs price + shipping. Set stone_per_ct to what you'd count each stone at per carat. Optional: payout < 1, tax_rate, fee, cushion.",
+        "stone_per_ct": {
+          "diamond": 0,
+          "sapphire": 0,
+          "ruby": 0,
+          "emerald": 0
+        }
       }
     },
     {
@@ -257,14 +253,13 @@
         "min_score": 45
       },
       "recovery": {
-        "_note": "The money-back test. Placeholders: set payout from real refiner/scrap-buyer quotes, tax to your rate, stone_per_ct only for stones you could truly resell.",
-        "payout": {
-          "gold": "${GOLD_PAYOUT:-0.80}",
-          "silver": "${SILVER_PAYOUT:-0.70}"
-        },
-        "tax_rate": 0.06,
-        "fee": 0,
-        "stone_per_ct": {}
+        "_note": "Vinny's value test: gram weight melted down at spot + gem value vs price + shipping. Set stone_per_ct to what you'd count each stone at per carat. Optional: payout < 1, tax_rate, fee, cushion.",
+        "stone_per_ct": {
+          "diamond": 0,
+          "sapphire": 0,
+          "ruby": 0,
+          "emerald": 0
+        }
       }
     },
     {
@@ -386,14 +381,13 @@
         "min_score": 35
       },
       "recovery": {
-        "_note": "The money-back test. Placeholders: set payout from real refiner/scrap-buyer quotes, tax to your rate, stone_per_ct only for stones you could truly resell.",
-        "payout": {
-          "gold": "${GOLD_PAYOUT:-0.80}",
-          "silver": "${SILVER_PAYOUT:-0.70}"
-        },
-        "tax_rate": 0.06,
-        "fee": 0,
-        "stone_per_ct": {}
+        "_note": "Vinny's value test: gram weight melted down at spot + gem value vs price + shipping. Set stone_per_ct to what you'd count each stone at per carat. Optional: payout < 1, tax_rate, fee, cushion.",
+        "stone_per_ct": {
+          "diamond": 0,
+          "sapphire": 0,
+          "ruby": 0,
+          "emerald": 0
+        }
       }
     }
   ]

@@ -45,9 +45,7 @@ class System:
 
 def _recovery(spec: Dict[str, Any]):
     from .valuation import Recovery
-    data = dict(spec.get("recovery") or {})
-    data.setdefault("cushion", spec.get("margin", 0.10))
-    return Recovery.from_config(data)
+    return Recovery.from_config(dict(spec.get("recovery") or {}))
 
 
 def build_listener(spec: Dict[str, Any], store: SeenStore, fetcher: Optional[Fetch] = None):

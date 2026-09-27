@@ -10,8 +10,8 @@ Each query in config names what it's hunting (``silver``, ``gold`` or
 and gets evidence points (``Lead.bonus``) the rules add up:
 
 - Vinny's value test: if we broke it into its elements, would we get our money
-  back? Metal melt x refiner payout (+ stones at his per-carat recovery) vs
-  all-in cost (price + shipping + tax + fees). See ``valuation.break_down``.
+  back? Gram weight melted down at spot, plus gem value, vs price + shipping.
+  See ``valuation.break_down``.
 - gems: certified, price per carat under Vinny's limit for that stone
 - both: misspelled title, auction ending within 24h with no bids, and a
   penalty for thin-feedback sellers
@@ -72,7 +72,7 @@ class EbayHuntListener:
         self.queries = queries
         self.spot = {k: float(v) for k, v in (spot or {}).items() if str(v).strip()}
         self.margin = margin
-        self.recovery = recovery or valuation.Recovery(cushion=margin)
+        self.recovery = recovery or valuation.Recovery()
         self.max_ppc = {k.lower(): float(v) for k, v in (max_ppc or {}).items()}
         self.marketplace = marketplace
         self.limit = limit

@@ -28,15 +28,14 @@ human look. **It never bids, buys, offers, or messages a seller.**
 
 ## The value test: could we get our money back?
 
-Vinny's rule: **if it were broken into its elements, would we get our money
-back?** Every metal listing is judged that way, not by raw melt:
+Vinny's rule, kept simple: **if it were broken into its elements, would we get
+our money back?**
 
-- **Break-down value** = melt (ozt x spot) x what a refiner or scrap buyer actually pays (`payout`, default gold 80%, silver 70%), plus stones only at *your* per-carat recovery value (`stone_per_ct`, default none).
-- **All-in cost** = (price + shipping) x (1 + sales tax, default 6%) + any flat refining/shipping fee.
-- Break-down beats all-in by the cushion (default 10%): **+40 plus the %**, "money back". Beats it by less: **+15**, thin cushion. Short by under 15%: no points, noted. Worse: **−30**.
+- **Break-down value** = the gram weight melted down at spot (weight x purity x spot) **plus the gems' value** (`stone_per_ct`, per stone type, which you set).
+- **Cost** = price + shipping.
+- Break-down ≥ cost: **money back**, +40 plus the % it clears by. Short by under 15%: no points, noted. Worse: −30.
 
-The payout numbers are placeholders. Set them from a real refiner quote in the
-`recovery` block of `hunts.example.json` (or `GOLD_PAYOUT` / `SILVER_PAYOUT`).
+Optional knobs in each listener's `recovery` block, all off by default: `payout` (below 1.0 if you want what a refiner actually pays), `tax_rate`, `fee`, and `cushion` (demand a margin above break-even).
 
 **Exception: designer pieces.** A Tiffany or Yurman piece can be worth more
 whole than broken down. For designer and period pieces, the break-down test

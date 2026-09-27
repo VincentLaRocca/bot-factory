@@ -211,19 +211,20 @@ def misspelled(title: str) -> List[str]:
 class Recovery:
     """Vinny's value test: if we broke it into its elements, would we get our money back?
 
-    Break-down value = metal melt x what a refiner/scrap buyer actually pays
-    (``payout``), plus stones at a recovery value per carat (default 0: stones
-    only count if Vinny sets a number he could really sell them for).
-    All-in cost = (price + shipping) x (1 + sales tax) + a flat refining/shipping fee.
+    Vinny's version (kept simple on purpose): break-down value = the gram weight
+    melted down at full spot, plus the gems' value. Cost = price + shipping.
+    If break-down >= cost, we get our money back.
 
-    The defaults are conservative placeholders. Set them from real refiner quotes.
+    Optional knobs, off by default: ``payout`` < 1 for what a refiner actually
+    pays, ``tax_rate`` and ``fee`` on the cost side, and ``cushion`` to demand
+    a margin above break-even.
     """
 
-    payout: Dict[str, float] = field(default_factory=lambda: {"gold": 0.80, "silver": 0.70})
+    payout: Dict[str, float] = field(default_factory=lambda: {"gold": 1.0, "silver": 1.0})
     stone_per_ct: Dict[str, float] = field(default_factory=dict)
-    tax_rate: float = 0.06
+    tax_rate: float = 0.0
     fee: float = 0.0
-    cushion: float = 0.10          # break-down must beat all-in by this much to count as a clear deal
+    cushion: float = 0.0           # 0 = money back at break-even
 
     @classmethod
     def from_config(cls, data: Optional[Dict] = None) -> "Recovery":
@@ -260,10 +261,10 @@ def break_down(text: str, cost: float, spot: Dict[str, float], recovery: Optiona
             if not stones:
                 return bonus, facts
         else:
-            metal_value = round(melt * recovery.payout.get(metal.metal, 0.0), 2)
-            facts.append(f"melt ${melt:,.2f} → refiner pays ~${metal_value:,.2f}")
+            metal_value = round(melt * recovery.payout.get(metal.metal, 1.0), 2)
+            facts.append(f"melt ${melt:,.2f}" + (f" → payout ~${metal_value:,.2f}" if metal_value != melt else ""))
     if stones:
-        facts.append(f"stones ~${stones:,.2f} at your per-carat recovery")
+        facts.append(f"gems ~${stones:,.2f} at your per-carat value")
     floor = round(metal_value + stones, 2)
     if not floor:
         return bonus, facts
@@ -273,22 +274,22 @@ def break_down(text: str, cost: float, spot: Dict[str, float], recovery: Optiona
     all_in = round(cost * (1 + recovery.tax_rate) + recovery.fee, 2)
     margin = floor - all_in
     pct = margin / all_in if all_in else 0.0
-    facts.append(f"break-down ${floor:,.2f} vs all-in ${all_in:,.2f} ({pct:+.0%})")
+    facts.append(f"break-down ${floor:,.2f} vs cost ${all_in:,.2f} ({pct:+.0%})")
     if pct >= recovery.cushion:
-        bonus.append((40 + min(40, int(pct * 100)), f"money back: breaks down to ${floor:,.0f} vs ${all_in:,.0f} all-in (+{pct:.0%})"))
+        bonus.append((40 + min(40, int(pct * 100)), f"money back: breaks down to ${floor:,.0f} vs ${all_in:,.0f} cost (+{pct:.0%})"))
     elif pct >= 0:
         bonus.append((15, f"money back, thin cushion (+${margin:,.0f})"))
     elif pct > -0.15:
         facts.append(f"short by ${-margin:,.0f}: only a buy for the piece itself")
     else:
-        bonus.append((-30, f"break-down ${floor:,.0f} is {-pct:.0%} short of ${all_in:,.0f} all-in"))
+        bonus.append((-30, f"break-down ${floor:,.0f} is {-pct:.0%} short of ${all_in:,.0f} cost"))
     return bonus, facts
 
 
 def metal_bonus(text: str, cost: float, spot: Dict[str, float], margin: float = 0.10,
                 recovery: Optional[Recovery] = None):
     """Back-compat wrapper around :func:`break_down`."""
-    return break_down(text, cost, spot, recovery or Recovery(cushion=margin))
+    return break_down(text, cost, spot, recovery or Recovery())
 
 
 # -- mispriced jewelry --------------------------------------------------------
