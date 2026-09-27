@@ -369,3 +369,63 @@ def test_sweep_honours_min_interval(tmp_path):
     assert len(web.calls) == 1                                      # second sweep skipped: not due
     sweep(system, force=True)
     assert len(web.calls) == 2
+
+
+# ------------------------------------------- Session 1, semi-architect run
+def test_chrome_find_uses_its_url_as_id():
+    find = from_json({"title": "Need painter", "url": "https://fb.example/posts/1", "via": "chrome"}, "inbound")
+    assert find.external_id == "https://fb.example/posts/1" and "chrome" in find.tags
+
+
+def test_intake_page_and_cors(live_server):
+    base, _ = live_server
+    with pytest.raises(urllib.error.HTTPError) as denied:
+        urllib.request.urlopen(base + "/intake", timeout=5)
+    assert denied.value.code == 401
+    with urllib.request.urlopen(base + "/intake?token=s3cret", timeout=5) as reply:
+        page = reply.read().decode()
+        assert reply.headers["Content-Type"].startswith("text/html") and 'fetch("/leads"' in page
+    preflight = urllib.request.Request(base + "/leads", method="OPTIONS")
+    with urllib.request.urlopen(preflight, timeout=5) as reply:
+        assert reply.status == 204 and "Authorization" in reply.headers["Access-Control-Allow-Headers"]
+
+
+def test_webhook_sink_sends_idempotent_authenticated_posts():
+    from leads.sinks import WebhookSink
+    web = FakeWeb()
+    sink = WebhookSink("mid-atlantic", "https://mab.example/api/webhooks/leads", "tok", "board", "HIGH", web)
+    sink.send(lead(urgency="LOW"))
+    sink.send(lead(urgency="CRITICAL"))
+    assert len(web.calls) == 1
+    call = web.calls[0]
+    assert call["headers"]["Authorization"] == "Bearer tok"
+    assert call["headers"]["Idempotency-Key"] == lead().lead_id
+    assert json.loads(call["data"])["cargo_summary"] == "Need a painter for 3 rooms"
+
+
+def test_webhook_sinks_come_from_config(tmp_path):
+    config = {"store": str(tmp_path / "s.db"), "sinks": {"webhooks": [
+        {"name": "mab", "url": "https://mab.example"}, {"name": "off", "url": ""}]}}
+    assert [s.name for s in config_module.build(config).pipeline.sinks] == ["mab"]
+
+
+def test_digest_reads_board_and_ranks():
+    from datetime import datetime, timezone
+    from leads import digest
+    now = datetime(2026, 9, 27, 12, tzinfo=timezone.utc)
+    board = {"status": "SUCCESS", "leads": [
+        {"cargo_summary": "Old one", "timestamp": "2026-09-25T10:00:00Z", "urgency_level": "CRITICAL",
+         "triage_status": "NEW", "lead_score": 99},
+        {"cargo_summary": "Medium job", "timestamp": "2026-09-27T09:00:00Z", "urgency_level": "MEDIUM",
+         "triage_status": "NEW", "lead_score": 50},
+        {"cargo_summary": "Hot job", "timestamp": "2026-09-27T08:00:00Z", "urgency_level": "HIGH",
+         "triage_status": "WATCH", "lead_score": 72, "detail_url": "https://sam.gov/x"},
+        {"cargo_summary": "Taken", "timestamp": "2026-09-27T08:00:00Z", "urgency_level": "CRITICAL",
+         "triage_status": "ACCEPTED", "lead_score": 90},
+    ]}
+    rows = digest.from_board("https://board/exec", FakeWeb({"https://board": board}))
+    picked = digest.select(rows, hours=24, top=5, now=now)
+    assert [r["title"] for r in picked] == ["Hot job", "Medium job"]
+    text = digest.render(picked, 24, "https://board.view")
+    assert "<https://sam.gov/x|Hot job>" in text and text.endswith("https://board.view")
+    assert "nothing new" in digest.render([], 24)

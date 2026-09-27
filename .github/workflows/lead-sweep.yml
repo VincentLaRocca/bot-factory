@@ -9,13 +9,15 @@ name: Lead sweep
 #   LEAD_BOARD_API_URL, SLACK_WEBHOOK_URL, GOOGLE_ALERT_PAINTING_RSS (optional)
 #
 # Reddit throttles datacenter IPs (GitHub runners included), so the social
-# feeds are best run from the always-on box — see docs/LEADS.md. They are
-# still attempted here; a 429 is logged and the rest of the sweep continues.
+# feeds run from the 5090 box (leads/deploy/5090). This workflow sweeps the
+# inbox every 30 min and SAM.gov twice a day. Run social feeds here manually
+# with workflow_dispatch → only: "social-painting social-courier".
 
 on:
   schedule:
-    - cron: "7,37 11-23 * * *"   # every 30 min, 7am–7pm ET: email + feeds
+    - cron: "7,37 11-23 * * *"   # every 30 min, 7am–7pm ET: email
     - cron: "15 11,19 * * *"     # twice a day: SAM.gov (small daily API quota)
+    - cron: "48 11 * * *"        # 7:48am ET: morning digest to Slack
   workflow_dispatch:
     inputs:
       only:
@@ -56,10 +58,12 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "only=${{ inputs.only }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event.schedule }}" = "48 11 * * *" ]; then
+            echo "only=DIGEST" >> "$GITHUB_OUTPUT"
           elif [ "${{ github.event.schedule }}" = "15 11,19 * * *" ]; then
             echo "only=sam-painting" >> "$GITHUB_OUTPUT"
           else
-            echo "only=inbox social-painting social-courier" >> "$GITHUB_OUTPUT"
+            echo "only=inbox" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Sweep
@@ -70,12 +74,19 @@ jobs:
           LEAD_BOARD_API_URL: ${{ secrets.LEAD_BOARD_API_URL }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           GOOGLE_ALERT_PAINTING_RSS: ${{ secrets.GOOGLE_ALERT_PAINTING_RSS }}
+          MIDATLANTIC_WEBHOOK_URL: ${{ secrets.MIDATLANTIC_WEBHOOK_URL }}
+          MIDATLANTIC_WEBHOOK_TOKEN: ${{ secrets.MIDATLANTIC_WEBHOOK_TOKEN }}
+          LEAD_BOARD_VIEW_URL: ${{ secrets.LEAD_BOARD_VIEW_URL }}
         run: |
           CONFIG=leads.config.json
           [ -f "$CONFIG" ] || CONFIG=leads/config.example.json
           ARGS=""
           [ -n "${{ steps.pick.outputs.only }}" ] && ARGS="--only ${{ steps.pick.outputs.only }}"
           [ "${{ inputs.dry_run }}" = "true" ] && ARGS="$ARGS --dry-run"
+          if [ "${{ steps.pick.outputs.only }}" = "DIGEST" ]; then
+            python -m leads --config "$CONFIG" digest --send
+            exit 0
+          fi
           python -m leads --config "$CONFIG" check
           python -m leads --config "$CONFIG" sweep $ARGS
 

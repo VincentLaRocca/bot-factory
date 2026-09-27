@@ -16,6 +16,12 @@ Routes::
     POST /sms?token=…        Twilio inbound SMS (form-encoded)
     GET  /health             liveness
     GET  /recent?token=…     last routed leads, JSON
+    GET  /intake?token=…     a small same-origin page for posting leads by hand
+                             or from Claude in Chrome (sites' CSP often blocks
+                             cross-origin fetch, so Chrome posts from here)
+
+CORS is open on ``/leads`` (the token still guards it), so a browser script
+can also post directly when the page it's on allows it.
 
 Auth is a shared secret (``LEADS_WEBHOOK_TOKEN``) as ``Authorization: Bearer``
 or ``?token=`` (Twilio and most form tools can't set headers). Always run it
@@ -78,6 +84,7 @@ def from_json(data: Dict[str, Any], source: str = "webhook") -> Lead:
     return Lead(
         source=source,
         external_id=str(data.get("id") or data.get("lead_id") or data.get("submission_id")
+                        or _pick(data, "url")  # a post's URL is a stable id for Chrome finds
                         or f"{clean(title)}|{clean(contact)}|{data.get('timestamp') or now_iso()}"),
         title=clean(title, 200),
         channel=_enum(data.get("listener_channel") or data.get("channel"), CHANNELS, "General Intake"),
@@ -92,7 +99,7 @@ def from_json(data: Dict[str, Any], source: str = "webhook") -> Lead:
         deadline=clean(_pick(data, "deadline"), 80),
         posted_at=str(data.get("timestamp") or now_iso()),
         tags=([str(t) for t in data.get("tags", [])] if isinstance(data.get("tags"), list) else [])
-             + ([str(data["source"])] if data.get("source") else []),
+             + [str(data[k]) for k in ("source", "via") if data.get(k)],
         raw={k: v for k, v in data.items() if k not in ("token",)},
     )
 
@@ -116,6 +123,60 @@ def from_twilio(form: Dict[str, str], source: str = "sms") -> Lead:
     )
 
 
+INTAKE_PAGE = """<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Lead intake</title>
+<style>
+ :root{--bg:#f7f7f5;--fg:#1d1d1b;--mut:#6b6b66;--line:#d9d9d4;--acc:#2b5fd9}
+ @media (prefers-color-scheme:dark){:root{--bg:#161615;--fg:#ecece8;--mut:#9a9a94;--line:#33332f;--acc:#7aa2ff}}
+ body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 system-ui,sans-serif}
+ main{max-width:640px;margin:0 auto;padding:20px 16px}
+ h1{font-size:20px;margin:0 0 4px} p{color:var(--mut);margin:0 0 16px}
+ label{display:block;font-size:13px;color:var(--mut);margin:12px 0 4px}
+ input,textarea,select{width:100%;box-sizing:border-box;padding:9px 10px;border:1px solid var(--line);
+  border-radius:8px;background:transparent;color:inherit;font:inherit}
+ textarea{min-height:90px} .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+ button{margin-top:16px;padding:10px 16px;border:0;border-radius:8px;background:var(--acc);color:#fff;font:inherit;cursor:pointer}
+ pre{white-space:pre-wrap;font-size:13px;color:var(--mut)}
+</style></head><body><main>
+<h1>Lead intake</h1><p>Adds a lead to the pipeline: dedupe, score, board. Fill the form, or paste JSON (an object or an array).</p>
+<form id="f">
+ <label for="title">What's the job</label><input id="title" name="title" required>
+ <label for="url">Link to the post / notice</label><input id="url" name="url" type="url">
+ <div class="row"><div><label for="contact">Contact</label><input id="contact" name="contact"></div>
+ <div><label for="location">Location</label><input id="location" name="location"></div></div>
+ <div class="row"><div><label for="value">Budget / payout ($)</label><input id="value" name="value" inputmode="decimal"></div>
+ <div><label for="deadline">Deadline</label><input id="deadline" name="deadline"></div></div>
+ <label for="channel">Channel</label><select id="channel" name="listener_channel">
+  <option>Local Community</option><option>Open Boards</option><option>Commercial / B2B</option>
+  <option>Trade Distress</option><option>General Intake</option></select>
+ <label for="body">Details</label><textarea id="body" name="body"></textarea>
+ <button>Send lead</button>
+</form>
+<label for="json">…or paste JSON</label><textarea id="json"></textarea><button id="sendJson" type="button">Send JSON</button>
+<pre id="out" aria-live="polite"></pre>
+<script>
+const token = new URLSearchParams(location.search).get("token") || "";
+const out = document.getElementById("out");
+async function send(payload) {
+  out.textContent = "Sending…";
+  try {
+    const r = await fetch("/leads", {method: "POST", headers: {"Content-Type": "application/json",
+      "Authorization": "Bearer " + token}, body: JSON.stringify(payload)});
+    out.textContent = JSON.stringify(await r.json(), null, 2);
+  } catch (e) { out.textContent = "Failed: " + e; }
+}
+document.getElementById("f").addEventListener("submit", e => {
+  e.preventDefault();
+  const data = Object.fromEntries(new FormData(e.target).entries());
+  data.via = "intake-page"; send(data); e.target.reset();
+});
+document.getElementById("sendJson").addEventListener("click", () => {
+  try { send(JSON.parse(document.getElementById("json").value)); }
+  catch (e) { out.textContent = "That isn't valid JSON: " + e.message; }
+});
+</script></main></body></html>"""
+
+
 def make_handler(pipeline, token: str, source: str = "webhook"):
     class Handler(BaseHTTPRequestHandler):
         server_version = "bot-factory-leads/0.1"
@@ -128,8 +189,20 @@ def make_handler(pipeline, token: str, source: str = "webhook"):
             self.send_response(status)
             self.send_header("Content-Type", content_type)
             self.send_header("Content-Length", str(len(body)))
+            self._cors()
             self.end_headers()
             self.wfile.write(body)
+
+        def _cors(self):
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Access-Control-Allow-Headers", "Authorization, Content-Type")
+            self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+
+        def do_OPTIONS(self):
+            self.send_response(204)
+            self._cors()
+            self.send_header("Content-Length", "0")
+            self.end_headers()
 
         def _authorized(self, query: Dict[str, List[str]]) -> bool:
             if not token:
@@ -147,6 +220,10 @@ def make_handler(pipeline, token: str, source: str = "webhook"):
                 if not self._authorized(query):
                     return self._reply(401, {"status": "ERROR", "message": "unauthorized"})
                 return self._reply(200, {"status": "SUCCESS", "leads": pipeline.store.recent(50)})
+            if url.path == "/intake":
+                if not self._authorized(query):
+                    return self._reply(401, {"status": "ERROR", "message": "unauthorized"})
+                return self._reply(200, INTAKE_PAGE.encode(), "text/html; charset=utf-8")
             return self._reply(404, {"status": "ERROR", "message": "not found"})
 
         def do_POST(self):

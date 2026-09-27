@@ -7,3 +7,6 @@ build/
 dist/
 var/
 leads.config.json
+data/
+leads/deploy/5090/.env
+leads/deploy/5090/cloudflared.yml

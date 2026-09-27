@@ -1,0 +1,10 @@
+# Copy to cloudflared.yml. One-time setup (PowerShell):
+#   cloudflared tunnel login
+#   cloudflared tunnel create bot-factory-leads        # prints the tunnel UUID + writes a credentials .json
+#   cloudflared tunnel route dns bot-factory-leads leads.YOUR-DOMAIN.com
+tunnel: bot-factory-leads
+credentials-file: C:\Users\YOU\.cloudflared\TUNNEL-UUID.json
+ingress:
+  - hostname: leads.YOUR-DOMAIN.com
+    service: http://localhost:8080
+  - service: http_status:404

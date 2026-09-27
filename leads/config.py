@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from .http import Fetch
 from .pipeline import Pipeline
 from .rules import RuleSet
-from .sinks import JsonlSink, LeadBoardSink, SlackSink
+from .sinks import JsonlSink, LeadBoardSink, SlackSink, WebhookSink
 from .store import SeenStore
 
 _VAR = re.compile(r"\$\{([A-Z0-9_]+)(?::-([^}]*))?\}")
@@ -79,6 +79,11 @@ def build(config: Dict[str, Any], dry_run: bool = False, only: Optional[List[str
     slack = sink_cfg.get("slack") or {}
     if slack.get("url"):
         sinks.append(SlackSink(slack["url"], slack.get("min_urgency", "HIGH"), fetcher))
+
+    for hook in sink_cfg.get("webhooks", []):
+        if hook.get("url") and hook.get("enabled", True):
+            sinks.append(WebhookSink(hook.get("name", "webhook"), hook["url"], hook.get("token", ""),
+                                     hook.get("shape", "board"), hook.get("min_urgency", "LOW"), fetcher))
 
     specs = [s for s in config.get("listeners", []) if s.get("enabled", True)]
     if only:

@@ -2,10 +2,15 @@
   "_readme": "Copy to leads.config.json (repo root) and edit. ${VARS} come from the environment / GitHub Secrets. Set enabled:false to park a listener.",
   "store": "var/leads.db",
   "ledger": "var/leads.jsonl",
+  "board_view_url": "${LEAD_BOARD_VIEW_URL:-}",
 
   "sinks": {
     "lead_board": { "url": "${LEAD_BOARD_API_URL}" },
-    "slack": { "url": "${SLACK_WEBHOOK_URL}", "min_urgency": "HIGH" }
+    "slack": { "url": "${SLACK_WEBHOOK_URL}", "min_urgency": "HIGH" },
+    "webhooks": [
+      { "name": "mid-atlantic-board", "url": "${MIDATLANTIC_WEBHOOK_URL}", "token": "${MIDATLANTIC_WEBHOOK_TOKEN}",
+        "shape": "board", "min_urgency": "LOW" }
+    ]
   },
 
   "rules": {

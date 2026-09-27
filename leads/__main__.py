@@ -5,6 +5,7 @@
     python -m leads loop --every 900      sweep forever, every N seconds
     python -m leads serve --port 8080     inbound lead listener (forms, Zapier, SMS)
     python -m leads recent                last routed leads from the store
+    python -m leads digest [--send]       top open leads of the last 24h (Slack with --send)
 
 Global: --config PATH (default leads.config.json, falling back to the example).
 """
@@ -91,6 +92,11 @@ def main(argv=None) -> int:
     p_serve.add_argument("--port", type=int, default=int(os.environ.get("PORT", 8080)))
     p_serve.add_argument("--host", default="0.0.0.0")
 
+    p_digest = sub.add_parser("digest")
+    p_digest.add_argument("--hours", type=int, default=24)
+    p_digest.add_argument("--top", type=int, default=10)
+    p_digest.add_argument("--send", action="store_true", help="post to the Slack webhook")
+
     sub.add_parser("check")
     p_recent = sub.add_parser("recent")
     p_recent.add_argument("--limit", type=int, default=25)
@@ -120,6 +126,23 @@ def main(argv=None) -> int:
             print(f"{row['first_seen'][:16]}  {row['urgency']:<8} {row['score']:>3}  {row['source']:<16} {row['title'][:70]}")
             if row["url"]:
                 print(f"{'':>45}{row['url']}")
+        return 0
+
+    if args.command == "digest":
+        from . import digest
+
+        sinks = config.get("sinks", {})
+        board = (sinks.get("lead_board") or {}).get("url")
+        rows = digest.from_board(board) if board else digest.from_store(system.store)
+        text = digest.render(digest.select(rows, args.hours, args.top), args.hours,
+                             config.get("board_view_url", ""))
+        print(text)
+        slack = (sinks.get("slack") or {}).get("url")
+        if args.send:
+            if not slack:
+                log.error("--send needs SLACK_WEBHOOK_URL")
+                return 1
+            digest.send(text, slack)
         return 0
 
     if args.command == "serve":

@@ -38,7 +38,20 @@ python -m leads check                # what's ready, what's missing a key
 python -m leads sweep --dry-run      # score and print, send nothing, remember nothing
 python -m leads sweep                # for real
 python -m leads recent               # last routed leads
+python -m leads digest --send        # top open leads of the last 24h → Slack
 ```
+
+## Destinations
+
+- **Lead board** (`LEAD_BOARD_API_URL`): the triage queue. Every sweeper converges here.
+- **Slack** (`SLACK_WEBHOOK_URL`): HIGH and CRITICAL only, plus the 7:48am digest.
+- **Other systems** (`sinks.webhooks`): e.g. the Mid-Atlantic Lead Board
+  (`MIDATLANTIC_WEBHOOK_URL` / `_TOKEN`). Bearer auth, `Idempotency-Key` = lead id,
+  optional `min_urgency`.
+- **Ledger** (`var/leads.jsonl`): everything routed, for replay.
+
+The digest reads the **board**, not a local store, so it sees leads from every
+sweeper: Actions, the 5090 box, Chrome, and inbound forms.
 
 ## The listeners
 
@@ -51,7 +64,8 @@ python -m leads recent               # last routed leads
 
 **Claude in Chrome as a listener.** For sources with no feed or API (Facebook
 groups, Nextdoor, eVA and portals behind a login), Claude in Chrome works them
-in the real browser and `POST`s each find to `/leads`. The finds get the same
+in the real browser and posts each find from the listener's own
+`/intake?token=…` page, following `pipeline/lead-system/chrome-listener.md`. The finds get the same
 dedupe, scoring and board as everything else.
 
 Adding a source is usually config, not code: another subreddit, another RSS
@@ -75,7 +89,7 @@ Tune with `sweep --dry-run`: each routed lead prints its score, and
 | --- | --- | --- |
 | **GitHub Actions** (`.github/workflows/lead-sweep.yml`) | Bids + email, zero servers | Add the secrets; it runs every 30 min 7am–7pm ET, SAM twice a day. Seen-store persists in the Actions cache. |
 | **Fly.io** (`leads/deploy/`) | The always-on inbound listener, plus a sweep loop | `fly launch`, a 1 GB volume, secrets, deploy — commands are in `fly.toml`. |
-| **The 5090 box / any home machine** | Social feeds | `python -m leads loop --every 1800 --serve`, exposed with a Cloudflare Tunnel. Reddit throttles datacenter IPs (Actions, Fly) with HTTP 429; a residential IP is rarely throttled. |
+| **The 5090 box** (`leads/deploy/5090/`) | Social feeds, inbound listener, Chrome intake | Windows kit: `.env`, `start-leads.ps1`, `start-tunnel.ps1` (Cloudflare), `install-autostart.ps1`. Reddit throttles datacenter IPs (Actions, Fly) with HTTP 429; a home connection isn't. |
 
 Run **one** scheduler per store. If two run anyway, the board rejects the
 repeat (`DUPLICATE`), but Slack could ping twice.

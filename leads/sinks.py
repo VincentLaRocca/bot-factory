@@ -2,6 +2,7 @@
 
 - :class:`LeadBoardSink`  — the existing Apps Script board (the human triage queue)
 - :class:`SlackSink`      — a ping for HIGH/CRITICAL only, so the channel stays signal
+- :class:`WebhookSink`    — any other HTTP endpoint (e.g. the Mid-Atlantic Lead Board)
 - :class:`JsonlSink`      — an append-only local ledger of everything routed
 
 A sink failing never loses a lead: the pipeline records the failure and the
@@ -68,6 +69,34 @@ class SlackSink(Sink):
         if lead.reasons:
             lines.append("_" + "; ".join(lead.reasons[:4]) + "_")
         post_json(self.fetch, self.url, {"text": "\n".join(lines)})
+
+
+class WebhookSink(Sink):
+    """POST each lead to another system: bearer auth, and an Idempotency-Key
+    equal to the stable lead id, so a retry or a second sweeper is harmless.
+
+    ``shape``: ``"board"`` (the lead-board field names, which most intake
+    endpoints understand) or ``"lead"`` (the full Lead record, with score reasons).
+    ``min_urgency`` optionally limits what this destination receives.
+    """
+
+    def __init__(self, name: str, url: str, token: str = "", shape: str = "board",
+                 min_urgency: str = "LOW", fetcher: Optional[Fetch] = None):
+        self.name = name
+        self.url = url
+        self.token = token
+        self.shape = shape
+        self.threshold = URGENCY.index(min_urgency) if min_urgency in URGENCY else len(URGENCY) - 1
+        self.fetch = fetcher or default_fetch
+
+    def send(self, lead: Lead) -> None:
+        if URGENCY.index(lead.urgency) > self.threshold:
+            return
+        payload = lead.to_board() if self.shape == "board" else lead.to_dict()
+        headers = {"Content-Type": "application/json", "Idempotency-Key": lead.lead_id}
+        if self.token:
+            headers["Authorization"] = f"Bearer {self.token}"
+        self.fetch(self.url, method="POST", data=json.dumps(payload, default=str).encode("utf-8"), headers=headers)
 
 
 class JsonlSink(Sink):
