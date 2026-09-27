@@ -97,6 +97,18 @@ def main(argv=None) -> int:
     p_digest.add_argument("--top", type=int, default=10)
     p_digest.add_argument("--send", action="store_true", help="post to the Slack webhook")
 
+    p_watch = sub.add_parser("watch", help="special listens: standing eBay watches (Shelby, Mazdaspeed6…)")
+    p_watch.add_argument("action", choices=["list", "add", "remove"])
+    p_watch.add_argument("name", nargs="?")
+    p_watch.add_argument("--q", help="eBay search, e.g. '(mazdaspeed6, mazdaspeed 6)'")
+    p_watch.add_argument("--hunt", default="auto", help="auto | vehicle | jewelry | electronics | equipment")
+    p_watch.add_argument("--max", type=float, default=None, help="max price")
+    p_watch.add_argument("--zip", default=None, help="local pickup around this ZIP")
+    p_watch.add_argument("--miles", type=int, default=150)
+    p_watch.add_argument("--notify", choices=["all", "deals"], default="all",
+                         help="all = every new listing; deals = only when the appraisers like the price")
+    p_watch.add_argument("--for", dest="customer", default=None, help="customer whose wish list this is on")
+
     sub.add_parser("check")
     p_recent = sub.add_parser("recent")
     p_recent.add_argument("--limit", type=int, default=25)
@@ -104,6 +116,27 @@ def main(argv=None) -> int:
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO,
                         format="%(asctime)s %(levelname)-7s %(message)s", datefmt="%H:%M:%S")
+    if args.command == "watch":
+        from . import watches
+        if args.action == "list":
+            for w in watches.seed_examples():
+                if args.customer and (w.get("customer") or "").lower() != args.customer.lower():
+                    continue
+                extra = " · ".join(x for x in (f"≤ ${w['max_price']:,.0f}" if w.get("max_price") else "",
+                                               f"near {w['near']['zip']}" if w.get("near") else "", w.get("notify", "all")) if x)
+                who = f"{w['customer']}: " if w.get("customer") else ""
+                print(f"{who}{w['name']:<18} {w['q']}  [{w.get('hunt', 'auto')}] {extra}")
+            return 0
+        if not args.name:
+            parser.error("watch add/remove needs a name")
+        if args.action == "remove":
+            print("removed" if watches.remove(args.name, customer=args.customer) else "no such watch")
+            return 0
+        near = {"zip": args.zip, "miles": args.miles} if args.zip else None
+        w = watches.add(args.name, args.q or args.name, args.hunt, args.max, near, args.notify, customer=args.customer)
+        print(f"watching: {w['name']} → {w['q']}" + (f" (wish list: {w['customer']})" if w.get("customer") else ""))
+        return 0
+
     path = _config_path(args.config)
     config = config_module.load(path)
     dry = getattr(args, "dry_run", False)

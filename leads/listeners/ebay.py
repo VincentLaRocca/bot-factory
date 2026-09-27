@@ -117,6 +117,21 @@ class EbayHuntListener:
             params["category_ids"] = str(query["category_ids"])
         return self.search_endpoint + "?" + urllib.parse.urlencode(params)
 
+    @classmethod
+    def for_watches(cls, name: str, client_id: str, client_secret: str, watch_file: Optional[str] = None, **kw):
+        """Special listens: one query per standing watch, re-read from the watch file every sweep."""
+        listener = cls(name, client_id, client_secret, [], **kw)
+        listener.watch_file = watch_file
+        listener.watching = True
+        return listener
+
+    def current_queries(self) -> List[Dict[str, Any]]:
+        if not getattr(self, "watching", False):
+            return self.queries
+        from .. import watches as watch_module
+        return [{**w, "hunt": w.get("hunt", "auto"), "watch": w["name"]}
+                for w in watch_module.seed_examples(getattr(self, "watch_file", None))]
+
     def listen(self) -> Iterator[Lead]:
         self.errors = []
         try:
@@ -124,8 +139,8 @@ class EbayHuntListener:
         except Exception as error:
             self.errors.append(f"token: {error}")
             return
-        seen = set()
-        for query in self.queries:
+        found_by_id: Dict[str, Lead] = {}   # one lead per listing, even when several wish lists want it
+        for query in self.current_queries():
             try:
                 data = self.fetch(self.search_url(query), headers={
                     "Authorization": f"Bearer {token}", "X-EBAY-C-MARKETPLACE-ID": self.marketplace}).json() or {}
@@ -133,10 +148,30 @@ class EbayHuntListener:
                 self.errors.append(f"{query.get('q')}: {error}")
                 continue
             for item in data.get("itemSummaries") or []:
-                if item.get("itemId") in seen:
+                item_id = str(item.get("itemId"))
+                found = found_by_id.get(item_id)
+                if found is None:
+                    found = found_by_id[item_id] = self.appraise(item, query.get("hunt", "silver"))
+                elif not query.get("watch"):
                     continue
-                seen.add(item.get("itemId"))
-                yield self.appraise(item, query.get("hunt", "silver"))
+                if query.get("watch"):
+                    self._mark_watch(found, query)
+        yield from found_by_id.values()
+
+    @staticmethod
+    def _mark_watch(found: Lead, query: Dict[str, Any]) -> None:
+        tag = f"watch:{query['watch']}"
+        who = query.get("customer")
+        first_watch = not any(t.startswith("watch:") for t in found.tags)
+        if tag not in found.tags:
+            found.tags.append(tag)
+        if who and f"for:{who}" not in found.tags:
+            found.tags.append(f"for:{who}")
+            wishers = [t[4:] for t in found.tags if t.startswith("for:")]
+            base = found.contact.split(" · ", 1)[1] if found.contact.startswith("wish list:") else found.contact
+            found.contact = f"wish list: {', '.join(wishers)} · " + base
+        if query.get("notify", "all") == "all" and first_watch:
+            found.bonus.append((50, f"special listen: {query['watch']}" + (f" for {who}" if who else "")))
 
     # -- the reading ---------------------------------------------------------
     def appraise(self, item: Dict[str, Any], hunt: str) -> Lead:

@@ -619,6 +619,27 @@
         ],
         "min_score": 45
       }
+    },
+    {
+      "name": "ebay-watches",
+      "kind": "ebay_watch",
+      "enabled": true,
+      "_note": "Special listens: standing watches from var/watches.json (starts with Mazdaspeed6 and Shelby). Every new match is flagged (notify=all) and still appraised; add more with: python -m leads watch add NAME --q '...'",
+      "client_id": "${EBAY_CLIENT_ID}",
+      "client_secret": "${EBAY_CLIENT_SECRET}",
+      "spot": {
+        "silver": "${SILVER_SPOT_USD:-}",
+        "gold": "${GOLD_SPOT_USD:-}"
+      },
+      "watch_file": "${WATCHES_FILE:-var/watches.json}",
+      "min_interval_minutes": 30,
+      "rules": {
+        "exclude_any": [
+          "for parts only",
+          "parts car"
+        ],
+        "min_score": 45
+      }
     }
   ]
 }

@@ -69,6 +69,10 @@ def build_listener(spec: Dict[str, Any], store: SeenStore, fetcher: Optional[Fet
             max_messages=int(spec.get("max_messages", 50)), port=int(spec.get("port", 993)), store=store,
             channel=spec.get("channel", "Commercial / B2B"), tags=spec.get("tags"),
             skip_from=spec.get("skip_from"), spot=spec.get("spot"), decipher=bool(spec.get("decipher", False)))
+    if kind == "ebay_watch":
+        return EbayHuntListener.for_watches(
+            name, spec.get("client_id", ""), spec.get("client_secret", ""), watch_file=spec.get("watch_file") or None,
+            spot=spec.get("spot"), fetcher=fetcher, recovery=_recovery(spec))
     if kind == "ebay":
         return EbayHuntListener(
             name, spec.get("client_id", ""), spec.get("client_secret", ""), spec.get("queries", []),

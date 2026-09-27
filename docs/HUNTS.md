@@ -143,3 +143,21 @@ everything else in the ad looks normal.**
 - **Scam tells** ("deposit to hold", gift cards, "deployed", "shipping only", Zelle/wire only, escrow): **−40**, and no upside is shown.
 - **Auctions:** a current bid isn't a price. Live auctions (GSA, eBay auctions) get **+15 "watch to the close"** with the bid ceiling that keeps the 40% flag (60% of book); fixed-price listings get the full +45.
 - `ebay-vehicles` searches local-pickup listings within 75–150 miles of Richmond (23220) and Norfolk (23510). GSA surplus vehicles get the same test against the current high bid.
+
+## Special listens and customer wish lists
+
+Standing eBay watches that never expire: every new listing that matches is
+flagged (+50 "special listen") and still appraised (book test, melt, gems).
+The first run starts with **Mazdaspeed6** and **Shelby**.
+
+```bash
+python -m leads watch list
+python -m leads watch add "Syclone" --q "gmc syclone" --hunt vehicle --max 30000
+python -m leads watch add "Mazdaspeed6" --q "(mazdaspeed6, mazdaspeed 6)" --for "Customer A" --max 15000 --zip 23220 --miles 200
+python -m leads watch list --for "Customer A"
+python -m leads watch remove "Mazdaspeed6" --for "Customer A"
+```
+
+- **Wish lists:** `--for` puts a watch on a customer's list. Matches are tagged `for:<customer>` and the board shows "wish list: <names>". One listing that several customers want is **one** lead naming all of them.
+- `--notify deals` only surfaces a watched item when the appraisers like the price; the default `all` surfaces every new match.
+- Watches live in `var/watches.json` (`WATCHES_FILE`): local, editable, and never committed. Customer names stay on your machine.

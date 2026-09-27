@@ -630,7 +630,7 @@ def test_ebay_needs_keys_and_hunt_config_loads(monkeypatch, tmp_path):
     monkeypatch.setenv("EBAY_CLIENT_SECRET", "b")
     config = config_module.load(config_module.__file__.replace("config.py", "hunts.example.json"))
     system = config_module.build(config, store_path=str(tmp_path / "h.db"))
-    assert {x.name for x in system.listeners} == {"ebay-jewelry", "ebay-metals", "ebay-gems", "ebay-refurb", "ebay-vehicles", "gsa-auctions", "estate-news"}
+    assert {x.name for x in system.listeners} == {"ebay-jewelry", "ebay-metals", "ebay-gems", "ebay-refurb", "ebay-vehicles", "ebay-watches", "gsa-auctions", "estate-news"}
     assert "estate-mail" in {n for n, _ in system.skipped}      # needs the inbox login
 
 
@@ -992,3 +992,66 @@ def test_book_test_on_live_auctions_means_watch_to_close():
     reasons = [r for _, r in score(lot, 3000)[0]]
     assert any("watch to the close" in r and "$15,600" in r for r in reasons)
     assert not any("looks normal" in r for r in reasons)
+
+
+def test_special_listens(tmp_path, monkeypatch):
+    from leads import watches
+    from leads.__main__ import main
+    file = tmp_path / "watches.json"
+    monkeypatch.setenv("WATCHES_FILE", str(file))
+    assert [w["name"] for w in watches.seed_examples()] == ["Mazdaspeed6", "Shelby"]
+    assert main(["watch", "add", "Syclone", "--q", "gmc syclone", "--hunt", "vehicle", "--max", "30000"]) == 0
+    assert main(["watch", "remove", "Shelby"]) == 0
+    assert [w["name"] for w in watches.load()] == ["Mazdaspeed6", "Syclone"]
+
+    from datetime import datetime, timezone
+    from leads.listeners.ebay import EbayHuntListener
+    item = _ebay_item("m6", "2006 Mazda Mazdaspeed6 Grand Touring AWD 6-speed", 7800)
+    web = FakeWeb({"https://api.ebay.com/identity": {"access_token": "T"},
+                   "https://api.ebay.com/buy/browse": {"itemSummaries": [item]}})
+    hunt = EbayHuntListener.for_watches("ebay-watches", "id", "secret", watch_file=str(file), fetcher=web,
+                                        now=datetime(2026, 9, 27, tzinfo=timezone.utc))
+    found = list(hunt.listen())
+    assert len(web.calls) == 3                                     # token + one search per watch
+    assert "q=%28mazdaspeed6" in web.calls[1]["url"] and "price%3A%5B..20000%5D" in web.calls[1]["url"]
+    assert "watch:Mazdaspeed6" in found[0].tags and any("special listen" in r for _, r in found[0].bonus)
+    assert Pipeline(SeenStore(), RuleSet.from_config({"min_score": 45}), []).process(found[:1]).routed
+
+
+def test_customer_wish_lists(tmp_path, monkeypatch):
+    from leads import watches
+    from leads.__main__ import main
+    monkeypatch.setenv("WATCHES_FILE", str(tmp_path / "w.json"))
+    main(["watch", "add", "Mazdaspeed6", "--q", "mazdaspeed6", "--for", "Customer A", "--max", "15000"])
+    main(["watch", "add", "Mazdaspeed6", "--q", "mazdaspeed6", "--for", "Customer B", "--max", "12000"])
+    main(["watch", "add", "Gold Rolex", "--q", "rolex 18k", "--for", "Customer A", "--hunt", "jewelry"])
+    lists = watches.customers()
+    assert sorted(w["name"] for w in lists["Customer A"]) == ["Gold Rolex", "Mazdaspeed6"]
+    assert [w["max_price"] for w in lists["Customer B"]] == [12000.0]
+    main(["watch", "remove", "Mazdaspeed6", "--for", "Customer A"])
+    assert [w["name"] for w in watches.customers()["Customer A"]] == ["Gold Rolex"]
+    assert "Customer B" in watches.customers()
+
+    from datetime import datetime, timezone
+    from leads.listeners.ebay import EbayHuntListener
+    web = FakeWeb({"https://api.ebay.com/identity": {"access_token": "T"},
+                   "https://api.ebay.com/buy/browse": {"itemSummaries": [_ebay_item("m6", "2007 Mazdaspeed6 GT", 9500)]}})
+    hunt = EbayHuntListener.for_watches("ebay-watches", "id", "s", watch_file=str(tmp_path / "w.json"), fetcher=web,
+                                        now=datetime(2026, 9, 27, tzinfo=timezone.utc))
+    found = list(hunt.listen())
+    assert any("for:Customer B" in x.tags and x.contact.startswith("wish list: Customer B") for x in found)
+
+
+def test_one_listing_on_several_wish_lists_is_one_lead(tmp_path, monkeypatch):
+    from leads.__main__ import main
+    from leads.listeners.ebay import EbayHuntListener
+    monkeypatch.setenv("WATCHES_FILE", str(tmp_path / "w.json"))
+    main(["watch", "add", "Mazdaspeed6", "--q", "mazdaspeed6", "--for", "Customer A"])
+    main(["watch", "add", "Mazdaspeed6", "--q", "mazdaspeed6", "--for", "Customer B"])
+    web = FakeWeb({"https://api.ebay.com/identity": {"access_token": "T"},
+                   "https://api.ebay.com/buy/browse": {"itemSummaries": [_ebay_item("m6", "2007 Mazdaspeed6 GT", 9500)]}})
+    found = list(EbayHuntListener.for_watches("w", "id", "s", watch_file=str(tmp_path / "w.json"), fetcher=web).listen())
+    assert len(found) == 1
+    assert {"for:Customer A", "for:Customer B"} <= set(found[0].tags)
+    assert found[0].contact.startswith("wish list: Customer A, Customer B")
+    assert sum(1 for _, r in found[0].bonus if "special listen" in r) == 1
