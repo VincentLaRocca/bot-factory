@@ -49,6 +49,11 @@ python -m leads recent               # last routed leads
 | Social | `feed` | nothing (Google Alerts: an RSS URL) | Reddit search per subreddit + any RSS/Atom URL. Gated on *topic in title* **and** *buying intent* ("looking for", "need a", "recommend", "[hiring]") so chatter doesn't route. |
 | Inbound | `webhook` | `LEADS_WEBHOOK_TOKEN` | `POST /leads` takes one JSON object or an array — common form field names (`name`, `phone`, `service`, `message`, `budget`, `zip`…) are mapped automatically. `POST /sms` takes Twilio's inbound webhook as-is. Auth by `Authorization: Bearer` or `?token=`. |
 
+**Claude in Chrome as a listener.** For sources with no feed or API (Facebook
+groups, Nextdoor, eVA and portals behind a login), Claude in Chrome works them
+in the real browser and `POST`s each find to `/leads`. The finds get the same
+dedupe, scoring and board as everything else.
+
 Adding a source is usually config, not code: another subreddit, another RSS
 URL, another NAICS code. A new *kind* of source is one file in
 `leads/listeners/` that yields `Lead` objects.

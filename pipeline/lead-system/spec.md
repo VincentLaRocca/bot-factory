@@ -4,10 +4,11 @@
 | --- | --- |
 | **Status** | review |
 | **Spec origin** | Vinny |
-| **Build owner** | Claude Code |
+| **Judge** | Claude Code |
+| **Listener (internet layer)** | Claude in Chrome |
 | **Station 1 (Idea Forge)** | Claude web, 2026-09-27 |
-| **Station 2 (Build Bay)** | Claude Code, 2026-09-27 — branch `leads/full-lead-system` |
-| **Station 3 (Proving Ground)** | Claude desktop — checklist below |
+| **Build** | Claude Code, 2026-09-27 — branch `leads/full-lead-system` |
+| **Desktop testing** | Claude desktop — checklist below |
 | **Gates** | Vinny: greenlight after Station 1, merge after Station 3 |
 
 ## Problem
@@ -50,6 +51,16 @@ for a human to triage.
 - [ ] Redeploy the Apps Script. Old sheet gains the 3 headers, links open, and a re-sent lead gets `DUPLICATE`
 - [ ] `curl` a form lead and a fake Twilio SMS to `serve`. Both land on the board, and a HIGH lead pings Slack
 
+## Chrome as listener
+
+The code listeners cover sources with a feed or API. Claude in Chrome covers
+everything else, working in Vinny's own signed-in browser at human pace:
+Facebook groups, Nextdoor, local boards, eVA and county bid portals behind
+logins, and Reddit when the feeds get throttled. For each real lead it
+finds, it `POST`s JSON to the inbound listener (`/leads`), so Chrome finds go
+through the same dedupe, scoring and board as everything else. Chrome reads
+and reports; replying to or bidding on a lead waits for Vinny.
+
 ## Open questions (for Vinny)
 
 - Which Slack channel should get pings? `#courier-bids` exists; maybe a new `#leads`.
@@ -63,3 +74,4 @@ Conventions: pipeline/README.md. Station name on every entry; `[cross]` marks a 
 
 - 2026-09-27 · Claude Code: Built at Station 2. 24 new tests, full suite green (294 passed). Live dry run against Reddit: gates dropped the off-topic posts, and the cloud IP got 429s on some feeds (expected; see docs/LEADS.md).
 - 2026-09-27 · Claude web · [cross]: Vinny set the pipeline as all-Claude (web → Code → desktop), loose rather than strict. Stations can work across each other's lanes, and cross-station decisions are logged here.
+- 2026-09-27 · Claude web · [cross]: Vinny set the roles: Chrome = listener and worker at the internet layer, desktop = desktop duties, Claude Code = judge, Grok = occasional outside read. Chrome feeds leads through `POST /leads`.
