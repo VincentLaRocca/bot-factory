@@ -14,6 +14,12 @@ and gets evidence points (``Lead.bonus``) the rules add up:
 - gems: certified, price per carat under Vinny's limit for that stone
 - both: misspelled title, auction ending within 24h with no bids, and a
   penalty for thin-feedback sellers
+
+**No eBay user data is kept.** Seller usernames are read to judge feedback
+and then dropped; only the listing (id, title, price, link) and the seller's
+feedback numbers are stored. That's what makes the "not persisting eBay user
+data" exemption from eBay's account-deletion notifications true. If that ever
+changes, run the deletion endpoint in ``listeners/webhook.py`` instead.
 """
 
 from __future__ import annotations
@@ -182,7 +188,8 @@ class EbayHuntListener:
             body=" · ".join(facts + [f"{'auction' if auction else 'buy it now'} ${price:,.2f} + ${shipping:,.2f} ship",
                                      item.get("condition", "")]),
             url=item.get("itemWebUrl", ""),
-            contact=f"{seller.get('username', '?')} ({seller.get('feedbackPercentage', '?')}%, {seller.get('feedbackScore', '?')})",
+            # Deliberately no username: see the module docstring (eBay user-data exemption).
+            contact=f"eBay seller ({seller.get('feedbackPercentage', '?')}%, {seller.get('feedbackScore', '?')} feedback)",
             location=", ".join(x for x in (where.get("postalCode"), where.get("country")) if x),
             value=cost, deadline=item.get("itemEndDate", "") if auction else "",
             posted_at=item.get("itemCreationDate", ""), tags=tags, bonus=bonus,

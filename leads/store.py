@@ -71,6 +71,15 @@ class SeenStore:
         self.db.execute("INSERT OR REPLACE INTO cursors VALUES (?, ?)", (source, str(value)))
         self.db.commit()
 
+    def purge_text(self, needle: str) -> int:
+        """Delete every stored lead whose record mentions ``needle`` (e.g. an eBay username)."""
+        if not needle:
+            return 0
+        cursor = self.db.execute("DELETE FROM leads WHERE instr(payload, ?) > 0 OR instr(title, ?) > 0",
+                                 (needle, needle))
+        self.db.commit()
+        return cursor.rowcount
+
     # -- reporting ---------------------------------------------------------
     def recent(self, limit: int = 50, disposition: str = "ROUTED") -> List[Dict]:
         rows = self.db.execute(

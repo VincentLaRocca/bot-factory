@@ -20,6 +20,15 @@ Routes::
                              or from Claude in Chrome (sites' CSP often blocks
                              cross-origin fetch, so Chrome posts from here)
 
+eBay Marketplace Account Deletion (only needed if eBay user data is ever
+stored; the hunter doesn't, so the exemption applies):
+
+    GET  /ebay/account-deletion?challenge_code=…   answers eBay's challenge
+    POST /ebay/account-deletion                   purges that user, replies 204
+
+Set ``EBAY_VERIFICATION_TOKEN`` (32–80 chars, letters/digits/_/-) and
+``EBAY_DELETION_ENDPOINT`` (the exact public URL registered with eBay).
+
 CORS is open on ``/leads`` (the token still guards it), so a browser script
 can also post directly when the page it's on allows it.
 
@@ -30,8 +39,10 @@ behind HTTPS — Fly.io, Railway, or a Cloudflare Tunnel from the 5090 box.
 
 from __future__ import annotations
 
+import hashlib
 import hmac
 import json
+import os
 import logging
 import re
 import urllib.parse
@@ -177,6 +188,18 @@ document.getElementById("sendJson").addEventListener("click", () => {
 </script></main></body></html>"""
 
 
+EBAY_PATH = "/ebay/account-deletion"
+
+
+def ebay_challenge(code: str, token: str = None, endpoint: str = None) -> str:
+    """eBay's challenge: hex(SHA-256(challengeCode + verificationToken + endpoint))."""
+    token = token if token is not None else os.environ.get("EBAY_VERIFICATION_TOKEN", "")
+    endpoint = endpoint if endpoint is not None else os.environ.get("EBAY_DELETION_ENDPOINT", "")
+    if not (code and token and endpoint):
+        return ""
+    return hashlib.sha256((code + token + endpoint).encode("utf-8")).hexdigest()
+
+
 def make_handler(pipeline, token: str, source: str = "webhook"):
     class Handler(BaseHTTPRequestHandler):
         server_version = "bot-factory-leads/0.1"
@@ -214,6 +237,12 @@ def make_handler(pipeline, token: str, source: str = "webhook"):
         def do_GET(self):
             url = urllib.parse.urlparse(self.path)
             query = urllib.parse.parse_qs(url.query)
+            if url.path == EBAY_PATH:
+                code = (query.get("challenge_code") or [""])[0]
+                answer = ebay_challenge(code)
+                if not answer:
+                    return self._reply(400, {"status": "ERROR", "message": "not configured or no challenge_code"})
+                return self._reply(200, {"challengeResponse": answer})
             if url.path == "/health":
                 return self._reply(200, {"status": "ok"})
             if url.path == "/recent":
@@ -229,6 +258,19 @@ def make_handler(pipeline, token: str, source: str = "webhook"):
         def do_POST(self):
             url = urllib.parse.urlparse(self.path)
             query = urllib.parse.parse_qs(url.query)
+            if url.path == EBAY_PATH:  # eBay can't send our token; it signs its own requests
+                length = min(int(self.headers.get("Content-Length") or 0), MAX_BODY)
+                try:
+                    data = json.loads(self.rfile.read(length) or b"{}")
+                except json.JSONDecodeError:
+                    return self._reply(400, {"status": "ERROR", "message": "body is not JSON"})
+                who = ((data.get("notification") or {}).get("data") or {})
+                purged = sum(pipeline.store.purge_text(str(who.get(k) or "")) for k in ("username", "userId"))
+                log.info("eBay account deletion: purged %s record(s)", purged)
+                self.send_response(204)
+                self._cors()
+                self.end_headers()
+                return None
             if not self._authorized(query):
                 return self._reply(401, {"status": "ERROR", "message": "unauthorized"})
             length = int(self.headers.get("Content-Length") or 0)

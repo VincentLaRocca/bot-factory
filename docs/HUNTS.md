@@ -7,6 +7,19 @@ human look. **It never bids, buys, offers, or messages a seller.**
 
 ## Setup
 
+0. **Enable the keyset.** eBay ships new Production keysets *disabled* until you
+   either subscribe to Marketplace Account Deletion notifications or claim the
+   exemption. The hunter **doesn't store eBay user data**: seller usernames are
+   read for the feedback check and dropped, and only the listing and the
+   seller's feedback numbers are kept. So the exemption is the honest,
+   fast path. developer.ebay.com → Alerts & Notifications (or the keyset
+   page) → Marketplace Account Deletion → toggle **"Not persisting eBay
+   data"** / apply for exemption.
+   If you ever start storing seller identities, use the endpoint instead: the
+   inbound listener serves `/ebay/account-deletion` (set
+   `EBAY_VERIFICATION_TOKEN` and `EBAY_DELETION_ENDPOINT` to the exact
+   public URL, e.g. `https://<tunnel-host>/ebay/account-deletion`). It
+   answers eBay's challenge and purges a deleted user's records.
 1. developer.ebay.com → **Application Keys** → *Production* keyset: copy the **App ID** (client id) and **Cert ID** (client secret).
 2. Put them in `EBAY_CLIENT_ID` / `EBAY_CLIENT_SECRET` (the 5090 `.env` and/or GitHub secrets).
 3. Set `SILVER_SPOT_USD` and `GOLD_SPOT_USD` (USD per troy oz). v0 uses the numbers you give it; update them when the market moves.

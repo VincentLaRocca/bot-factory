@@ -624,3 +624,44 @@ def test_ebay_needs_keys_and_hunt_config_loads(monkeypatch, tmp_path):
     config = config_module.load(config_module.__file__.replace("config.py", "hunts.example.json"))
     system = config_module.build(config, store_path=str(tmp_path / "h.db"))
     assert {x.name for x in system.listeners} == {"ebay-metals", "ebay-gems"}
+
+
+def test_ebay_hunt_keeps_no_seller_username():
+    from datetime import datetime, timezone
+    from leads.listeners.ebay import EbayHuntListener
+    web = FakeWeb({"https://api.ebay.com/identity": {"access_token": "T"},
+                   "https://api.ebay.com/buy/browse": {"itemSummaries": [
+                       _ebay_item("9", "Sterling Silver Lot 400 grams", 200)]}})
+    hunt = EbayHuntListener("ebay-metals", "id", "secret", [{"hunt": "silver", "q": "x"}], spot={"silver": 30},
+                            fetcher=web, now=datetime(2026, 9, 27, tzinfo=timezone.utc))
+    record = json.dumps(next(hunt.listen()).to_dict())
+    assert "estate_seller" not in record and "99.8%" in record
+
+
+def test_ebay_deletion_challenge_and_purge(monkeypatch):
+    import hashlib
+    from leads.listeners.webhook import ebay_challenge
+    token, endpoint = "t" * 40, "https://leads.example.com/ebay/account-deletion"
+    assert ebay_challenge("abc", token, endpoint) == hashlib.sha256(("abc" + token + endpoint).encode()).hexdigest()
+    assert ebay_challenge("abc", "", endpoint) == ""
+
+    monkeypatch.setenv("EBAY_VERIFICATION_TOKEN", token)
+    monkeypatch.setenv("EBAY_DELETION_ENDPOINT", endpoint)
+    store = SeenStore()
+    store.record(lead(ext="k", contact="bob_the_seller"), "ROUTED")
+    store.record(lead(ext="j", title="Other", contact="alice"), "ROUTED")
+    server = serve(Pipeline(store, RuleSet()), "s3cret", "127.0.0.1", 0)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    base = f"http://127.0.0.1:{server.server_port}/ebay/account-deletion"
+    try:
+        with urllib.request.urlopen(base + "?challenge_code=xyz", timeout=5) as reply:
+            assert json.loads(reply.read())["challengeResponse"] == ebay_challenge("xyz", token, endpoint)
+        body = json.dumps({"metadata": {"topic": "MARKETPLACE_ACCOUNT_DELETION"},
+                           "notification": {"data": {"username": "bob_the_seller", "userId": "u1"}}})
+        request = urllib.request.Request(base, data=body.encode(), method="POST",
+                                         headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(request, timeout=5) as reply:
+            assert reply.status == 204
+        assert store.counts() == {"ROUTED": 1}
+    finally:
+        server.shutdown()
