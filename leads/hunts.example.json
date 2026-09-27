@@ -337,7 +337,7 @@
       "name": "gsa-auctions",
       "kind": "gsa_auctions",
       "enabled": true,
-      "_note": "Federal surplus via the official GSA Auctions API; Virginia is a hotbed for gov deals. Every lot is appraised (jewelry, vehicle, equipment, auto-picked). scrap_per_ton / cat_value / comps_csv are YOUR numbers: placeholders until set.",
+      "_note": "Federal surplus via the official GSA Auctions API; Virginia is a hotbed for gov deals. Every lot is appraised (jewelry, vehicle, equipment, auto-picked). scrap_per_ton / cat_value / comps_csv are YOUR numbers: placeholders until set. Vehicles also get the book test (40%+ under book, clean ad) against the current high bid.",
       "api_key": "${DATA_GOV_API_KEY:-DEMO_KEY}",
       "states": [
         "VA",
@@ -553,6 +553,71 @@
           "hampton roads": 5
         },
         "min_score": 40
+      }
+    },
+    {
+      "name": "ebay-vehicles",
+      "kind": "ebay",
+      "enabled": true,
+      "_note": "Vehicles near Richmond and Norfolk (local pickup). Book test: 40%+ under book with a normal-looking ad gets flagged hard. Book values come from YOUR price sheet (VALUE_COMPS_CSV), looked up on KBB/NADA/Edmunds.",
+      "client_id": "${EBAY_CLIENT_ID}",
+      "client_secret": "${EBAY_CLIENT_SECRET}",
+      "min_interval_minutes": 60,
+      "queries": [
+        {
+          "hunt": "vehicle",
+          "q": "pickup truck",
+          "max_price": 25000,
+          "near": {
+            "zip": "23220",
+            "miles": 100
+          }
+        },
+        {
+          "hunt": "vehicle",
+          "q": "pickup truck",
+          "max_price": 25000,
+          "near": {
+            "zip": "23510",
+            "miles": 75
+          }
+        },
+        {
+          "hunt": "vehicle",
+          "q": "cargo van",
+          "max_price": 25000,
+          "near": {
+            "zip": "23220",
+            "miles": 150
+          }
+        },
+        {
+          "hunt": "vehicle",
+          "q": "(tacoma, f-150, silverado, ram 1500, tundra)",
+          "max_price": 30000,
+          "near": {
+            "zip": "23220",
+            "miles": 150
+          }
+        },
+        {
+          "hunt": "vehicle",
+          "q": "(camry, accord, corolla, civic)",
+          "max_price": 15000,
+          "near": {
+            "zip": "23220",
+            "miles": 100
+          }
+        }
+      ],
+      "rules": {
+        "exclude_any": [
+          "for parts",
+          "parts only",
+          "salvage",
+          "rebuilt"
+        ],
+        "min_score": 45
       }
     }
   ]

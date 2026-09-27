@@ -103,6 +103,10 @@ class EbayHuntListener:
         filters = ["priceCurrency:USD", "itemLocationCountry:US"]
         if query.get("max_price"):
             filters.append(f"price:[..{query['max_price']}]")
+        near = query.get("near") or {}
+        if near.get("zip"):
+            filters += ["pickupCountry:US", f"pickupPostalCode:{near['zip']}",
+                        f"pickupRadius:{int(near.get('miles', 100))}", "pickupRadiusUnit:mi"]
         buying = query.get("buying", "")
         if buying:
             filters.append("buyingOptions:{" + "|".join(b.strip().upper() for b in buying.split("|")) + "}")

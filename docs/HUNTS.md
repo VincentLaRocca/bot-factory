@@ -131,3 +131,14 @@ estimate scores by how sure the appraisal is; a working machine is never marked 
 for being worth more than its scrap. Your numbers: `SCRAP_PER_TON`,
 `CAT_CONVERTER_VALUE`, and a price sheet CSV (`VALUE_COMPS_CSV`, same columns as
 `leads/appraisers/comps.example.csv`; every example value there is a PLACEHOLDER).
+
+## Vehicles: the book test
+
+Vinny's rule: **compare the price to book value, and flag 40%+ discounts if
+everything else in the ad looks normal.**
+
+- **Book value** comes from your price sheet (`VALUE_COMPS_CSV`): one row per make/model/year range, with the value you looked up on KBB, NADA or Edmunds. It's adjusted for mileage. KBB and NADA have no free API, and scraping them breaks their terms. So the numbers are yours, or a paid pricing API later (spending gate), or Chrome looks one up on request.
+- **40%+ under book with a clean ad: +45** (+30 without a year-matched row), "under book and the ad looks normal".
+- **Cheap for a reason:** salvage, rebuilt, flood, parts-only, title problems, won't run, engine/transmission trouble, frame/rust, as-is, mileage not actual. These are noted as "the ad explains it", not flagged.
+- **Scam tells** ("deposit to hold", gift cards, "deployed", "shipping only", Zelle/wire only, escrow): **−40**, and no upside is shown.
+- `ebay-vehicles` searches local-pickup listings within 75–150 miles of Richmond (23220) and Norfolk (23510). GSA surplus vehicles get the same test against the current high bid.

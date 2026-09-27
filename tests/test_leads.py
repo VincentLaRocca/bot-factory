@@ -630,7 +630,7 @@ def test_ebay_needs_keys_and_hunt_config_loads(monkeypatch, tmp_path):
     monkeypatch.setenv("EBAY_CLIENT_SECRET", "b")
     config = config_module.load(config_module.__file__.replace("config.py", "hunts.example.json"))
     system = config_module.build(config, store_path=str(tmp_path / "h.db"))
-    assert {x.name for x in system.listeners} == {"ebay-jewelry", "ebay-metals", "ebay-gems", "ebay-refurb", "gsa-auctions", "estate-news"}
+    assert {x.name for x in system.listeners} == {"ebay-jewelry", "ebay-metals", "ebay-gems", "ebay-refurb", "ebay-vehicles", "gsa-auctions", "estate-news"}
     assert "estate-mail" in {n for n, _ in system.skipped}      # needs the inbox login
 
 
@@ -957,3 +957,28 @@ def test_google_alert_emails_are_deciphered():
     found = next(listener.listen())
     assert found.location == "Midlothian, VA" and found.value == 12_000_000.0
     assert "Oct 30" in found.deadline and found.url == "https://news.example/beacon"
+
+
+def test_book_test_flags_40pct_under_book_only_when_the_ad_is_clean():
+    from leads.appraisers import appraise, score
+    from leads.appraisers.comps import Comp
+    comps = [Comp("vehicle", ["toyota", "tacoma"], 2015, 2019, 26000, "")]
+    clean = appraise("2017 Toyota Tacoma SR5 4x4, 98,000 miles, clean title, runs and drives great", 12500, comps=comps)
+    bonus, _ = score(clean, 12500)
+    assert any("under book" in r and "looks normal" in r and p == 45 for p, r in bonus)
+    salvage = appraise("2017 Toyota Tacoma salvage title runs", 12500, comps=comps)
+    assert not any("looks normal" in r for _, r in score(salvage, 12500)[0])
+    assert any("ad explains it: salvage" in f for f in salvage.facts)
+    scam = appraise("2017 Toyota Tacoma 60k miles, I am deployed, deposit to hold, shipping only", 9000, comps=comps)
+    bonus, _ = score(scam, 9000)
+    assert any(p == -40 for p, _ in bonus) and not any("upside" in r or "under book" in r for _, r in bonus)
+    fair = appraise("2017 Toyota Tacoma 98k miles runs great", 22000, comps=comps)
+    assert not any("under book" in r for _, r in score(fair, 22000)[0])          # 15% under: not a flag
+
+
+def test_ebay_vehicle_search_filters_local_pickup():
+    from leads.listeners.ebay import EbayHuntListener
+    hunt = EbayHuntListener("v", "id", "s", [], fetcher=FakeWeb())
+    url = hunt.search_url({"q": "pickup truck", "near": {"zip": "23220", "miles": 100}})
+    decoded = urllib.parse.unquote(url)
+    assert "pickupPostalCode:23220" in decoded and "pickupRadius:100" in decoded and "pickupRadiusUnit:mi" in decoded

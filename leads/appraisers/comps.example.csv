@@ -1,4 +1,10 @@
 domain,match,year_from,year_to,value,note
+vehicle,toyota tacoma,2015,2019,24000,PLACEHOLDER book (look up KBB private party)
+vehicle,toyota tacoma,2020,2023,31000,PLACEHOLDER book
+vehicle,honda accord,2015,2019,14000,PLACEHOLDER book
+vehicle,honda civic,2015,2019,12000,PLACEHOLDER book
+vehicle,toyota camry,2018,2022,17000,PLACEHOLDER book
+vehicle,ford f-150,2021,2024,32000,PLACEHOLDER book
 vehicle,ford f-150,2011,2014,11000,PLACEHOLDER - replace with real sold comps
 vehicle,ford f-150,2015,2020,19000,PLACEHOLDER
 vehicle,chevrolet silverado,2011,2014,11000,PLACEHOLDER
