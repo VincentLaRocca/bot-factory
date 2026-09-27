@@ -71,7 +71,7 @@ def matches(text: str) -> bool:
 @register("vehicle")
 def appraise(text: str, cost: float = 0.0, comps: Optional[List] = None, scrap_per_ton: float = 180.0,
              scrap_yield: float = 0.75, cat_value: float = 100.0, book_discount: float = 0.40,
-             **_) -> Optional[Appraisal]:
+             auction: bool = False, **_) -> Optional[Appraisal]:
     text = " " + text.lower() + " "
     text = re.sub(r"\bf ?(150|250|350|450)\b", r"f-\1", text)          # F150 / F 150 → f-150
     text = re.sub(r"\bchevy\b", "chevrolet", text)
@@ -104,7 +104,11 @@ def appraise(text: str, cost: float = 0.0, comps: Optional[List] = None, scrap_p
         if cost and book:
             under = 1 - cost / book
             facts.append(f"asking ${cost:,.0f} is {under:.0%} {'under' if under >= 0 else 'over'} book")
-            if under >= book_discount and not problems:
+            if under >= book_discount and not problems and auction:
+                # A live auction's current bid isn't the price. Watch it; the test that counts is at the close.
+                extra.append((15, f"current bid {under:.0%} under book (${cost:,.0f} vs ${book:,.0f}), clean ad: "
+                                  f"watch to the close; flag holds while the bid stays ≤ ${book * (1 - book_discount):,.0f}"))
+            elif under >= book_discount and not problems:
                 extra.append((45 if dated else 30,
                               f"{under:.0%} under book (${cost:,.0f} vs ${book:,.0f}) and the ad looks normal"))
             elif under >= book_discount:

@@ -982,3 +982,13 @@ def test_ebay_vehicle_search_filters_local_pickup():
     url = hunt.search_url({"q": "pickup truck", "near": {"zip": "23220", "miles": 100}})
     decoded = urllib.parse.unquote(url)
     assert "pickupPostalCode:23220" in decoded and "pickupRadius:100" in decoded and "pickupRadiusUnit:mi" in decoded
+
+
+def test_book_test_on_live_auctions_means_watch_to_close():
+    from leads.appraisers import appraise, score
+    from leads.appraisers.comps import Comp
+    comps = [Comp("vehicle", ["toyota", "tacoma"], 2015, 2019, 26000, "")]
+    lot = appraise("2017 Toyota Tacoma 4x4 runs and drives", 3000, comps=comps, auction=True)
+    reasons = [r for _, r in score(lot, 3000)[0]]
+    assert any("watch to the close" in r and "$15,600" in r for r in reasons)
+    assert not any("looks normal" in r for r in reasons)

@@ -88,7 +88,7 @@ class GsaAuctionsListener:
                 continue
             text = " ".join(clean(row.get(k)) for k in ("ItemName", "LotDescript"))
             high = _money(row.get("HighBidAmount"))
-            appraisal = appraisers.appraise(text, high, self.appraiser, **self.settings)
+            appraisal = appraisers.appraise(text, high, self.appraiser, auction=True, **self.settings)
             bonus, facts = appraisers.score(appraisal, high, self.recovery.cushion)
             yield Lead(
                 source=self.name,

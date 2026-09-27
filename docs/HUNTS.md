@@ -141,4 +141,5 @@ everything else in the ad looks normal.**
 - **40%+ under book with a clean ad: +45** (+30 without a year-matched row), "under book and the ad looks normal".
 - **Cheap for a reason:** salvage, rebuilt, flood, parts-only, title problems, won't run, engine/transmission trouble, frame/rust, as-is, mileage not actual. These are noted as "the ad explains it", not flagged.
 - **Scam tells** ("deposit to hold", gift cards, "deployed", "shipping only", Zelle/wire only, escrow): **−40**, and no upside is shown.
+- **Auctions:** a current bid isn't a price. Live auctions (GSA, eBay auctions) get **+15 "watch to the close"** with the bid ceiling that keeps the 40% flag (60% of book); fixed-price listings get the full +45.
 - `ebay-vehicles` searches local-pickup listings within 75–150 miles of Richmond (23220) and Norfolk (23510). GSA surplus vehicles get the same test against the current high bid.

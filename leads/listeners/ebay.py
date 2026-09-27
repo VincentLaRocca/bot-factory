@@ -152,7 +152,7 @@ class EbayHuntListener:
         if hunt in ("vehicle", "equipment", "electronics", "auto"):
             appraisal = appraisers.appraise(title + " " + str(item.get("condition", "")), cost,
                                             None if hunt == "auto" else hunt, comps=self.comps,
-                                            spot=self.spot, recovery=self.recovery)
+                                            spot=self.spot, recovery=self.recovery, auction=auction)
             got, said = appraisers.score(appraisal, cost, self.recovery.cushion)
             bonus.extend(got)
             facts.extend(said or ["no appraisal: item not recognised"])
