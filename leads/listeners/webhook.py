@@ -149,7 +149,10 @@ INTAKE_PAGE = """<!doctype html><html lang="en"><head><meta charset="utf-8">
  button{margin-top:16px;padding:10px 16px;border:0;border-radius:8px;background:var(--acc);color:#fff;font:inherit;cursor:pointer}
  pre{white-space:pre-wrap;font-size:13px;color:var(--mut)}
 </style></head><body><main>
-<h1>Lead intake</h1><p>Adds a lead to the pipeline: dedupe, score, board. Fill the form, or paste JSON (an object or an array).</p>
+<h1>Lead intake</h1><p>Adds a lead to the pipeline: dedupe, score, board. Paste a clip, fill the form, or paste JSON.</p>
+<label for="clip">Paste a clip (news story, email, post, bid notice) and it deciphers the lead</label>
+<textarea id="clip" style="min-height:140px"></textarea><button id="sendClip" type="button">Decipher &amp; send</button>
+<hr style="border:0;border-top:1px solid var(--line);margin:20px 0">
 <form id="f">
  <label for="title">What's the job</label><input id="title" name="title" required>
  <label for="url">Link to the post / notice</label><input id="url" name="url" type="url">
@@ -180,6 +183,10 @@ document.getElementById("f").addEventListener("submit", e => {
   e.preventDefault();
   const data = Object.fromEntries(new FormData(e.target).entries());
   data.via = "intake-page"; send(data); e.target.reset();
+});
+document.getElementById("sendClip").addEventListener("click", () => {
+  const clip = document.getElementById("clip").value.trim();
+  if (clip) send({clip: clip, via: "clip"});
 });
 document.getElementById("sendJson").addEventListener("click", () => {
   try { send(JSON.parse(document.getElementById("json").value)); }
@@ -286,6 +293,9 @@ def make_handler(pipeline, token: str, source: str = "webhook"):
                 if url.path == "/leads":
                     data = json.loads(raw or "{}")
                     items = data if isinstance(data, list) else [data]
+                    from ..decipher import decipher
+                    items = [{**decipher(item["clip"]), **{k: v for k, v in item.items() if k != "clip"}}
+                             if isinstance(item, dict) and item.get("clip") else item for item in items]
                     report = pipeline.process([from_json(item, source) for item in items if isinstance(item, dict)])
                     return self._reply(200, {
                         "status": "SUCCESS",

@@ -886,3 +886,41 @@ def test_ebay_refurb_lots_use_the_appraisers():
     lot = next(hunt.listen())
     assert "electronics" in lot.tags and "20 × laptop" in lot.body
     assert any("upside" in r for _, r in lot.bonus)      # 20 × $90 × 0.8 = $1,440 vs $560
+
+
+# ----------------------------------------------------------------- decipher
+CLIP = """Henrico County seeks painting contractor for Glen Allen library repaint.
+The county will accept bids for interior painting at the Twin Hickory Library, estimated at $45,000.
+Bids due Oct 15, 2026. Contact Maria Lopez, mlopez@henrico.us, (804) 555-0142.
+Details: https://henrico.us/bids/2026-114"""
+
+
+def test_decipher_by_rules():
+    from leads.decipher import by_rules
+    got = by_rules(CLIP)
+    assert got["title"].startswith("Henrico County seeks painting contractor")
+    assert "Maria Lopez" in got["contact"] and "mlopez@henrico.us" in got["contact"] and "555-0142" in got["contact"]
+    assert got["location"] == "Glen Allen, VA" and got["value"] == 45000.0
+    assert "Oct 15" in got["deadline"] and got["url"] == "https://henrico.us/bids/2026-114"
+
+
+def test_decipher_prefers_local_model_and_falls_back(monkeypatch):
+    from leads import decipher as d
+    monkeypatch.setenv("OLLAMA_URL", "http://localhost:11434")
+    model = FakeWeb({"http://localhost:11434/api/generate": {"response": json.dumps(
+        {"title": "Interior repaint, Twin Hickory Library", "value": "$45,000", "contact": ""})}})
+    got = d.decipher(CLIP, fetcher=model)
+    assert got["title"] == "Interior repaint, Twin Hickory Library" and got["value"] == 45000.0
+    assert "Maria Lopez" in got["contact"] and got["via"] == "local-model"      # rules filled the blank
+    dead = FakeWeb({"http://localhost:11434": RuntimeError("connection refused")})
+    got = d.decipher(CLIP, fetcher=dead)
+    assert "rules only" in got["decipher_note"] and got["value"] == 45000.0
+
+
+def test_paste_a_clip_through_the_listener(live_server):
+    base, sink = live_server
+    status, body = _post(base + "/leads", json.dumps({"clip": CLIP, "via": "clip"}), token="s3cret")
+    assert status == 200 and len(json.loads(body)["routed"]) == 1
+    assert sink.sent[-1].location == "Glen Allen, VA" and sink.sent[-1].value == 45000.0
+    with urllib.request.urlopen(base + "/intake?token=s3cret", timeout=5) as reply:
+        assert "Decipher &amp; send" in reply.read().decode()

@@ -95,6 +95,15 @@ local subs, technical groups, the groups we own. The thread listener reads
 what comes back. Claude can help draft; Vinny edits, owns and posts. Follow
 each subreddit's rules on self-promotion and AI-assisted posts.
 
+**Paste a clip, get a lead.** Same move as the ChatGPT RSS-leads window: paste a
+news clip, email, post or bid notice into the **Paste a clip** box on
+`/intake?token=…`, or send `{"clip": "..."}` to `/leads`, and `leads/decipher.py`
+pulls out the title, contact (name, email, phone), location, dollar amount,
+deadline and link. Then it goes through scoring and onto the board. Rules
+always run. On the 5090, set `OLLAMA_URL=http://localhost:11434` (and
+optionally `OLLAMA_MODEL`) and a local model reads the clip first, with the
+rules filling any blanks. No paid API, and nothing leaves the machine.
+
 **Claude in Chrome as a listener.** For sources with no feed or API (Facebook
 groups, Nextdoor, eVA and portals behind a login), Claude in Chrome works them
 in the real browser and posts each find from the listener's own
