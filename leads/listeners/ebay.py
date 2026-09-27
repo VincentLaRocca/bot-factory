@@ -35,6 +35,10 @@ from .. import valuation
 
 TOKEN_URL = "https://api.ebay.com/identity/v1/oauth2/token"
 SEARCH_URL = "https://api.ebay.com/buy/browse/v1/item_summary/search"
+# Sandbox keysets (App IDs containing "-SBX-") only work against eBay's sandbox,
+# which holds test listings: good for proving the wiring, not for real deals.
+SANDBOX = ("https://api.sandbox.ebay.com/identity/v1/oauth2/token",
+           "https://api.sandbox.ebay.com/buy/browse/v1/item_summary/search")
 SCOPE = "https://api.ebay.com/oauth/api_scope"
 
 
@@ -73,6 +77,8 @@ class EbayHuntListener:
         self.now = now
         self.errors: List[str] = []
         self._token: Optional[str] = None
+        self.sandbox = "-SBX-" in client_id.upper()
+        self.token_url, self.search_endpoint = SANDBOX if self.sandbox else (TOKEN_URL, SEARCH_URL)
 
     # -- eBay plumbing ------------------------------------------------------
     def token(self) -> str:
@@ -80,7 +86,7 @@ class EbayHuntListener:
             return self._token
         basic = base64.b64encode(f"{self.client_id}:{self.client_secret}".encode()).decode()
         body = urllib.parse.urlencode({"grant_type": "client_credentials", "scope": SCOPE}).encode()
-        reply = self.fetch(TOKEN_URL, method="POST", data=body, headers={
+        reply = self.fetch(self.token_url, method="POST", data=body, headers={
             "Authorization": f"Basic {basic}", "Content-Type": "application/x-www-form-urlencoded"}).json() or {}
         if not reply.get("access_token"):
             raise RuntimeError(f"eBay token refused: {reply.get('error_description') or reply}")
@@ -99,7 +105,7 @@ class EbayHuntListener:
                   "sort": "endingSoonest" if buying.upper() == "AUCTION" else "newlyListed"}
         if query.get("category_ids"):
             params["category_ids"] = str(query["category_ids"])
-        return SEARCH_URL + "?" + urllib.parse.urlencode(params)
+        return self.search_endpoint + "?" + urllib.parse.urlencode(params)
 
     def listen(self) -> Iterator[Lead]:
         self.errors = []

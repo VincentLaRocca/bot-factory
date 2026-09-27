@@ -705,3 +705,12 @@ def test_estate_mail_reads_metal_from_alerts():
                                             channel="Local Community", tags=["estate"], spot={"silver": "30"})
     found = next(listener.listen())
     assert "ozt silver" in found.body and any("melt" in r for _, r in found.bonus)
+
+
+def test_ebay_sandbox_keys_use_sandbox_endpoints():
+    from leads.listeners.ebay import EbayHuntListener
+    web = FakeWeb({"https://api.sandbox.ebay.com/identity": {"access_token": "S"},
+                   "https://api.sandbox.ebay.com/buy/browse": {"itemSummaries": []}})
+    hunt = EbayHuntListener("x", "someone-app-SBX-abc123-def", "secret", [{"q": "sterling"}], fetcher=web)
+    assert list(hunt.listen()) == [] and hunt.sandbox
+    assert all(call["url"].startswith("https://api.sandbox.ebay.com/") for call in web.calls)
