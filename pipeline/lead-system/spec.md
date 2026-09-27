@@ -51,6 +51,19 @@ for a human to triage.
 - [ ] Redeploy the Apps Script. Old sheet gains the 3 headers, links open, and a re-sent lead gets `DUPLICATE`
 - [ ] `curl` a form lead and a fake Twilio SMS to `serve`. Both land on the board, and a HIGH lead pings Slack
 
+## Borrow list
+
+Already ours, to fold in instead of rebuilding:
+
+- `lead-board/`: the Apps Script board is the triage queue (in use)
+- Mid-Atlantic Lead Board (ChatGPT Apps SDK): has an authenticated `POST /api/webhooks/leads`. It could be a second sink next to the Apps Script board.
+- Courier SMS listener on Fly.io and the Courier Alerts Slack app (`#courier-bids`): reuse the Fly app and Slack webhook instead of new ones
+- `capabilities/anomaly` and `capabilities/research`: later, to flag unusual leads and research promising ones (v1, not v0)
+
+Ask Gemini (library) what the NotebookLM notebooks already hold on lead
+sources, bid hunting, and the listener pattern. Ask Grok to help with sources
+and a Breaker pass.
+
 ## Chrome as listener
 
 The code listeners cover sources with a feed or API. Claude in Chrome covers
@@ -77,3 +90,4 @@ Conventions: pipeline/README.md. Station name on every entry; `[cross]` marks a 
 - 2026-09-27 · Claude web · [cross]: Vinny set the roles: Chrome = listener and worker at the internet layer, desktop = desktop duties, Claude Code = judge, Grok = occasional outside read. Chrome feeds leads through `POST /leads`.
 - 2026-09-27 · Claude web · [cross]: Desktop also holds the sessions with Vinny and brings the different lenses that pull reality into focus. For this card: are the routed leads ones Vinny would actually chase?
 - 2026-09-27 · Claude web · Session 1: First session of the pipeline, with Vinny. Set the roles and the loose rules (pipeline/README.md), and took the lead system from idea to PR #10. Next: judge verdict (fresh Claude Code session, Grok optional), then desktop's reality check with Vinny.
+- 2026-09-27 · Claude web · [cross]: Vinny: borrow from our own work, ask Gemini for theirs, and bring Grok in to assist. Borrow list added.

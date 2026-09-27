@@ -13,7 +13,8 @@ that speed doesn't cost trust.
 | **Listener / internet worker** | Claude in Chrome | works the internet layer in Vinny's real browser: watches sites, reads what has no feed or API, fills forms, and hands findings to the factory (e.g. `POST /leads`) |
 | **Desktop: sessions and reality lens** | Claude desktop | holds the working sessions with Vinny. Brings the different lenses that pull reality into focus: does this match the real world, the real market, what Vinny actually meant? Also handles desktop duties: local files, apps, the 5090, running and testing things on Vinny's machine |
 | **Judge** | Claude Code | the factory's judge: checks work against the Build Card's "Done means", runs the tests, rules pass / rework, and builds or fixes code when that's the fastest route |
-| **Second opinion** | Grok (sometimes) | called in when an outside read helps, such as a Breaker pass on a Maker's work or a tie-break between Claudes. Its reading is logged like any other |
+| **Assist** | Grok (sometimes) | called in when an outside read or extra hands help, such as a Breaker pass on a Maker's work, a tie-break between Claudes, or a piece of the build. Its input is logged like any other |
+| **Library** | Gemini | keeper of the NotebookLM library. Asked what already exists (their specs, notebooks and prior work) before anything new is built |
 
 ## Loose, not completely loose
 
@@ -38,6 +39,11 @@ Where the roles meet: Chrome brings in what's out there, Claude Code judges
 whether the work meets the card, and desktop checks both against reality with
 Vinny. A judge's PASS on code that misses the real point is still a miss;
 desktop flags it with its lens, logged as `[cross]`.
+
+**Borrow first.** Before building, check what already exists: our own code
+(bot-factory, the lead board, earlier listeners), Gemini's library for their
+side of the work, and Grok for help. Reuse or adapt beats a rewrite. The card
+lists what was borrowed and from where.
 
 What stays fixed:
 
