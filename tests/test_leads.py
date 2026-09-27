@@ -347,7 +347,7 @@ def test_example_config_builds_and_skips_missing_keys(monkeypatch, tmp_path):
     monkeypatch.setenv("LEADS_WEBHOOK_TOKEN", "t")
     config = config_module.load(config_module.__file__.replace("config.py", "config.example.json"))
     system = config_module.build(config, store_path=str(tmp_path / "s.db"))
-    assert {n for n, _ in system.skipped} == {"sam-painting", "inbox", "reddit-replies"}
+    assert {n for n, _ in system.skipped} == {"sam-painting", "inbox", "reddit-replies", "reddit-threads", "owned-groups"}
     assert system.listeners == []               # Reddit scraping is parked: Vinny posts, replies come by email
     assert system.webhook["token"] == "t"
     assert [s.name for s in system.pipeline.sinks] == ["ledger"]    # no board/slack without URLs
@@ -447,3 +447,65 @@ def test_reddit_replies_route_by_sender_and_channel():
     inbox = email_listener.EmailListener("inbox", "imap", "u", "p", connect=lambda: FakeImap({3: bytes(reply), 4: bytes(make_email())}),
                                          skip_from=["redditmail.com"])
     assert [x.title for x in inbox.listen()] == ["RFQ: exterior painting, Chesapeake warehouse"]
+
+
+# ------------------------------------------------- Reddit thread interrogation
+def _listing(*children):
+    return {"data": {"children": list(children)}}
+
+
+def _thread_json():
+    post = {"kind": "t3", "data": {"id": "abc", "title": "Best way to find a painter in RVA?", "author": "vinny_rva",
+                                   "subreddit": "rva", "selftext": "Thoughts from a vet-owned shop.",
+                                   "permalink": "/r/rva/comments/abc/best_way/", "created_utc": 1790500000}}
+    reply_to_me = {"kind": "t1", "data": {"name": "t1_c2", "id": "c2", "author": "homeowner", "parent_id": "t1_c1",
+                                          "body": "Are you available next week? Need a quote for 3 rooms, budget $1,800",
+                                          "permalink": "/r/rva/comments/abc/best_way/c2/", "created_utc": 1790501000}}
+    mine = {"kind": "t1", "data": {"name": "t1_c1", "id": "c1", "author": "vinny_rva", "parent_id": "t3_abc",
+                                   "body": "We do this.", "permalink": "/r/rva/comments/abc/best_way/c1/",
+                                   "created_utc": 1790500500,
+                                   "replies": {"data": {"children": [reply_to_me]}}}}
+    chatter = {"kind": "t1", "data": {"name": "t1_c3", "id": "c3", "author": "lurker", "parent_id": "t3_abc",
+                                      "body": "Nice weather today.", "permalink": "/r/rva/comments/abc/best_way/c3/",
+                                      "created_utc": 1790502000}}
+    more = {"kind": "more", "data": {}}
+    return [_listing(post), _listing(mine, chatter, more)]
+
+
+def test_thread_listener_interrogates_threads_i_joined():
+    from datetime import datetime, timezone
+    from leads.listeners.reddit_threads import RedditThreadListener
+    joined = {"kind": "t1", "data": {"name": "t1_c1", "link_id": "t3_abc", "created_utc": 1790500500,
+                                     "permalink": "/r/rva/comments/abc/best_way/c1/"}}
+    web = FakeWeb({
+        "https://www.reddit.com/user/vinny_rva/comments.json": _listing(joined),
+        "https://www.reddit.com/user/vinny_rva/submitted.json": _listing(),
+        "https://www.reddit.com/r/rva/comments/abc/best_way.json": _thread_json(),
+    })
+    store = SeenStore()
+    listener = RedditThreadListener("reddit-threads", "u/vinny_rva", fetcher=web, store=store,
+                                    now=datetime(2026, 9, 27, tzinfo=timezone.utc))
+    found = {x.external_id: x for x in listener.listen()}
+    assert set(found) == {"t3_abc", "t1_c2", "t1_c3"}                 # thread + other people's comments, not mine
+    assert "1 replies to you" in found["t3_abc"].body and "$1,800" in found["t3_abc"].body
+    assert "you-started-it" in found["t3_abc"].tags
+    assert "reply-to-you" in found["t1_c2"].tags and found["t1_c2"].url.endswith("/c2/")
+    assert list(listener.listen()) == []                              # re-check: nothing new, nothing repeated
+
+    rules = RuleSet.from_config({"boost": {"reddit-thread": 20, "reply-to-you": 20, "quote": 15}, "min_score": 35})
+    report = Pipeline(SeenStore(), rules, []).process(found.values())
+    assert {x.external_id for x in report.routed} == {"t3_abc", "t1_c2"}   # chatter dropped
+
+
+def test_owned_groups_watch_every_thread():
+    from datetime import datetime, timezone
+    from leads.listeners.reddit_threads import RedditThreadListener
+    post = {"kind": "t3", "data": {"id": "abc", "created_utc": 1790500000, "permalink": "/r/rva/comments/abc/best_way/"}}
+    web = FakeWeb({"https://www.reddit.com/r/mytribe/new.json": _listing(post),
+                   "https://www.reddit.com/r/rva/comments/abc/best_way.json": _thread_json()})
+    listener = RedditThreadListener("owned-groups", "vinny_rva", fetcher=web, subreddits=["r/mytribe"],
+                                    follow_user=False, tags=["owned", "recruit"],
+                                    now=datetime(2026, 9, 27, tzinfo=timezone.utc))
+    found = list(listener.listen())
+    assert len(found) == 3 and all("recruit" in x.tags for x in found)
+    assert not any("/user/" in call["url"] for call in web.calls)

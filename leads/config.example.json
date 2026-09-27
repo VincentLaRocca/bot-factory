@@ -125,6 +125,43 @@
     },
 
     {
+      "name": "reddit-threads",
+      "kind": "reddit_threads",
+      "enabled": true,
+      "_note": "Every thread Vinny comments in or starts gets read in full and re-checked for 7 days. Run on the 5090 (Reddit throttles cloud IPs).",
+      "username": "${REDDIT_USERNAME}",
+      "follow_user": true,
+      "watch_days": 7,
+      "rules": {
+        "exclude_any": ["[for hire]"],
+        "boost": { "reddit-thread": 20, "reply-to-you": 20, "looking for": 15, "need a": 15, "need someone": 15, "recommend": 10,
+                   "anyone know": 10, "how much": 15, "quote": 15, "are you available": 20, "dm me": 10, "pm me": 10,
+                   "painter": 10, "painting": 5, "courier": 10, "delivery": 5 },
+        "min_score": 35
+      }
+    },
+
+    {
+      "name": "owned-groups",
+      "kind": "reddit_threads",
+      "enabled": true,
+      "_note": "Groups we own: recruiting runs through these. Every thread in them is read in full. OWNED_SUBREDDITS is comma-separated, e.g. sub1,sub2.",
+      "username": "${REDDIT_USERNAME}",
+      "follow_user": false,
+      "subreddits": "${OWNED_SUBREDDITS}",
+      "watch_days": 14,
+      "max_threads": 25,
+      "tags": ["owned", "recruit"],
+      "rules": {
+        "exclude_any": [],
+        "boost": { "interested": 20, "join": 15, "how do i": 10, "sign me up": 20, "i'm a painter": 20, "i paint": 15,
+                   "i drive": 20, "i have a van": 20, "i have a truck": 20, "looking for work": 20, "experience": 10,
+                   "need a": 15, "quote": 15, "reply-to-you": 20, "reddit-thread": 10 },
+        "min_score": 20
+      }
+    },
+
+    {
       "name": "inbound",
       "kind": "webhook",
       "enabled": true,

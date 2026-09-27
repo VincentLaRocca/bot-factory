@@ -70,6 +70,23 @@ redditor. Replies and DMs arrive as Reddit notification emails, and the
 `reddit-replies` listener puts them on the board. Claude can draft posts;
 Vinny publishes them.
 
+**Threads Vinny joins get interrogated** (`reddit-threads`, on the 5090).
+Every thread he comments in or starts is read in full: the post plus every
+comment, re-checked for 7 days. You get one thread lead (asks, amounts,
+replies to you) and a lead per new comment. The rules route the ones with
+intent, and anything `reply-to-you`.
+
+**Groups we own** (`owned-groups`, `OWNED_SUBREDDITS`). Recruiting runs
+through Vinny's own subreddits, so every thread in them is watched, with
+recruiting rules ("interested", "I drive", "I paint", "looking for work").
+These are tagged `recruit` and kept on the lead board only. Nothing is wired
+to the physical guild.
+
+**Cross-pollination.** Vinny posts thoughtful threads in his own voice:
+local subs, technical groups, the groups we own. The thread listener reads
+what comes back. Claude can help draft; Vinny edits, owns and posts. Follow
+each subreddit's rules on self-promotion and AI-assisted posts.
+
 **Claude in Chrome as a listener.** For sources with no feed or API (Facebook
 groups, Nextdoor, eVA and portals behind a login), Claude in Chrome works them
 in the real browser and posts each find from the listener's own

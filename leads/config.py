@@ -46,6 +46,7 @@ class System:
 def build_listener(spec: Dict[str, Any], store: SeenStore, fetcher: Optional[Fetch] = None):
     from .listeners.email import EmailListener
     from .listeners.feeds import FeedListener
+    from .listeners.reddit_threads import RedditThreadListener
     from .listeners.sam import SamListener
 
     kind, name = spec.get("kind"), spec["name"]
@@ -61,6 +62,13 @@ def build_listener(spec: Dict[str, Any], store: SeenStore, fetcher: Optional[Fet
             max_messages=int(spec.get("max_messages", 50)), port=int(spec.get("port", 993)), store=store,
             channel=spec.get("channel", "Commercial / B2B"), tags=spec.get("tags"),
             skip_from=spec.get("skip_from"))
+    if kind == "reddit_threads":
+        return RedditThreadListener(
+            name, spec.get("username", ""), watch_days=int(spec.get("watch_days", 7)),
+            max_threads=int(spec.get("max_threads", 10)), location=spec.get("location", ""),
+            fetcher=fetcher, store=store,
+            subreddits=spec["subreddits"].split(",") if isinstance(spec.get("subreddits"), str) else spec.get("subreddits"),
+            follow_user=bool(spec.get("follow_user", True)), tags=spec.get("tags"))
     if kind == "feed":
         return FeedListener.from_config(name, spec, fetcher=fetcher)
     raise ValueError(f"unknown listener kind {kind!r} for {name}")
