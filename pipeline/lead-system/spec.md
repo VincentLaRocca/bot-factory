@@ -58,4 +58,8 @@ for a human to triage.
 
 ## Log
 
-- 2026-09-27: Built at Station 2. 24 new tests, full suite green (294 passed). Live dry run against Reddit: gates dropped the off-topic posts, and the cloud IP got 429s on some feeds (expected; see docs/LEADS.md).
+Conventions: pipeline/README.md. Station name on every entry; `[cross]` marks a decision that touches more than one station.
+
+
+- 2026-09-27 · Claude Code: Built at Station 2. 24 new tests, full suite green (294 passed). Live dry run against Reddit: gates dropped the off-topic posts, and the cloud IP got 429s on some feeds (expected; see docs/LEADS.md).
+- 2026-09-27 · Claude web · [cross]: Vinny set the pipeline as all-Claude (web → Code → desktop), loose rather than strict. Stations can work across each other's lanes, and cross-station decisions are logged here.
