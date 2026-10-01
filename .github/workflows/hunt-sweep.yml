@@ -3,9 +3,9 @@ name: Hunt sweep (eBay, estate-sale alerts, GSA surplus)
 # Searches eBay through the official Browse API and posts deals to the hunt
 # Slack channel. Read-only: nothing here bids, buys or messages a seller.
 #
-# Secrets: EBAY_CLIENT_ID, EBAY_CLIENT_SECRET, SILVER_SPOT_USD, GOLD_SPOT_USD,
-#          HUNT_SLACK_WEBHOOK_URL
-# Spot prices are set by hand for v0 (update the secrets when the market moves).
+# Secrets: EBAY_CLIENT_ID, EBAY_CLIENT_SECRET, HUNT_SLACK_WEBHOOK_URL
+# Spot prices are live (gold-api.com). SILVER_SPOT_USD / GOLD_SPOT_USD are optional
+# overrides: set one only to pin your own number.
 
 on:
   schedule:
