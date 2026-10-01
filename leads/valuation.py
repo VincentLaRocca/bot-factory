@@ -298,7 +298,9 @@ GEM_FACTORS = {
     "synthetic": 0.03,          # lab/created stones: a few % of natural
     "unstated_origin": 0.6,     # neither "natural" nor "lab" stated: discount the doubt
     "certified": 1.15,
-    "size": [(0.5, 0.6), (1.0, 1.0), (2.0, 1.5), (3.0, 2.0), (99, 2.6)],   # (up to ct, x per-ct price)
+    # (up to ct, x per-ct price). Base = a 1.00-1.49 ct stone. Steps follow the market's
+    # weight breaks (1/2, 1, 1.5, 2, 3 ct): a 1.02 ct stone is base, not a 1.5 ct price.
+    "size": [(0.49, 0.5), (0.99, 0.75), (1.49, 1.0), (1.99, 1.3), (2.99, 1.6), (99, 2.0)],
     "clarity": {"fl": 2.0, "if": 1.8, "vvs1": 1.5, "vvs2": 1.4, "vvs": 1.4, "vs1": 1.2, "vs2": 1.1, "vs": 1.1,
                 "si1": 0.9, "si2": 0.75, "si3": 0.6, "si": 0.8, "i1": 0.5, "i2": 0.35, "i3": 0.25,
                 "eye clean": 1.2, "loupe clean": 1.4, "transparent": 1.1, "translucent": 0.6,

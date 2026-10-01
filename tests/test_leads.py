@@ -770,7 +770,7 @@ def test_money_back_test_math():
     rec = Recovery(stone_per_ct={"sapphire": 50})
     title = "14k natural sapphire ring 2 ct 5 grams"
     got, facts = break_down(title, 300, {"gold": 2500}, rec, read_gem(title))
-    assert "2 ct natural sapphire ≈ $150" in " ".join(facts) and "money back" in got[0][1]  # $235 melt + $150 gems
+    assert "2 ct natural sapphire ≈ $160" in " ".join(facts) and "money back" in got[0][1]  # $235 melt + $160 gems (2 ct step x1.6)
     # Optional strictness knobs still work
     strict = Recovery(payout={"gold": 0.8}, tax_rate=0.06, cushion=0.10)
     got, facts = break_down("14k ring 10 grams", 360, {"gold": 2500}, strict)
@@ -809,15 +809,18 @@ def test_gem_value_by_carat_quality_clarity_and_origin():
     fine = read_gem("GIA natural diamond 1.5 ct G VS1 excellent")
     assert (fine.natural, fine.color, fine.clarity, fine.certified) == (True, "g", "vs1", "GIA")
     value, why = gem_value(fine, base)
-    assert value == pytest.approx(1.5 * 1000 * 1.5 * 1.2 * 1.25 * 1.15, rel=1e-3) and "GIA" in why
+    assert value == pytest.approx(1.5 * 1000 * 1.3 * 1.2 * 1.25 * 1.15, rel=1e-3) and "GIA" in why   # 1.5 ct step x1.3
     lab = read_gem("lab grown diamond 1.5 ct G VS1")
     assert gem_value(lab, base)[0] < value * 0.05                       # synthetic ≈ 3% of natural
     unheated = read_gem("natural unheated royal blue sapphire 2 ct eye clean")
     filled = read_gem("natural glass filled ruby 2 ct")
     assert (unheated.treatment, unheated.color, unheated.clarity) == ("unheated", "royal blue", "eye clean")
-    assert gem_value(unheated, base)[0] > 2 * 200 * 1.5 * 2                # size, color, clarity and no-heat stack up
+    assert gem_value(unheated, base)[0] > 2 * 200 * 1.6 * 2                # size, color, clarity and no-heat stack up
     assert filled.treatment == "glass filled" and gem_value(filled, base)[0] == 0.0   # no base set for ruby
     assert gem_value(read_gem("CZ 3ct"), base) == (0.0, "simulant: no gem value")
+    # Weight breaks: just over 1 ct is priced as 1 ct, not bumped to a 1.5 ct price
+    assert gem_value(read_gem("natural diamond 1.02 ct"), base)[0] == pytest.approx(1020)
+    assert gem_value(read_gem("natural diamond 0.90 ct"), base)[0] == pytest.approx(0.9 * 1000 * 0.75)
 
 
 def test_gsa_live_camelcase_fields():
