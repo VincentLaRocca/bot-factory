@@ -32,6 +32,12 @@ CORE_CONTEXT_FILE = Path(aiop.__file__).with_name("context.jsonld")
 RESERVED = {"@context", "@id", "@type"}
 
 
+@pytest.fixture(autouse=True)
+def _offline_spot_feed(monkeypatch):
+    """The suite runs offline: no live spot calls unless a test brings its own fetcher."""
+    monkeypatch.setenv("SPOT_FEED", "off")
+
+
 def load_document(name: str) -> Dict:
     return json.loads((EXAMPLES_DIR / f"{name}.jsonld").read_text())
 

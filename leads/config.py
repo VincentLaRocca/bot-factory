@@ -97,6 +97,25 @@ def build_listener(spec: Dict[str, Any], store: SeenStore, fetcher: Optional[Fet
     raise ValueError(f"unknown listener kind {kind!r} for {name}")
 
 
+def _fill_spot(config: Dict[str, Any], specs: List[Dict[str, Any]],
+               fetcher: Optional[Fetch]) -> List[Dict[str, Any]]:
+    """Blank spot prices get filled from the live feed; hand-set ones stay.
+    One feed (and at most one call per metal) for the whole sweep."""
+    if not any("spot" in s for s in specs):
+        return specs
+    from .spot import feed_from_config, resolve
+    feed = feed_from_config(config, fetcher)
+    filled, merged = [], None
+    for spec in specs:
+        if "spot" in spec:
+            spot, source = resolve(spec.get("spot"), feed)
+            spec = dict(spec, spot=spot, spot_source=source)
+            merged = merged or source
+        filled.append(spec)
+    config.setdefault("_spot_source", merged or {})
+    return filled
+
+
 def build(config: Dict[str, Any], dry_run: bool = False, only: Optional[List[str]] = None,
           fetcher: Optional[Fetch] = None, store_path: Optional[str] = None) -> System:
     store = SeenStore(store_path or config.get("store", "var/leads.db"))
@@ -123,6 +142,8 @@ def build(config: Dict[str, Any], dry_run: bool = False, only: Optional[List[str
         specs = [s for s in specs if s["name"] in only]
     source_rules = {s["name"]: s["rules"] for s in config.get("listeners", []) if s.get("rules")}
     pipeline = Pipeline(store, rules, sinks, source_rules=source_rules, dry_run=dry_run)
+
+    specs = _fill_spot(config, specs, fetcher)
 
     listeners, skipped, webhook = [], [], None
     for spec in specs:

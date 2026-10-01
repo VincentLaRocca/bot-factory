@@ -2,6 +2,13 @@
   "_readme": "Mispriced jewelry (gold, silver), bullion, gems: eBay (Browse API), estate-sale alerts, GSA surplus. Run: python -m leads --config leads/hunts.example.json sweep --dry-run. Never bids or buys.",
   "store": "var/hunts.db",
   "ledger": "var/hunts.jsonl",
+  "spot_feed": {
+    "_readme": "Blank SILVER_SPOT_USD / GOLD_SPOT_USD are filled live from gold-api.com (free, no key). A number you set wins. Off: enabled false or SPOT_FEED=off.",
+    "enabled": true,
+    "ttl_minutes": 15,
+    "stale_hours": 24,
+    "cache": "var/spot.json"
+  },
   "sinks": {
     "slack": {
       "url": "${HUNT_SLACK_WEBHOOK_URL}",

@@ -22,7 +22,7 @@ human look. **It never bids, buys, offers, or messages a seller.**
    answers eBay's challenge and purges a deleted user's records.
 1. developer.ebay.com → **Application Keys** → *Production* keyset: copy the **App ID** (client id) and **Cert ID** (client secret).
 2. Put them in `EBAY_CLIENT_ID` / `EBAY_CLIENT_SECRET` (the 5090 `.env` and/or GitHub secrets).
-3. Set `SILVER_SPOT_USD` and `GOLD_SPOT_USD` (USD per troy oz). v0 uses the numbers you give it; update them when the market moves.
+3. Spot prices are live: blank `SILVER_SPOT_USD` / `GOLD_SPOT_USD` are filled from gold-api.com (free, no key), cached 15 min, with the last good price used for up to 24h if the feed is down. Set either one to pin your own number; yours always wins. Check what the hunter will use with `python -m leads spot`. Turn the feed off with `SPOT_FEED=off`.
 4. Set your **price-per-carat limits** in `leads/hunts.example.json` → `max_price_per_carat`. The example values are placeholders, not advice.
 5. Try it: `python -m leads --config leads/hunts.example.json sweep --dry-run --json`
 

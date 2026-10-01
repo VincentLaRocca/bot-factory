@@ -117,12 +117,23 @@ def main(argv=None) -> int:
         p_cust.add_argument(f"--{flag}")
 
     sub.add_parser("check")
+    sub.add_parser("spot", help="live gold/silver spot the melt test will use, and where each number came from")
     p_recent = sub.add_parser("recent")
     p_recent.add_argument("--limit", type=int, default=25)
 
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO,
                         format="%(asctime)s %(levelname)-7s %(message)s", datefmt="%H:%M:%S")
+    if args.command == "spot":
+        from .spot import feed_from_config, resolve
+        cfg = config_module.load(args.config) if args.config else {}
+        manual = {"gold": os.environ.get("GOLD_SPOT_USD", ""), "silver": os.environ.get("SILVER_SPOT_USD", "")}
+        spot, source = resolve(manual, feed_from_config(cfg))
+        for metal in ("gold", "silver"):
+            price = spot.get(metal)
+            shown = f"${price:,.2f}/ozt" if price else "not available"
+            print(f"{metal:<7} {shown:<18} {source.get(metal, 'unavailable')}")
+        return 0 if spot else 1
     if args.command == "customer":
         from . import customers
         if args.action == "list":

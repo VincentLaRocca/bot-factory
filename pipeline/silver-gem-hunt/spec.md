@@ -32,7 +32,7 @@ the ones worth a look.
 
 - Stdlib only. Reuses the lead engine (`leads/`): Lead model, rules, dedupe store, sinks, digest.
 - Browse API only (search and read). No Trading/Offer APIs, no bidding, no buying, no seller contact.
-- Spot prices come from config/env (`SILVER_SPOT_USD`, `GOLD_SPOT_USD`) for v0. A live spot feed is v1.
+- Spot prices: live from gold-api.com (free, no key) when `SILVER_SPOT_USD` / `GOLD_SPOT_USD` are blank; a number set by hand wins.
 - Gem price-per-carat limits are Vinny's call. The example values are placeholders, not advice.
 
 ## Borrow list
@@ -59,3 +59,5 @@ the ones worth a look.
 - 2026-09-27 · Claude Code · [cross]: Vinny: gem value by carat, quality/color and clarity, authentic vs synthetic. Built `gem_value`: carats × his base $/ct × size × clarity (diamond grades or colored-stone words) × color (D–M or named colors) × treatment × origin (natural ×1, lab ×0.03, unstated ×0.6) × cert. Simulants are worth 0. Gem and jewelry hunts penalize lab (−60) and heavy treatment (−25). Weight guesstimates: low-end typical grams per item type. Fixed: glass-filled rubies were misread as glass; plurals (spoons, bangles). Tests 332 passed.
 - 2026-09-27 · Claude web · [cross]: Vinny: "eBay is your domain now." Claude runs the eBay hunting and appraising end to end (queries, appraisers, tuning). Bidding and buying stay Vinny's gate. eBay listener now routes vehicle/equipment/electronics hunts through the appraiser framework; new `ebay-refurb` listener hunts bulk computer lots (his old refurb trade).
 - 2026-09-27 · Claude Code: Vinny: add searches for Richmond estate sales. `estate-news` (Google News RSS: Richmond/Henrico/Chesterfield/Hampton Roads estate sales and auctions, deciphered). Live: news is thin for estate sales (first run's only hits were an unrelated auction abroad, now excluded), so the main feed stays the estate-sale sites' email alerts into HMTCHS (`estate-mail`, now deciphered too).
+- 2026-10-01 · Claude web · [architect]: Vinny: "let's build." Closed the open v1 item: **live spot feed** (`leads/spot.py`). Blank spot is filled from gold-api.com (free, no key, checked live: gold $4,185.20, silver $61.15). Per metal: hand-set wins → live (cached 15 min, one call per metal per sweep) → last good price up to 24h, labeled stale → left out and said so. Bad ticks outside sane bounds are rejected. `python -m leads spot` shows the numbers and their source. `spot_feed` block in hunts.example.json; `SPOT_FEED=off` turns it off. Test suite forced offline (it had been reaching the live feed). Live dry run: GSA sweep, 42 lots, 9 routed, live spot in use. Tests 361 passed.
+- 2026-10-01 · Claude web · open: the gate is still eBay's Production keyset (`prelucky`). Last known state 9/27: exemption applied for, keyset disabled. Once it shows enabled, the jewelry hunt runs as is with live spot.
