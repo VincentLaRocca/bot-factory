@@ -26,10 +26,12 @@ if (Test-Path $EnvFile) {
 if (-not $Token) { $Token = [guid]::NewGuid().ToString("N") + [guid]::NewGuid().ToString("N") }
 
 Write-Host "Checking Cloudflare sign-in (a browser window opens the first time)..."
-npx --yes wrangler@4 whoami 2>&1 | Out-Null
-if ($LASTEXITCODE -ne 0) { npx --yes wrangler@4 login }
+$who = npx --yes wrangler@4 whoami 2>&1 | Out-String
+if ($LASTEXITCODE -ne 0 -or $who -match "not authenticated|not logged in") { npx --yes wrangler@4 login }
 
-Write-Host "Deploying the endpoint..."
+Write-Host "Deploying the endpoint (answer 'yes' if asked to register a workers.dev subdomain)..."
+npx --yes wrangler@4 deploy          # interactive: first-time prompts work here
+# Second deploy is a no-op change but prints the address in a form we can read.
 $out = npx --yes wrangler@4 deploy 2>&1 | Out-String
 Write-Host $out
 $m = [regex]::Match($out, 'https://ebay-deletion\.[a-z0-9-]+\.workers\.dev')
