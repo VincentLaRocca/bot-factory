@@ -30,6 +30,20 @@ past rules.
 5. **Always on:** run `install-autostart.ps1` once from an admin PowerShell.
    Both start at login and restart if they fall over.
 
+## eBay Production keyset (account-deletion endpoint)
+
+eBay keeps a new Production keyset off until the app answers its account-deletion
+notices (or an exemption is granted). One command stands the endpoint up:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File leads\deploy\5090\ebay-endpoint.ps1
+```
+
+It fills the tokens in `.env`, opens a quick tunnel, self-tests eBay's challenge,
+and prints the Endpoint and Verification token to paste into developer.ebay.com →
+Alerts & Notifications. Quick-tunnel URLs change on restart: re-paste after one,
+or use a named tunnel and pass `-Hostname leads.your-domain.com`.
+
 ## Day to day
 
 - Log: `data\leads.log` · store: `data\leads.db`
