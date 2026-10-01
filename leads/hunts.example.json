@@ -1,0 +1,704 @@
+{
+  "_readme": "Mispriced jewelry (gold, silver), bullion, gems: eBay (Browse API), estate-sale alerts, GSA surplus. Run: python -m leads --config leads/hunts.example.json sweep --dry-run. Never bids or buys.",
+  "store": "var/hunts.db",
+  "ledger": "var/hunts.jsonl",
+  "spot_feed": {
+    "_readme": "Blank SILVER_SPOT_USD / GOLD_SPOT_USD are filled live from gold-api.com (free, no key). A number you set wins. Off: enabled false or SPOT_FEED=off.",
+    "enabled": true,
+    "ttl_minutes": 15,
+    "stale_hours": 24,
+    "cache": "var/spot.json"
+  },
+  "sinks": {
+    "slack": {
+      "url": "${HUNT_SLACK_WEBHOOK_URL}",
+      "min_urgency": "HIGH"
+    }
+  },
+  "rules": {
+    "exclude_any": [],
+    "urgent_any": [],
+    "min_score": 45
+  },
+  "listeners": [
+    {
+      "name": "ebay-jewelry",
+      "kind": "ebay",
+      "enabled": true,
+      "_note": "Mispriced jewelry, gold AND silver: under melt, fine metal filed under fashion/costume, seller-unsure wording, designer/period names (verify), misspellings, dead auctions.",
+      "client_id": "${EBAY_CLIENT_ID}",
+      "client_secret": "${EBAY_CLIENT_SECRET}",
+      "spot": {
+        "silver": "${SILVER_SPOT_USD:-}",
+        "gold": "${GOLD_SPOT_USD:-}"
+      },
+      "max_price_per_carat": {
+        "sapphire": 100,
+        "ruby": 100,
+        "emerald": 80,
+        "diamond": 300
+      },
+      "min_interval_minutes": 20,
+      "queries": [
+        {
+          "hunt": "jewelry",
+          "q": "14k gold ring grams",
+          "max_price": 800
+        },
+        {
+          "hunt": "jewelry",
+          "q": "10k gold class ring",
+          "max_price": 600
+        },
+        {
+          "hunt": "jewelry",
+          "q": "18k gold jewelry",
+          "max_price": 1500
+        },
+        {
+          "hunt": "jewelry",
+          "q": "gold chain grams",
+          "max_price": 1500,
+          "buying": "AUCTION"
+        },
+        {
+          "hunt": "jewelry",
+          "q": "sterling silver jewelry lot grams",
+          "max_price": 300
+        },
+        {
+          "hunt": "jewelry",
+          "q": "sterling silver bracelet heavy",
+          "max_price": 250
+        },
+        {
+          "hunt": "jewelry",
+          "q": "navajo sterling turquoise",
+          "max_price": 300
+        },
+        {
+          "hunt": "jewelry",
+          "q": "estate jewelry lot gold silver",
+          "max_price": 400,
+          "buying": "AUCTION"
+        },
+        {
+          "hunt": "jewelry",
+          "q": "(unmarked, untested) gold ring",
+          "max_price": 400
+        },
+        {
+          "hunt": "jewelry",
+          "q": "grandmas jewelry lot",
+          "max_price": 200
+        },
+        {
+          "hunt": "jewelry",
+          "q": "junk drawer jewelry lot unsearched",
+          "max_price": 150
+        },
+        {
+          "hunt": "jewelry",
+          "q": "14k costume jewelry",
+          "max_price": 300
+        },
+        {
+          "hunt": "jewelry",
+          "q": "(tiffany, yurman, georg jensen) sterling",
+          "max_price": 300
+        },
+        {
+          "hunt": "jewelry",
+          "q": "platinum ring",
+          "max_price": 800
+        }
+      ],
+      "rules": {
+        "exclude_any": [
+          "lab created",
+          "lab-created",
+          "lab grown",
+          "simulated",
+          "cz",
+          "cubic zirconia",
+          "moissanite",
+          "gold plated",
+          "gold filled",
+          "gold tone",
+          "silver plated",
+          "silver tone",
+          "replica",
+          "inspired",
+          "style",
+          "dupe"
+        ],
+        "min_score": 45
+      },
+      "recovery": {
+        "_note": "Vinny's value test: gram weight melted at spot + gem value vs price + shipping. stone_per_ct = YOUR base $/ct for a clean, natural, untreated ~1 ct stone; size, clarity, color, treatment, natural-vs-lab and certificate adjust it (leads/valuation.py GEM_FACTORS, overridable in gem_factors). 0 = stones not counted.",
+        "stone_per_ct": {
+          "diamond": 1100,
+          "ruby": 350,
+          "sapphire": 250,
+          "emerald": 300,
+          "alexandrite": 1000,
+          "spinel": 130,
+          "tanzanite": 120,
+          "aquamarine": 65,
+          "opal": 50,
+          "morganite": 50,
+          "peridot": 30,
+          "tourmaline": 25,
+          "garnet": 10,
+          "topaz": 5,
+          "amethyst": 5,
+          "jade": 0
+        },
+        "_stone_basis": "Recovery $/ct (what a dealer pays cash, ~25% of retail index) for a clean, natural, ~1 ct, medium-grade, heated/standard-treated stone. Researched 2026-10-01: GemstoneAI market index, RubyGlint tier tables, Washington Diamond resale ranges (used diamonds bring 20-40% of retail cash). valuation.py factors scale it for size, clarity, color, treatment, natural vs lab, certificate. Jade 0: priced by piece and often dyed. Retune from real buys."
+      }
+    },
+    {
+      "name": "ebay-metals",
+      "kind": "ebay",
+      "enabled": true,
+      "client_id": "${EBAY_CLIENT_ID}",
+      "client_secret": "${EBAY_CLIENT_SECRET}",
+      "spot": {
+        "silver": "${SILVER_SPOT_USD:-}",
+        "gold": "${GOLD_SPOT_USD:-}"
+      },
+      "min_interval_minutes": 30,
+      "queries": [
+        {
+          "hunt": "silver",
+          "q": "sterling silver grams",
+          "max_price": 500,
+          "buying": "FIXED_PRICE"
+        },
+        {
+          "hunt": "silver",
+          "q": "sterling silver scrap",
+          "max_price": 500,
+          "buying": "AUCTION"
+        },
+        {
+          "hunt": "silver",
+          "q": "90% junk silver face",
+          "max_price": 600
+        },
+        {
+          "hunt": "silver",
+          "q": "morgan silver dollar lot",
+          "max_price": 800
+        },
+        {
+          "hunt": "silver",
+          "q": "(sterlng, silvr, sliver) 925",
+          "max_price": 500
+        },
+        {
+          "hunt": "gold",
+          "q": "14k gold scrap grams",
+          "max_price": 1500
+        },
+        {
+          "hunt": "gold",
+          "q": "10k gold ring grams",
+          "max_price": 800
+        },
+        {
+          "hunt": "gold",
+          "q": "18k gold dwt",
+          "max_price": 1500
+        }
+      ],
+      "recovery": {
+        "_note": "Vinny's value test: gram weight melted at spot + gem value vs price + shipping. stone_per_ct = YOUR base $/ct for a clean, natural, untreated ~1 ct stone; size, clarity, color, treatment, natural-vs-lab and certificate adjust it (leads/valuation.py GEM_FACTORS, overridable in gem_factors). 0 = stones not counted.",
+        "stone_per_ct": {
+          "diamond": 1100,
+          "ruby": 350,
+          "sapphire": 250,
+          "emerald": 300,
+          "alexandrite": 1000,
+          "spinel": 130,
+          "tanzanite": 120,
+          "aquamarine": 65,
+          "opal": 50,
+          "morganite": 50,
+          "peridot": 30,
+          "tourmaline": 25,
+          "garnet": 10,
+          "topaz": 5,
+          "amethyst": 5,
+          "jade": 0
+        },
+        "_stone_basis": "Recovery $/ct (what a dealer pays cash, ~25% of retail index) for a clean, natural, ~1 ct, medium-grade, heated/standard-treated stone. Researched 2026-10-01: GemstoneAI market index, RubyGlint tier tables, Washington Diamond resale ranges (used diamonds bring 20-40% of retail cash). valuation.py factors scale it for size, clarity, color, treatment, natural vs lab, certificate. Jade 0: priced by piece and often dyed. Retune from real buys."
+      }
+    },
+    {
+      "name": "ebay-gems",
+      "kind": "ebay",
+      "enabled": true,
+      "client_id": "${EBAY_CLIENT_ID}",
+      "client_secret": "${EBAY_CLIENT_SECRET}",
+      "_limits_note": "PLACEHOLDERS - set max_price_per_carat to what you'd actually pay per stone. Not advice.",
+      "max_price_per_carat": {
+        "sapphire": 100,
+        "ruby": 100,
+        "emerald": 80,
+        "tanzanite": 60,
+        "opal": 40,
+        "diamond": 300
+      },
+      "min_interval_minutes": 60,
+      "queries": [
+        {
+          "hunt": "gem",
+          "q": "GIA certified natural sapphire loose",
+          "max_price": 1000
+        },
+        {
+          "hunt": "gem",
+          "q": "natural ruby loose ct",
+          "max_price": 500
+        },
+        {
+          "hunt": "gem",
+          "q": "estate jewelry lot gemstones",
+          "max_price": 300,
+          "buying": "AUCTION"
+        },
+        {
+          "hunt": "gem",
+          "q": "(saphire, emrald, rubie, dimond)",
+          "max_price": 500
+        }
+      ],
+      "rules": {
+        "exclude_any": [
+          "lab created",
+          "lab-created",
+          "lab grown",
+          "simulated",
+          "cz",
+          "moissanite"
+        ],
+        "min_score": 45
+      },
+      "recovery": {
+        "_note": "Vinny's value test: gram weight melted at spot + gem value vs price + shipping. stone_per_ct = YOUR base $/ct for a clean, natural, untreated ~1 ct stone; size, clarity, color, treatment, natural-vs-lab and certificate adjust it (leads/valuation.py GEM_FACTORS, overridable in gem_factors). 0 = stones not counted.",
+        "stone_per_ct": {
+          "diamond": 1100,
+          "ruby": 350,
+          "sapphire": 250,
+          "emerald": 300,
+          "alexandrite": 1000,
+          "spinel": 130,
+          "tanzanite": 120,
+          "aquamarine": 65,
+          "opal": 50,
+          "morganite": 50,
+          "peridot": 30,
+          "tourmaline": 25,
+          "garnet": 10,
+          "topaz": 5,
+          "amethyst": 5,
+          "jade": 0
+        },
+        "_stone_basis": "Recovery $/ct (what a dealer pays cash, ~25% of retail index) for a clean, natural, ~1 ct, medium-grade, heated/standard-treated stone. Researched 2026-10-01: GemstoneAI market index, RubyGlint tier tables, Washington Diamond resale ranges (used diamonds bring 20-40% of retail cash). valuation.py factors scale it for size, clarity, color, treatment, natural vs lab, certificate. Jade 0: priced by piece and often dyed. Retune from real buys."
+      }
+    },
+    {
+      "name": "estate-mail",
+      "kind": "email",
+      "enabled": true,
+      "_note": "Estate sale & auction alerts (EstateSales.NET, HiBid, AuctionZip, local auction houses) sent to the Human Network inbox and labeled 'Estate' by a Gmail filter. The email listener is unchanged; only its folder and rules differ. Also takes Google Alerts from the HMTCHS account ('Richmond estate sale', 'Henrico estate auction', …) when labeled Estate.",
+      "host": "imap.gmail.com",
+      "user": "${LEADS_IMAP_USER}",
+      "password": "${LEADS_IMAP_PASSWORD}",
+      "folder": "Estate",
+      "channel": "Local Community",
+      "tags": [
+        "estate",
+        "email"
+      ],
+      "spot": {
+        "silver": "${SILVER_SPOT_USD:-}",
+        "gold": "${GOLD_SPOT_USD:-}"
+      },
+      "rules": {
+        "require_any": [
+          "sterling",
+          "silver",
+          "gold",
+          "14k",
+          "10k",
+          "18k",
+          "karat",
+          "jewelry",
+          "jewellery",
+          "coin",
+          "coins",
+          "bullion",
+          "diamond",
+          "gem",
+          "gemstone",
+          "ruby",
+          "sapphire",
+          "emerald",
+          ".925",
+          "925",
+          "estate jewelry"
+        ],
+        "boost": {
+          "sterling": 15,
+          "14k": 15,
+          "18k": 15,
+          "10k": 10,
+          "gold": 10,
+          "coins": 10,
+          "coin collection": 20,
+          "jewelry": 10,
+          "estate jewelry": 15,
+          "bullion": 20,
+          "silver flatware": 20,
+          "tea set": 10,
+          "diamond": 10,
+          "no reserve": 15,
+          "online only": 5,
+          "richmond": 10,
+          "henrico": 10,
+          "chesterfield": 10,
+          "norfolk": 10,
+          "virginia beach": 10,
+          "chesapeake": 10,
+          "williamsburg": 10
+        },
+        "min_score": 35
+      },
+      "only_from": [],
+      "decipher": true
+    },
+    {
+      "name": "gsa-auctions",
+      "kind": "gsa_auctions",
+      "enabled": true,
+      "_note": "Federal surplus via the official GSA Auctions API; Virginia is a hotbed for gov deals. Every lot is appraised (jewelry, vehicle, equipment, auto-picked). scrap_per_ton / cat_value / comps_csv are YOUR numbers: placeholders until set. Vehicles also get the book test (40%+ under book, clean ad) against the current high bid.",
+      "api_key": "${DATA_GOV_API_KEY:-DEMO_KEY}",
+      "states": [
+        "VA",
+        "MD",
+        "NC",
+        "DC"
+      ],
+      "spot": {
+        "silver": "${SILVER_SPOT_USD:-}",
+        "gold": "${GOLD_SPOT_USD:-}"
+      },
+      "min_interval_minutes": 60,
+      "rules": {
+        "require_any": [
+          ".925",
+          "10k",
+          "14k",
+          "18k",
+          "925",
+          "backhoe",
+          "bullion",
+          "chevrolet",
+          "cisco",
+          "coin",
+          "coins",
+          "compressor",
+          "computer",
+          "computers",
+          "desktop",
+          "desktops",
+          "diamond",
+          "dodge",
+          "dozer",
+          "emerald",
+          "estate jewelry",
+          "excavator",
+          "ford",
+          "forklift",
+          "gem",
+          "gemstone",
+          "generator",
+          "gmc",
+          "gold",
+          "ipad",
+          "jewellery",
+          "jewelry",
+          "karat",
+          "laptop",
+          "laptops",
+          "latitude",
+          "lift",
+          "loader",
+          "monitor",
+          "monitors",
+          "mower",
+          "optiplex",
+          "pickup",
+          "ruby",
+          "sapphire",
+          "sedan",
+          "server",
+          "servers",
+          "silver",
+          "skid steer",
+          "sterling",
+          "suv",
+          "switch",
+          "tablet",
+          "thinkpad",
+          "toyota",
+          "tractor",
+          "trailer",
+          "truck",
+          "van",
+          "vehicle"
+        ],
+        "boost": {
+          "jewelry": 15,
+          "coins": 15,
+          "gold": 10,
+          "silver": 10,
+          "runs": 5,
+          "virginia": 5,
+          "norfolk": 5,
+          "richmond": 5,
+          "chesapeake": 5,
+          "quantico": 5,
+          "lot of": 5
+        },
+        "min_score": 35
+      },
+      "recovery": {
+        "_note": "Vinny's value test: gram weight melted at spot + gem value vs price + shipping. stone_per_ct = YOUR base $/ct for a clean, natural, untreated ~1 ct stone; size, clarity, color, treatment, natural-vs-lab and certificate adjust it (leads/valuation.py GEM_FACTORS, overridable in gem_factors). 0 = stones not counted.",
+        "stone_per_ct": {
+          "diamond": 1100,
+          "ruby": 350,
+          "sapphire": 250,
+          "emerald": 300,
+          "alexandrite": 1000,
+          "spinel": 130,
+          "tanzanite": 120,
+          "aquamarine": 65,
+          "opal": 50,
+          "morganite": 50,
+          "peridot": 30,
+          "tourmaline": 25,
+          "garnet": 10,
+          "topaz": 5,
+          "amethyst": 5,
+          "jade": 0
+        },
+        "_stone_basis": "Recovery $/ct (what a dealer pays cash, ~25% of retail index) for a clean, natural, ~1 ct, medium-grade, heated/standard-treated stone. Researched 2026-10-01: GemstoneAI market index, RubyGlint tier tables, Washington Diamond resale ranges (used diamonds bring 20-40% of retail cash). valuation.py factors scale it for size, clarity, color, treatment, natural vs lab, certificate. Jade 0: priced by piece and often dyed. Retune from real buys."
+      },
+      "appraiser": "auto",
+      "scrap_per_ton": "${SCRAP_PER_TON:-180}",
+      "cat_value": "${CAT_CONVERTER_VALUE:-100}",
+      "comps_csv": "${VALUE_COMPS_CSV:-}"
+    },
+    {
+      "name": "ebay-refurb",
+      "kind": "ebay",
+      "enabled": true,
+      "_note": "Vinny's old trade: bulk computer lots to refurbish or part out. Appraised per unit x count against your price sheet.",
+      "client_id": "${EBAY_CLIENT_ID}",
+      "client_secret": "${EBAY_CLIENT_SECRET}",
+      "min_interval_minutes": 60,
+      "queries": [
+        {
+          "hunt": "electronics",
+          "q": "lot laptops dell latitude",
+          "max_price": 1500
+        },
+        {
+          "hunt": "electronics",
+          "q": "lot thinkpad laptops",
+          "max_price": 1500
+        },
+        {
+          "hunt": "electronics",
+          "q": "lot optiplex desktops",
+          "max_price": 1000
+        },
+        {
+          "hunt": "electronics",
+          "q": "laptop lot no hard drive",
+          "max_price": 800,
+          "buying": "AUCTION"
+        },
+        {
+          "hunt": "electronics",
+          "q": "government surplus computers lot",
+          "max_price": 1500
+        },
+        {
+          "hunt": "electronics",
+          "q": "poweredge server lot",
+          "max_price": 1500
+        }
+      ],
+      "rules": {
+        "exclude_any": [
+          "for parts only screens",
+          "empty case"
+        ],
+        "min_score": 45
+      }
+    },
+    {
+      "name": "estate-news",
+      "kind": "feed",
+      "enabled": true,
+      "_note": "Richmond-area estate sale & estate auction searches (Google News RSS, last 7 days, deciphered). The same searches can be Google Alerts in the HMTCHS account; those arrive via estate-mail. News is a thin source for estate sales. The estate-sale sites' own email alerts (estate-mail) are the main feed; this only catches notable auctions.",
+      "channel": "Local Community",
+      "tags": [
+        "estate",
+        "news"
+      ],
+      "google_news": [
+        "\"Richmond\" estate sale",
+        "\"Richmond\" estate auction",
+        "Henrico estate sale",
+        "Chesterfield estate sale",
+        "\"Hampton Roads\" estate sale",
+        "Virginia estate auction jewelry coins"
+      ],
+      "news_days": 7,
+      "max_items": 30,
+      "min_interval_minutes": 120,
+      "rules": {
+        "require_title_any": [
+          "estate sale",
+          "estate sales",
+          "estate auction",
+          "auction",
+          "liquidation",
+          "collection"
+        ],
+        "exclude_any": [
+          "real estate",
+          "richmond, ca",
+          "california",
+          "obituary",
+          "crore",
+          "lakh",
+          "india",
+          "hyderabad",
+          "england",
+          "uk"
+        ],
+        "boost": {
+          "sterling": 10,
+          "silver": 10,
+          "gold": 10,
+          "14k": 10,
+          "10k": 10,
+          "18k": 10,
+          "jewelry": 10,
+          "coins": 10,
+          "coin": 10,
+          "diamond": 10,
+          "estate jewelry": 10,
+          "bullion": 10,
+          "richmond": 10,
+          "henrico": 10,
+          "chesterfield": 10,
+          "hampton roads": 5
+        },
+        "min_score": 40
+      }
+    },
+    {
+      "name": "ebay-vehicles",
+      "kind": "ebay",
+      "enabled": true,
+      "_note": "Vehicles near Richmond and Norfolk (local pickup). Book test: 40%+ under book with a normal-looking ad gets flagged hard. Book values come from YOUR price sheet (VALUE_COMPS_CSV), looked up on KBB/NADA/Edmunds.",
+      "client_id": "${EBAY_CLIENT_ID}",
+      "client_secret": "${EBAY_CLIENT_SECRET}",
+      "min_interval_minutes": 60,
+      "queries": [
+        {
+          "hunt": "vehicle",
+          "q": "pickup truck",
+          "max_price": 25000,
+          "near": {
+            "zip": "23220",
+            "miles": 100
+          }
+        },
+        {
+          "hunt": "vehicle",
+          "q": "pickup truck",
+          "max_price": 25000,
+          "near": {
+            "zip": "23510",
+            "miles": 75
+          }
+        },
+        {
+          "hunt": "vehicle",
+          "q": "cargo van",
+          "max_price": 25000,
+          "near": {
+            "zip": "23220",
+            "miles": 150
+          }
+        },
+        {
+          "hunt": "vehicle",
+          "q": "(tacoma, f-150, silverado, ram 1500, tundra)",
+          "max_price": 30000,
+          "near": {
+            "zip": "23220",
+            "miles": 150
+          }
+        },
+        {
+          "hunt": "vehicle",
+          "q": "(camry, accord, corolla, civic)",
+          "max_price": 15000,
+          "near": {
+            "zip": "23220",
+            "miles": 100
+          }
+        }
+      ],
+      "rules": {
+        "exclude_any": [
+          "for parts",
+          "parts only",
+          "salvage",
+          "rebuilt"
+        ],
+        "min_score": 45
+      }
+    },
+    {
+      "name": "ebay-watches",
+      "kind": "ebay_watch",
+      "enabled": true,
+      "_note": "Special listens: standing watches from var/watches.json (starts with Mazdaspeed6 and Shelby). Every new match is flagged (notify=all) and still appraised; add more with: python -m leads watch add NAME --q '...'",
+      "client_id": "${EBAY_CLIENT_ID}",
+      "client_secret": "${EBAY_CLIENT_SECRET}",
+      "spot": {
+        "silver": "${SILVER_SPOT_USD:-}",
+        "gold": "${GOLD_SPOT_USD:-}"
+      },
+      "watch_file": "${WATCHES_FILE:-var/watches.json}",
+      "min_interval_minutes": 30,
+      "rules": {
+        "exclude_any": [
+          "for parts only",
+          "parts car"
+        ],
+        "min_score": 45
+      }
+    }
+  ]
+}

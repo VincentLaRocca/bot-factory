@@ -1,0 +1,66 @@
+name: Hunt sweep (eBay, estate-sale alerts, GSA surplus)
+
+# Searches eBay through the official Browse API and posts deals to the hunt
+# Slack channel. Read-only: nothing here bids, buys or messages a seller.
+#
+# Secrets: EBAY_CLIENT_ID, EBAY_CLIENT_SECRET, HUNT_SLACK_WEBHOOK_URL
+# Spot prices are live (gold-api.com). SILVER_SPOT_USD / GOLD_SPOT_USD are optional
+# overrides: set one only to pin your own number.
+
+on:
+  schedule:
+    - cron: "22,52 11-23 * * *"   # every 30 min, 7am–7pm ET
+    - cron: "44 11 * * *"         # 7:44am ET: deal digest
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Score and log only; send nothing"
+        type: boolean
+        default: false
+
+concurrency:
+  group: hunt-sweep
+  cancel-in-progress: false
+
+jobs:
+  hunt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Restore hunt store
+        uses: actions/cache/restore@v4
+        with:
+          path: var
+          key: hunts-store-${{ github.run_id }}
+          restore-keys: hunts-store-
+      - name: Hunt
+        env:
+          EBAY_CLIENT_ID: ${{ secrets.EBAY_CLIENT_ID }}
+          EBAY_CLIENT_SECRET: ${{ secrets.EBAY_CLIENT_SECRET }}
+          SILVER_SPOT_USD: ${{ secrets.SILVER_SPOT_USD }}
+          GOLD_SPOT_USD: ${{ secrets.GOLD_SPOT_USD }}
+          HUNT_SLACK_WEBHOOK_URL: ${{ secrets.HUNT_SLACK_WEBHOOK_URL }}
+          DATA_GOV_API_KEY: ${{ secrets.DATA_GOV_API_KEY }}
+          LEADS_IMAP_USER: ${{ secrets.LEADS_IMAP_USER }}
+          LEADS_IMAP_PASSWORD: ${{ secrets.LEADS_IMAP_PASSWORD }}
+        run: |
+          CONFIG=leads/hunts.example.json
+          [ -f hunts.config.json ] && CONFIG=hunts.config.json
+          if [ "${{ github.event.schedule }}" = "44 11 * * *" ]; then
+            python -m leads --config "$CONFIG" digest --send
+            exit 0
+          fi
+          ARGS=""
+          [ "${{ inputs.dry_run }}" = "true" ] && ARGS="--dry-run"
+          python -m leads --config "$CONFIG" check
+          python -m leads --config "$CONFIG" sweep $ARGS
+      - name: Save hunt store
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: var
+          key: hunts-store-${{ github.run_id }}

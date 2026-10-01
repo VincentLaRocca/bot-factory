@@ -1,0 +1,240 @@
+{
+  "_readme": "Copy to leads.config.json (repo root) and edit. ${VARS} come from the environment / GitHub Secrets. Set enabled:false to park a listener.",
+  "store": "var/leads.db",
+  "ledger": "var/leads.jsonl",
+  "board_view_url": "${LEAD_BOARD_VIEW_URL:-}",
+
+  "sinks": {
+    "lead_board": { "url": "${LEAD_BOARD_API_URL}" },
+    "slack": { "url": "${SLACK_WEBHOOK_URL}", "min_urgency": "HIGH" },
+    "webhooks": [
+      { "name": "mid-atlantic-board", "url": "${MIDATLANTIC_WEBHOOK_URL}", "token": "${MIDATLANTIC_WEBHOOK_TOKEN}",
+        "shape": "board", "min_urgency": "LOW" }
+    ]
+  },
+
+  "rules": {
+    "exclude_any": ["[for hire]", "for hire]", "looking for work", "resume", "mlm", "crypto giveaway"],
+    "geo_any": ["virginia", ", va", " va ", "richmond", "rva", "norfolk", "virginia beach", "chesapeake",
+                "hampton roads", "newport news", "henrico", "chesterfield", "midlothian", "petersburg",
+                "williamsburg", "suffolk", "portsmouth", "mid-atlantic", "maryland", "north carolina", "dc"],
+    "geo_points": 15,
+    "urgent_any": ["asap", "urgent", "emergency", "same day", "same-day", "today", "tonight", "rush", "hot shot", "hotshot"],
+    "min_score": 30
+  },
+
+  "listeners": [
+    {
+      "name": "sam-painting",
+      "kind": "sam",
+      "enabled": true,
+      "api_key": "${SAM_API_KEY}",
+      "naics": ["238320"],
+      "set_asides": ["SDVOSBC", "SDVOSBS", "SBA"],
+      "states": ["VA", "MD", "NC", "DC"],
+      "lookback_days": 3,
+      "min_interval_minutes": 480,
+      "rules": {
+        "require_any": [],
+        "boost": { "sdvosb": 30, "service-disabled": 30, "total small business": 10, "solicitation": 10,
+                   "combined synopsis": 10, "sources sought": 5, "painting": 10, "coating": 5 },
+        "min_score": 20
+      }
+    },
+
+    {
+      "name": "inbox",
+      "kind": "email",
+      "enabled": true,
+      "host": "imap.gmail.com",
+      "user": "${LEADS_IMAP_USER}",
+      "password": "${LEADS_IMAP_PASSWORD}",
+      "folder": "Leads",
+      "only_from": [],
+      "skip_from": ["redditmail.com", "reddit.com", "x.com", "twitter.com", "googlealerts-noreply@google.com"],
+      "rules": {
+        "require_any": ["paint", "quote", "estimate", "bid", "rfq", "rfp", "delivery", "courier", "pickup",
+                        "haul", "move", "job", "project", "proposal", "invitation to bid"],
+        "boost": { "rfq": 15, "rfp": 15, "invitation to bid": 20, "quote": 10, "estimate": 10, "sdvosb": 20 },
+        "min_score": 30
+      }
+    },
+
+    {
+      "name": "social-painting",
+      "kind": "feed",
+      "enabled": false,
+      "_note": "Parked: on Reddit, Vinny posts as himself and leads come back as replies (see reddit-replies). Keep for Google Alerts / other RSS by moving URLs here and enabling.",
+      "channel": "Local Community",
+      "reddit": [
+        { "subreddit": "rva",            "query": "painter OR painting OR \"paint my\"" },
+        { "subreddit": "norfolk",        "query": "painter OR painting" },
+        { "subreddit": "VirginiaBeach",  "query": "painter OR painting" },
+        { "subreddit": "HamptonRoads",   "query": "painter OR painting" }
+      ],
+      "urls": ["${GOOGLE_ALERT_PAINTING_RSS:-}"],
+      "rules": {
+        "require_title_any": ["painter", "painting", "paint ", "painted", "repaint"],
+        "intent_any": ["looking for", "need a", "need someone", "recommend", "recommendation", "anyone know",
+                       "iso ", "in search of", "quote", "hire", "hiring", "who do you use", "suggestions"],
+        "boost": { "recommend": 10, "looking for": 15, "need a": 15, "quote": 10, "hire": 10, "anyone know": 5 },
+        "exclude_any": ["[for hire]", "art class", "paint night", "painting class", "car paint", "paintball"],
+        "min_score": 35
+      }
+    },
+
+    {
+      "name": "social-courier",
+      "kind": "feed",
+      "enabled": false,
+      "_note": "Parked, as above.",
+      "channel": "Local Community",
+      "reddit": [
+        { "subreddit": "rva",      "query": "courier OR delivery OR \"pick up\" OR movers OR haul" },
+        { "subreddit": "norfolk",  "query": "courier OR delivery OR movers OR haul" },
+        { "subreddit": "forhire",  "query": "courier OR delivery Virginia" }
+      ],
+      "rules": {
+        "require_title_any": ["courier", "deliver", "delivery", "pick up", "pickup", "haul", "movers",
+                              "moving help", "transport", "hot shot", "hotshot"],
+        "intent_any": ["looking for", "need a", "need someone", "need help", "recommend", "anyone know",
+                       "iso ", "in search of", "[hiring]", "hiring", "will pay", "paying", "who do you use"],
+        "boost": { "[hiring]": 20, "need": 10, "looking for": 15, "pay": 10, "paid": 10 },
+        "exclude_any": ["[for hire]", "doordash", "uber eats", "instacart", "amazon flex"],
+        "min_score": 35
+      }
+    },
+
+    {
+      "name": "reddit-replies",
+      "kind": "email",
+      "enabled": true,
+      "_note": "Reddit is human-first: Vinny posts, people reply. Turn on Reddit's email notifications for replies, comments, and chat/messages; a Gmail filter labels mail from redditmail.com as Leads.",
+      "host": "imap.gmail.com",
+      "user": "${LEADS_IMAP_USER}",
+      "password": "${LEADS_IMAP_PASSWORD}",
+      "folder": "Leads",
+      "only_from": ["redditmail.com", "reddit.com"],
+      "channel": "Local Community",
+      "tags": ["reddit", "reply"],
+      "rules": {
+        "exclude_any": ["upvoted", "trending", "top posts", "digest", "you have a new follower"],
+        "boost": { "quote": 15, "how much": 15, "interested": 15, "can you": 10, "dm": 10, "message you": 10, "available": 10 },
+        "min_score": 0
+      }
+    },
+
+    {
+      "name": "news-distributors",
+      "kind": "feed",
+      "enabled": true,
+      "_note": "Vinny's keyword-pair news searches, automated: Google News RSS for each pair, last 7 days, each story deciphered (who, where, how much). Distributor news means B2B courier and service leads.",
+      "channel": "Commercial / B2B",
+      "tags": ["news"],
+      "google_news": ["\"Richmond\" distributors", "\"Virginia\" distributors",
+                      "\"Richmond\" distribution center", "\"Virginia\" distribution center",
+                      "\"Hampton Roads\" distributors", "\"Richmond\" warehouse opening"],
+      "news_days": 7,
+      "max_items": 40,
+      "rules": {
+        "require_title_any": ["distributor", "distributors", "distribution", "warehouse", "wholesale", "wholesaler",
+                              "supplier", "suppliers", "logistics", "fulfillment", "supply"],
+        "exclude_any": ["obituary", "dies", "arrested", "richmond, ca", "richmond, calif", "california", "contra costa",
+                        "richmond, ky", "richmond, ind", "richmond, tx"],
+        "boost": { "opens": 15, "opening": 15, "expands": 15, "expansion": 15, "new facility": 20, "new location": 15,
+                   "distribution center": 15, "headquarters": 10, "relocat": 10, "hiring": 10, "jobs": 10,
+                   "contract": 10, "acquires": 10, "announces": 5, "richmond": 10, "henrico": 10,
+                   "chesterfield": 10, "hanover": 10, "hampton roads": 10, "norfolk": 10, "chesapeake": 10,
+                   "suffolk": 10, "virginia beach": 10 },
+        "min_score": 35
+      }
+    },
+
+    {
+      "name": "google-alerts",
+      "kind": "email",
+      "enabled": true,
+      "_note": "Google Alerts set up in the Human Network (HMTCHS) Google account for the same keyword pairs, delivered by email to that inbox. Gmail filter: from googlealerts-noreply@google.com, label Leads. Each alert is deciphered.",
+      "host": "imap.gmail.com",
+      "user": "${LEADS_IMAP_USER}",
+      "password": "${LEADS_IMAP_PASSWORD}",
+      "folder": "Leads",
+      "only_from": ["googlealerts-noreply@google.com"],
+      "decipher": true,
+      "channel": "Commercial / B2B",
+      "tags": ["news", "google-alert"],
+      "rules": {
+        "require_any": ["distributor", "distributors", "distribution", "warehouse", "wholesale", "supplier", "logistics", "fulfillment"],
+        "exclude_any": ["obituary", "california"],
+        "boost": { "opens": 15, "expands": 15, "new facility": 20, "distribution center": 15, "hiring": 10, "richmond": 10, "henrico": 10, "chesterfield": 10, "hampton roads": 10 },
+        "min_score": 35
+      }
+    },
+
+    {
+      "name": "x-replies",
+      "kind": "email",
+      "enabled": true,
+      "_note": "Human touch on X/Twitter: Vinny posts as himself. Replies, mentions, quote-posts and DMs arrive as X notification emails in the Human Network inbox (Gmail filter: from x.com OR twitter.com, label Leads). No X API (paid, and not needed), and no scraping.",
+      "host": "imap.gmail.com",
+      "user": "${LEADS_IMAP_USER}",
+      "password": "${LEADS_IMAP_PASSWORD}",
+      "folder": "Leads",
+      "only_from": ["x.com", "twitter.com"],
+      "channel": "Local Community",
+      "tags": ["x", "reply"],
+      "rules": {
+        "exclude_any": ["new login", "password", "verify", "security", "confirm your", "highlights", "trending", "who to follow", "your weekly", "recommended"],
+        "boost": { "replied": 10, "mentioned you": 10, "sent you a direct message": 20, "quote": 10, "how much": 15, "are you available": 20, "interested": 15, "dm": 10, "painter": 10, "courier": 10, "silver": 5, "gold": 5 },
+        "min_score": 0
+      }
+    },
+
+    {
+      "name": "reddit-threads",
+      "kind": "reddit_threads",
+      "enabled": false,
+      "_paused": "2026-09-27: paused while Vinny sorts out his Reddit standing. Re-enable when he is back in good standing.",
+      "_note": "Every thread Vinny comments in or starts gets read in full and re-checked for 7 days. Run on the 5090 (Reddit throttles cloud IPs).",
+      "username": "${REDDIT_USERNAME}",
+      "follow_user": true,
+      "watch_days": 7,
+      "rules": {
+        "exclude_any": ["[for hire]"],
+        "boost": { "reddit-thread": 20, "reply-to-you": 20, "looking for": 15, "need a": 15, "need someone": 15, "recommend": 10,
+                   "anyone know": 10, "how much": 15, "quote": 15, "are you available": 20, "dm me": 10, "pm me": 10,
+                   "painter": 10, "painting": 5, "courier": 10, "delivery": 5 },
+        "min_score": 35
+      }
+    },
+
+    {
+      "name": "owned-groups",
+      "kind": "reddit_threads",
+      "enabled": false,
+      "_paused": "2026-09-27: paused while Vinny sorts out his Reddit standing. Re-enable when he is back in good standing.",
+      "_note": "Groups we own: recruiting runs through these. Every thread in them is read in full. OWNED_SUBREDDITS is comma-separated, e.g. sub1,sub2.",
+      "username": "${REDDIT_USERNAME}",
+      "follow_user": false,
+      "subreddits": "${OWNED_SUBREDDITS}",
+      "watch_days": 14,
+      "max_threads": 25,
+      "tags": ["owned", "recruit"],
+      "rules": {
+        "exclude_any": [],
+        "boost": { "interested": 20, "join": 15, "how do i": 10, "sign me up": 20, "i'm a painter": 20, "i paint": 15,
+                   "i drive": 20, "i have a van": 20, "i have a truck": 20, "looking for work": 20, "experience": 10,
+                   "need a": 15, "quote": 15, "reply-to-you": 20, "reddit-thread": 10 },
+        "min_score": 20
+      }
+    },
+
+    {
+      "name": "inbound",
+      "kind": "webhook",
+      "enabled": true,
+      "token": "${LEADS_WEBHOOK_TOKEN}",
+      "rules": { "min_score": 0 }
+    }
+  ]
+}

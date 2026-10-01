@@ -67,6 +67,7 @@
   dialog label { display: block; font-size: 12px; color: var(--muted); margin: 10px 0 4px; }
   dialog input { width: 100%; }
   dialog .row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
+.cargo a { color: inherit; text-decoration-color: rgba(127,127,127,.5); }
 </style>
 </head>
 <body>
@@ -261,6 +262,8 @@ function render() {
   if (state.lastFetch) setStatus(`${state.api ? "Sheet" : "Demo"} · updated ${state.lastFetch.toLocaleTimeString()}`);
 }
 
+function safeUrl(u) { return /^https?:\/\//i.test(String(u || "")); }
+
 function card(l) {
   const el = document.createElement("div");
   el.className = `card ${l.urgency_level} ${l.triage_status}`;
@@ -271,11 +274,12 @@ function card(l) {
         <span class="badge urg ${l.urgency_level}">${esc(l.urgency_level)}</span>
         <span class="badge st ${l.triage_status}">${esc(l.triage_status.replace("_", " "))}</span>
         <span class="badge">${esc(l.listener_channel)}</span>
+        ${l.lead_score ? `<span class="badge" title="rule score">★ ${esc(l.lead_score)}</span>` : ""}
       </div>
       <span class="meta">${age(l.timestamp)}</span>
     </div>
     <div class="route">${esc(l.origin)}<span class="arrow">→</span>${esc(l.destination)}</div>
-    <div class="cargo">${esc(l.cargo_summary)}</div>
+    <div class="cargo">${safeUrl(l.detail_url) ? `<a href="${esc(l.detail_url)}" target="_blank" rel="noopener">${esc(l.cargo_summary)} ↗</a>` : esc(l.cargo_summary)}</div>
     <div class="metrics">
       <div class="metric"><div class="label">Payout</div><div class="value">${money(l.payout_offered)}</div></div>
       <div class="metric"><div class="label">Miles</div><div class="value">${l.mileage_est ? l.mileage_est.toFixed(1) : "—"}</div></div>
@@ -284,7 +288,7 @@ function card(l) {
     <div class="meta">
       <span class="deadline">⏱ <b>${esc(l.window_deadline)}</b></span>
       <span>${esc(l.source_medium)} · <b>${esc(l.source_contact)}</b></span>
-      <span>${esc(l.lead_id)}</span>
+      <span>${esc(l.source_system || l.lead_id)}</span>
     </div>
     <div class="actions"></div>`;
   const actions = el.querySelector(".actions");

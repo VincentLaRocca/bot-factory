@@ -1,0 +1,30 @@
+# fly launch --config leads/deploy/fly.toml --dockerfile leads/deploy/Dockerfile --no-deploy
+# fly volumes create leads_data --size 1
+# fly secrets set LEADS_WEBHOOK_TOKEN=... LEAD_BOARD_API_URL=... SLACK_WEBHOOK_URL=... \
+#                 SAM_API_KEY=... LEADS_IMAP_USER=... LEADS_IMAP_PASSWORD=...
+# fly deploy --config leads/deploy/fly.toml --dockerfile leads/deploy/Dockerfile
+app = "bot-factory-leads"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  SWEEP_EVERY = "1800"
+
+[mounts]
+  source = "leads_data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "off"   # the sweep loop needs the machine awake
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    grace_period = "10s"
+    interval = "30s"
+    method = "GET"
+    path = "/health"
+    timeout = "5s"

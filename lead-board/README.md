@@ -26,6 +26,14 @@ through `doPost`.
 | `window_deadline` | string | Pickup or delivery deadline | `Pickup by 12:40 PM` |
 | `triage_status` | enum | Current board state | `NEW` |
 | `updated_at` | ISO string | Last state update | `2026-09-22T16:20:00.000Z` |
+| `detail_url` | string | Link to the source (http/https only) | `https://sam.gov/opp/…/view` |
+| `lead_score` | number | Rule score from `leads/` (0–100) | `85` |
+| `source_system` | string | Listener that produced the lead | `sam-painting` |
+
+An intake whose `lead_id` already exists returns `{"status": "DUPLICATE"}` and
+adds no row, so listeners can safely resend. Sheets created before the last
+three columns existed get their headers filled in on the next request. The
+automated listeners that feed this board live in `leads/` (see `docs/LEADS.md`).
 
 ## Deployment
 

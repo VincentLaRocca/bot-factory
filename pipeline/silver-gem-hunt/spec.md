@@ -1,0 +1,67 @@
+# Build Card: Silver, gold & gem hunt (eBay, estate sales, surplus auctions)
+
+| | |
+| --- | --- |
+| **Status** | review |
+| **Spec origin** | Vinny, 2026-09-27 (pivot from Reddit; he has an eBay developer account) |
+| **Judge** | Claude Code |
+| **Build** | Claude Code, 2026-09-27, `[architect]` (semi), branch `leads/full-lead-system` |
+| **Sessions and reality lens** | Claude desktop: are the flagged deals real deals, and would Vinny actually buy them? |
+| **Gates** | Vinny: every bid or buy is his, by hand. Merge after the reality check. |
+
+## Problem
+
+Precious-metal and gem listings on eBay are sometimes priced below what's in
+them: sterling sold by the piece instead of by weight, junk silver at face,
+gold jewelry listed without karat math, stones hidden by a misspelled title,
+and auctions ending with no bids. Finding those by hand means reading thousands
+of titles a day. Build a listener that reads them for Vinny and surfaces only
+the ones worth a look.
+
+## Done means
+
+1. `python -m leads --config leads/hunts.example.json sweep` searches eBay through the official Browse API (App ID + Cert ID from Vinny's developer account, OAuth client credentials).
+2. **Silver and gold (the value test: "if it were broken into elements, could we get our money back?"):** the title parser finds weight (g, dwt, ozt, oz), purity (sterling/.925, .999, 10–24k, 90% coin) and known coins. It computes melt from the spot price and flags listings whose price plus shipping is under melt by a set margin.
+3. **Gems:** certified stones (GIA/AGS/IGI), price per carat under the limits Vinny sets per stone, misspelled titles, and auctions ending within 24h with no bids get flagged.
+4. **Fakes and lookalikes are vetoed:** plated, filled, "tone", nickel/German/Tibetan silver, lab-created, simulated, CZ, moissanite, glass, replica.
+5. Deals go to their own Slack channel and ledger, never the courier lead board, plus a daily deal digest.
+6. Nothing ever bids, buys, offers or messages a seller.
+7. Tests run offline against recorded eBay responses.
+
+## Constraints and non-goals
+
+- Stdlib only. Reuses the lead engine (`leads/`): Lead model, rules, dedupe store, sinks, digest.
+- Browse API only (search and read). No Trading/Offer APIs, no bidding, no buying, no seller contact.
+- Spot prices: live from gold-api.com (free, no key) when `SILVER_SPOT_USD` / `GOLD_SPOT_USD` are blank; a number set by hand wins.
+- Gem price-per-carat limits are Vinny's call. The example values are placeholders, not advice.
+
+## Borrow list
+
+- `leads/` engine: pipeline, rules, store, Slack sink, digest
+- 5090 kit: same `.env`, same start script (add `--config leads/hunts.example.json` as a second loop, or a scheduled sweep)
+
+## Log
+
+- 2026-09-27 · Claude web · [cross]: Vinny pivoted from Reddit to eBay (developer account) for a new use case: silver and gem hunting. Gold added a minute later ("gold too").
+- 2026-09-27 · Claude Code · [architect]: Built `leads/valuation.py` (coins, junk face, g/dwt/ozt × purity × qty; gem stone/ct/cert; misspellings; fakes vetoed) and `leads/listeners/ebay.py` (Browse API, client-credentials token, evidence points via `Lead.bonus`). `leads/hunts.example.json`, `hunt-sweep.yml` (every 30 min, 7:44am digest), docs/HUNTS.md. Tests: 318 passed.
+- 2026-09-27 · Claude Code · open: spot prices are manual for v0. A live spot feed and learning from Vinny's actual buys are v1.
+- 2026-09-27 · Claude Code · [cross]: eBay's Production keyset (`prelucky`) arrives disabled until account-deletion compliance is met. Chose the no-persistence path: the hunter now drops seller usernames (it keeps listing + feedback numbers only), so the exemption is truthful. Also built `/ebay/account-deletion` (challenge + purge) on the inbound listener as the fallback. Tests 320 passed.
+- 2026-09-27 · Claude web · [cross]: Vinny: "the bid system is repurposed for estate sales" and "email lead is flexible enough to not need changing." So: `estate-mail` is the unchanged email listener with an Estate label, precious rules and melt reading. New `gsa-auctions` listener (official GSA Auctions API, api.data.gov key). Chrome estate playbook sets up alerts on EstateSales.NET/.org, HiBid, AuctionZip and LiveAuctioneers. SAM.gov listener stays in the code, idle.
+- 2026-09-27 · Claude Code · fix: mixed-metal text ("14k jewelry, sterling flatware 1200 grams") read the weight as 14k gold, overvaluing it roughly 30×. Each weight now pairs with the nearest purity mention; `.999` takes its metal from the nearest "gold"/"silver". Regression tests added. Live GSA dry run: 678 lots in VA/MD/NC/DC, 0 precious, all dropped. Tests 325 passed.
+- 2026-09-27 · Claude Code: Vinny has a Sandbox keyset too. App IDs containing `-SBX-` now route to api.sandbox.ebay.com automatically (test listings only; proves the wiring while Production waits on the exemption). Keys stay out of the repo.
+- 2026-09-27 · Claude Code: Sandbox keyset tested live. OAuth token OK; Browse search returned 200 test listings across two queries; the appraiser read each one (sandbox items are test data, so nothing routed). Wiring proven end to end. Keys were used in memory only and are not stored anywhere.
+- 2026-09-27 · Claude web · correction: the "Exempted from Marketplace Account Deletion" line Vinny saw is the toggle's label, not a granted exemption. Exemption not yet applied; the keyset is still disabled.
+- 2026-09-27 · Vinny: applied for the eBay Marketplace Account Deletion exemption (not persisting eBay data). Waiting for the Production keyset to show enabled.
+- 2026-09-27 · Claude Code · [architect]: Vinny: "on eBay we're looking for mispriced jewelry… and silver." New `jewelry` hunt (metal + gem reading + mispricing clues: fine metal filed under Fashion/Costume, seller-unsure wording, designer/period names tagged verify, platinum). `ebay-jewelry` listener with 14 gold/silver jewelry queries every 20 min is now the main hunt. Tests 328 passed.
+- 2026-09-27 · Claude Code · [architect] [cross]: Vinny's value test: "if it were broken into elements, could we get our money back?" Scoring switched from raw melt to break-down value (melt × refiner payout + stones at his per-carat recovery) vs all-in cost (price + ship + tax + fee). Defaults are conservative placeholders (gold 80%, silver 70%, 6% tax). Exception, per Vinny ("except for designer"): designer/period pieces can't be vetoed by the break-down test; they're tagged for sold-comps checks. Tests updated to the stricter test, e.g. a 400 g sterling lot at $265 no longer passes.
+- 2026-09-27 · Claude Code · [cross]: Vinny: "not so strict a rule, just the gram weight melted down plus gem value." Defaults now: full-spot melt + gem value (per-carat, his numbers) vs price + shipping, money back at break-even. Refiner payout, tax, fee and cushion remain as optional knobs, off by default.
+- 2026-09-27 · Claude Code · [cross]: Vinny: "gram weights can be guesstimated." When karat or sterling is stated without a weight, a low-end typical weight per item type (ring, class ring, chain, bracelet, spoon…) × lot quantity is used. Estimates score lower, are labeled "confirm weight", and never get a penalty. Stated weights win.
+- 2026-09-27 · Claude Code · [cross]: Vinny: gem value by carat, quality/color and clarity, authentic vs synthetic. Built `gem_value`: carats × his base $/ct × size × clarity (diamond grades or colored-stone words) × color (D–M or named colors) × treatment × origin (natural ×1, lab ×0.03, unstated ×0.6) × cert. Simulants are worth 0. Gem and jewelry hunts penalize lab (−60) and heavy treatment (−25). Weight guesstimates: low-end typical grams per item type. Fixed: glass-filled rubies were misread as glass; plurals (spoons, bangles). Tests 332 passed.
+- 2026-09-27 · Claude web · [cross]: Vinny: "eBay is your domain now." Claude runs the eBay hunting and appraising end to end (queries, appraisers, tuning). Bidding and buying stay Vinny's gate. eBay listener now routes vehicle/equipment/electronics hunts through the appraiser framework; new `ebay-refurb` listener hunts bulk computer lots (his old refurb trade).
+- 2026-09-27 · Claude Code: Vinny: add searches for Richmond estate sales. `estate-news` (Google News RSS: Richmond/Henrico/Chesterfield/Hampton Roads estate sales and auctions, deciphered). Live: news is thin for estate sales (first run's only hits were an unrelated auction abroad, now excluded), so the main feed stays the estate-sale sites' email alerts into HMTCHS (`estate-mail`, now deciphered too).
+- 2026-10-01 · Claude web · [architect]: Vinny: "let's build." Closed the open v1 item: **live spot feed** (`leads/spot.py`). Blank spot is filled from gold-api.com (free, no key, checked live: gold $4,185.20, silver $61.15). Per metal: hand-set wins → live (cached 15 min, one call per metal per sweep) → last good price up to 24h, labeled stale → left out and said so. Bad ticks outside sane bounds are rejected. `python -m leads spot` shows the numbers and their source. `spot_feed` block in hunts.example.json; `SPOT_FEED=off` turns it off. Test suite forced offline (it had been reaching the live feed). Live dry run: GSA sweep, 42 lots, 9 routed, live spot in use. Tests 361 passed.
+- 2026-10-01 · Claude web · open: the gate is still eBay's Production keyset (`prelucky`). Last known state 9/27: exemption applied for, keyset disabled. Once it shows enabled, the jewelry hunt runs as is with live spot.
+- 2026-10-01 · Claude web · [cross]: Vinny: "help me get there" (Production keyset). Took the self-serve route instead of waiting on the exemption review: `leads/deploy/5090/ebay-endpoint.ps1` sets up tokens, opens a Cloudflare quick tunnel, saves EBAY_DELETION_ENDPOINT, starts the listener, self-tests the challenge the way eBay does, and prints what to paste. Simulated here: challenge answer matched SHA-256(code+token+endpoint); deletion POST → 204. Caveat: quick-tunnel URL changes on restart; a named tunnel is the stable home.
+- 2026-10-01 · Claude web · [satoshi]: Vinny: "GO into Satoshi Mode." Problem: quick-tunnel address changes on restart, and eBay must keep reaching the endpoint. Solution: `leads/deploy/ebay-worker/`: the account-deletion endpoint as a free Cloudflare Worker with a permanent workers.dev address, one-command `deploy-worker.ps1` (sign-in, deploy, secrets, self-test, prints what to paste), offline `test.mjs` passing (challenge hash, 204 on notices, 400/404/405). hunt-sweep.yml header updated: spot is live, the spot secrets are optional overrides. Note: scheduled Actions only fire from main, so the 30-min cloud hunt starts when PR #10 is merged (Vinny's gate).
+- 2026-10-01 · Claude web · [satoshi] [cross]: Vinny: "go out to the internet and find the standard prices for gems." Set `stone_per_ct` in every recovery block to researched **recovery** $/ct (dealer cash, ~25% of the 2026 retail index; used diamonds bring 20-40% of retail cash): diamond 1100, ruby 350, sapphire 250, emerald 300, alexandrite 1000, spinel 130, tanzanite 120, aquamarine 65, opal 50, morganite 50, peridot 30, tourmaline 25, garnet 10, topaz 5, amethyst 5, jade 0 (priced by piece, often dyed). Sources: GemstoneAI market index, RubyGlint tier tables, Washington Diamond resale ranges. Fix found while checking: size steps jumped x1.5 at 1.01 ct; now follow market weight breaks (<0.5 x0.5, <1 x0.75, 1-1.49 x1.0, 1.5-1.99 x1.3, 2-2.99 x1.6, 3+ x2.0). Tests updated, 361 passed.
+

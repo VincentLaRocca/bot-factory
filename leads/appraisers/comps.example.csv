@@ -1,0 +1,42 @@
+domain,match,year_from,year_to,value,note
+vehicle,toyota tacoma,2015,2019,24000,PLACEHOLDER book (look up KBB private party)
+vehicle,toyota tacoma,2020,2023,31000,PLACEHOLDER book
+vehicle,honda accord,2015,2019,14000,PLACEHOLDER book
+vehicle,honda civic,2015,2019,12000,PLACEHOLDER book
+vehicle,toyota camry,2018,2022,17000,PLACEHOLDER book
+vehicle,ford f-150,2021,2024,32000,PLACEHOLDER book
+vehicle,ford f-150,2011,2014,11000,PLACEHOLDER - replace with real sold comps
+vehicle,ford f-150,2015,2020,19000,PLACEHOLDER
+vehicle,chevrolet silverado,2011,2014,11000,PLACEHOLDER
+vehicle,ford explorer,2011,2017,8000,PLACEHOLDER
+vehicle,ford transit,2015,2020,17000,PLACEHOLDER
+vehicle,dodge grand caravan,2011,2019,6000,PLACEHOLDER
+vehicle,toyota camry,2010,2017,7000,PLACEHOLDER
+vehicle,ford fusion,2013,2020,6000,PLACEHOLDER
+vehicle,pickup,,,9000,PLACEHOLDER - generic pickup
+vehicle,sedan,,,5000,PLACEHOLDER - generic sedan
+vehicle,van,,,8000,PLACEHOLDER - generic van
+equipment,skid steer,,,18000,PLACEHOLDER
+equipment,forklift,,,9000,PLACEHOLDER
+equipment,backhoe,,,30000,PLACEHOLDER
+equipment,mini excavator,,,25000,PLACEHOLDER
+equipment,excavator,,,45000,PLACEHOLDER
+equipment,generator,,,4000,PLACEHOLDER - towable
+equipment,air compressor,,,3000,PLACEHOLDER - towable
+equipment,trailer,,,2500,PLACEHOLDER - utility
+equipment,zero turn mower,,,2500,PLACEHOLDER
+equipment,tractor,,,12000,PLACEHOLDER
+equipment,box truck,,,15000,PLACEHOLDER
+equipment,dump truck,,,30000,PLACEHOLDER
+electronics,latitude,,,90,PLACEHOLDER - per unit, no drive
+electronics,thinkpad,,,90,PLACEHOLDER - per unit
+electronics,elitebook,,,80,PLACEHOLDER - per unit
+electronics,macbook,,,250,PLACEHOLDER - per unit
+electronics,optiplex,,,60,PLACEHOLDER - per unit
+electronics,elitedesk,,,55,PLACEHOLDER - per unit
+electronics,poweredge,,,200,PLACEHOLDER - per unit
+electronics,laptop,,,60,PLACEHOLDER - generic per unit
+electronics,desktop,,,40,PLACEHOLDER - generic per unit
+electronics,monitor,,,20,PLACEHOLDER - generic per unit
+electronics,ipad,,,90,PLACEHOLDER - per unit
+electronics,cisco switch,,,60,PLACEHOLDER - per unit

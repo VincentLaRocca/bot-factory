@@ -4,7 +4,8 @@ const BID_SHEET_NAME = "BidCalculator";
 const HEADERS = [
   "lead_id", "timestamp", "listener_channel", "source_medium", "source_contact",
   "origin", "destination", "cargo_summary", "payout_offered", "mileage_est",
-  "rate_per_mile", "urgency_level", "window_deadline", "triage_status", "updated_at"
+  "rate_per_mile", "urgency_level", "window_deadline", "triage_status", "updated_at",
+  "detail_url", "lead_score", "source_system"
 ];
 const LISTENER_CHANNELS = ["Trade Distress", "Commercial / B2B", "Open Boards", "Local Community", "General Intake"];
 const SOURCE_MEDIUMS = ["SMS", "Email", "Direct Form", "Board Scraping", "Webhook"];
@@ -26,6 +27,11 @@ function getSheet_() {
     sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
     sheet.getRange(1, 1, 1, HEADERS.length).setFontWeight("bold");
     sheet.setFrozenRows(1);
+  } else {
+    // Sheets created before a column was added get the missing header filled in.
+    HEADERS.forEach((header, index) => {
+      if (String(firstRow[index] || "").trim() === "") sheet.getRange(1, index + 1).setValue(header);
+    });
   }
   return sheet;
 }
@@ -96,11 +102,17 @@ function doPost(e) {
         data.source_contact || "", data.origin || "", data.destination || "",
         data.cargo_summary || "", payout, mileage, mileage > 0 ? round2(payout / mileage) : 0,
         normalize_(data.urgency_level, URGENCY, "MEDIUM"), data.window_deadline || "",
-        "NEW", timestamp
+        "NEW", timestamp,
+        /^https?:\/\//i.test(String(data.detail_url || "")) ? String(data.detail_url) : "",
+        parseInt(data.lead_score, 10) || "", data.source_system || ""
       ];
       const lock = LockService.getScriptLock();
       lock.waitLock(30000);
       try {
+        // Listeners use stable ids, so a re-sent lead is recognised, not doubled.
+        if (data.lead_id && findRowByLeadId_(sheet, data.lead_id)) {
+          return response_({status: "DUPLICATE", lead_id: data.lead_id});
+        }
         sheet.appendRow(row);
       } finally {
         lock.releaseLock();
